@@ -1,0 +1,36 @@
+{
+  "fixture": "security/svg-attacks.md",
+  "category": "security",
+  "description": "SVG attack vectors: inline SVG with script, onload, external references, xlink, data URI, foreignObject, animate, set, style",
+  "html": {
+    "mustNotContain": [
+      "<svg",
+      "<script",
+      "onload",
+      "onerror",
+      "xlink:href",
+      "javascript:",
+      "alert(",
+      "foreignObject",
+      "<animate",
+      "<set",
+      "@import",
+      "evil.example.com"
+    ]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["raw-html-blocked"],
+    "minSeverity": "warning"
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}

@@ -1,0 +1,37 @@
+{
+  "fixture": "features/front-matter.md",
+  "category": "features",
+  "description": "YAML front matter with title, description, lang, author, date, tags, nested objects, numbers, booleans",
+  "html": {
+    "mustContain": ["<h1", "Document Title"],
+    "mustNotContain": [
+      "title: Front Matter Test",
+      "description: Document with YAML front matter",
+      "lang: en",
+      "author: Test Author",
+      "<script"
+    ]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Document Title", "slug": "document-title" },
+      { "level": 2, "text": "Section", "slug": "section" }
+    ]
+  },
+  "metadata": {
+    "title": "Front Matter Test",
+    "description": "Document with YAML front matter",
+    "lang": "en"
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}

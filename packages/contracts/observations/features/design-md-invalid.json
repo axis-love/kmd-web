@@ -1,0 +1,35 @@
+{
+  "fixture": "features/design-md-invalid.md",
+  "category": "features",
+  "description": "Invalid DESIGN.md with deliberate errors: not-a-color, missing refs, bad units, bad values",
+  "html": {
+    "mustContain": ["color-on-surface", "not-a-color"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Design System", "slug": "design-system" },
+      { "level": 2, "text": "Color", "slug": "color" },
+      { "level": 2, "text": "Typography", "slug": "typography" },
+      { "level": 2, "text": "Spacing", "slug": "spacing" },
+      { "level": 2, "text": "Radii", "slug": "radii" }
+    ]
+  },
+  "metadata": {
+    "title": "Invalid Design Spec"
+  },
+  "detectedFeatures": {
+    "hasDesignDoc": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "diagnostics": {
+    "minSeverity": "warning"
+  },
+  "applicability": "optional"
+}

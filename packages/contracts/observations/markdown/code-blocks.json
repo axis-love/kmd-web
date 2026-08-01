@@ -1,0 +1,29 @@
+{
+  "fixture": "markdown/code-blocks.md",
+  "category": "markdown",
+  "description": "Fenced code blocks with and without language tags, indented code, inline code, diff code",
+  "html": {
+    "mustContain": ["<pre>", "<code>", "typescript", "python", "rust", "npm run verify"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Code Blocks", "slug": "code-blocks" },
+      { "level": 2, "text": "Fenced with language", "slug": "fenced-with-language" },
+      { "level": 2, "text": "Fenced without language", "slug": "fenced-without-language" },
+      { "level": 2, "text": "Indented code", "slug": "indented-code" },
+      { "level": 2, "text": "Inline code", "slug": "inline-code" },
+      { "level": 2, "text": "Diff code", "slug": "diff-code" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasCodeHighlighting": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  }
+}

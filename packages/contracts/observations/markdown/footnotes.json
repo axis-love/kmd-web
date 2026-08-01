@@ -1,0 +1,22 @@
+{
+  "fixture": "markdown/footnotes.md",
+  "category": "markdown",
+  "description": "Footnote definitions and references, including multi-paragraph footnote and undefined reference",
+  "html": {
+    "mustContain": ["footnote"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [{ "level": 1, "text": "Footnotes", "slug": "footnotes" }]
+  },
+  "detectedFeatures": {
+    "hasFootnotes": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasAlerts": false
+  }
+}

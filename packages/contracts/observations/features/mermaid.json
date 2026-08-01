@@ -1,0 +1,36 @@
+{
+  "fixture": "features/mermaid.md",
+  "category": "features",
+  "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
+  "html": {
+    "mustContain": ["mermaid"],
+    "mustNotContain": ["<script", "onerror", "javascript:", "alert(", "<img", "onload"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Mermaid Diagrams", "slug": "mermaid-diagrams" },
+      { "level": 2, "text": "Flowchart", "slug": "flowchart" },
+      { "level": 2, "text": "Sequence Diagram", "slug": "sequence-diagram" },
+      { "level": 2, "text": "Git Graph", "slug": "git-graph" },
+      { "level": 2, "text": "Mermaid with code after", "slug": "mermaid-with-code-after" },
+      { "level": 2, "text": "Multiple mermaid blocks", "slug": "multiple-mermaid-blocks" },
+      {
+        "level": 2,
+        "text": "Malicious mermaid (external reference)",
+        "slug": "malicious-mermaid-external-reference"
+      }
+    ]
+  },
+  "detectedFeatures": {
+    "hasMermaid": true,
+    "hasCodeHighlighting": true,
+    "hasMath": false,
+    "hasDesignDoc": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "fallback": "When mermaid rendering is disabled, mermaid code blocks render as plain fenced code blocks with a readable fallback. The malicious mermaid block must not produce executable HTML even when rendered.",
+  "applicability": "optional"
+}

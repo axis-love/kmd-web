@@ -1,0 +1,22 @@
+{
+  "fixture": "markdown/wikilinks.md",
+  "category": "markdown",
+  "description": "Wikilink syntax: [[link]], [[link|label]], [[path/to/page]], [[page#section]]",
+  "html": {
+    "mustContain": ["wikilink"],
+    "mustNotContain": ["<script", "javascript:"]
+  },
+  "outline": {
+    "entries": [{ "level": 1, "text": "Wikilinks", "slug": "wikilinks" }]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  }
+}

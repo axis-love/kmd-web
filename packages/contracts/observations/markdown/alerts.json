@@ -1,0 +1,30 @@
+{
+  "fixture": "markdown/alerts.md",
+  "category": "markdown",
+  "description": "GitHub-style alert blocks: NOTE, TIP, IMPORTANT, WARNING, CAUTION, plus a regular blockquote for negative assertion",
+  "html": {
+    "mustContain": ["[!NOTE]", "[!TIP]", "[!IMPORTANT]", "[!WARNING]", "[!CAUTION]"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "GitHub Alerts", "slug": "github-alerts" },
+      { "level": 2, "text": "Note alert", "slug": "note-alert" },
+      { "level": 2, "text": "Tip alert", "slug": "tip-alert" },
+      { "level": 2, "text": "Important alert", "slug": "important-alert" },
+      { "level": 2, "text": "Warning alert", "slug": "warning-alert" },
+      { "level": 2, "text": "Caution alert", "slug": "caution-alert" },
+      { "level": 2, "text": "Not an alert", "slug": "not-an-alert" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasAlerts": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false
+  }
+}

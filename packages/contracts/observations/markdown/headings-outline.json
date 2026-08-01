@@ -1,0 +1,35 @@
+{
+  "fixture": "markdown/headings-outline.md",
+  "category": "markdown",
+  "description": "Heading hierarchy and slug deduplication for outline extraction",
+  "html": {
+    "mustContain": ["<h1", "<h2", "<h3", "<h4", "<h5", "<h6"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Main Title", "slug": "main-title" },
+      { "level": 2, "text": "Section One", "slug": "section-one" },
+      { "level": 3, "text": "Subsection A", "slug": "subsection-a" },
+      { "level": 2, "text": "Section Two", "slug": "section-two" },
+      { "level": 3, "text": "Subsection B", "slug": "subsection-b" },
+      { "level": 2, "text": "Duplicate Heading", "slug": "duplicate-heading" },
+      { "level": 2, "text": "Duplicate Heading", "slug": "duplicate-heading-2" },
+      { "level": 2, "text": "Section Three", "slug": "section-three" },
+      { "level": 3, "text": "Deeply", "slug": "deeply" },
+      { "level": 4, "text": "Nested", "slug": "nested" },
+      { "level": 5, "text": "Heading", "slug": "heading" },
+      { "level": 6, "text": "Level Six Heading", "slug": "level-six-heading" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  }
+}

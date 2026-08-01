@@ -10,12 +10,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./runner": {
+      "types": "./dist/runner/contract-runner.d.ts",
+      "import": "./dist/runner/contract-runner.js"
+    },
+    "./manifest.json": "./manifest.json",
+    "./fixtures/*": "./fixtures/*",
+    "./observations/*": "./observations/*"
   },
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "fixtures",
+    "observations",
+    "manifest.json"
   ]
 }

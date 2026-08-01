@@ -1,0 +1,37 @@
+{
+  "fixture": "security/pathological.md",
+  "category": "security",
+  "description": "Pathological input: deeply nested lists (20 levels), nested blockquotes, very long line, many emphasis markers, nested emphasis, excessive heading hashes, repeated rules, malformed structure",
+  "html": {
+    "mustContain": ["<ul>", "<blockquote>", "heading"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Pathological Input", "slug": "pathological-input" },
+      { "level": 2, "text": "Deeply nested lists", "slug": "deeply-nested-lists" },
+      { "level": 2, "text": "Deeply nested blockquotes", "slug": "deeply-nested-blockquotes" },
+      { "level": 2, "text": "Very long line", "slug": "very-long-line" },
+      {
+        "level": 2,
+        "text": "Many inline emphasis markers",
+        "slug": "many-inline-emphasis-markers"
+      },
+      { "level": 2, "text": "Deeply nested emphasis", "slug": "deeply-nested-emphasis" },
+      { "level": 2, "text": "Excessive heading levels", "slug": "excessive-heading-levels" },
+      { "level": 2, "text": "Repeated horizontal rules", "slug": "repeated-horizontal-rules" },
+      { "level": 2, "text": "Empty document structure", "slug": "empty-document-structure" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}

@@ -1,0 +1,57 @@
+{
+  "fixture": "markdown/commonmark.md",
+  "category": "markdown",
+  "description": "CommonMark basics: paragraphs, inline styles, headings, lists, blockquotes, links, images, code, horizontal rules, escaping",
+  "html": {
+    "mustContain": [
+      "<strong>",
+      "<em>",
+      "<code>",
+      "<del>",
+      "<h2>",
+      "<h3>",
+      "<ul>",
+      "<ol>",
+      "<blockquote>",
+      "<a ",
+      "<img ",
+      "<hr",
+      "https://example.com",
+      "./other.md",
+      "#section"
+    ],
+    "mustNotContain": ["<script", "javascript:", "onerror"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "CommonMark Basics", "slug": "commonmark-basics" },
+      { "level": 2, "text": "Paragraphs and Inline", "slug": "paragraphs-and-inline" },
+      { "level": 2, "text": "Headings", "slug": "headings" },
+      { "level": 3, "text": "Level 3", "slug": "level-3" },
+      { "level": 4, "text": "Level 4", "slug": "level-4" },
+      { "level": 5, "text": "Level 5", "slug": "level-5" },
+      { "level": 6, "text": "Level 6", "slug": "level-6" },
+      { "level": 2, "text": "Lists", "slug": "lists" },
+      { "level": 2, "text": "Blockquotes", "slug": "blockquotes" },
+      { "level": 2, "text": "Links and Images", "slug": "links-and-images" },
+      { "level": 2, "text": "Code", "slug": "code" },
+      { "level": 2, "text": "Horizontal Rule", "slug": "horizontal-rule" },
+      { "level": 2, "text": "Escaping", "slug": "escaping" }
+    ]
+  },
+  "assets": {
+    "count": 1,
+    "mustIncludeUrls": ["./image.png"],
+    "mustIncludeTypes": ["image"]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  }
+}

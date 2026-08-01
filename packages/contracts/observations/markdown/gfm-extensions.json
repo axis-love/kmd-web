@@ -1,0 +1,35 @@
+{
+  "fixture": "markdown/gfm-extensions.md",
+  "category": "markdown",
+  "description": "GFM extensions: tables, task lists, strikethrough, autolinks",
+  "html": {
+    "mustContain": [
+      "<table>",
+      "<th>",
+      "<td>",
+      "<del>",
+      "https://github.com",
+      "contact@example.com"
+    ],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "GFM Extensions", "slug": "gfm-extensions" },
+      { "level": 2, "text": "Tables", "slug": "tables" },
+      { "level": 2, "text": "Task Lists", "slug": "task-lists" },
+      { "level": 2, "text": "Strikethrough", "slug": "strikethrough" },
+      { "level": 2, "text": "Autolinks", "slug": "autolinks" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasTables": true,
+    "hasTaskLists": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  }
+}

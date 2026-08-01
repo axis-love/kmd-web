@@ -1,0 +1,29 @@
+{
+  "fixture": "security/dom-clobbering.md",
+  "category": "security",
+  "description": "DOM clobbering: form/anchor/img with id/name attributes that shadow globals, nested forms",
+  "html": {
+    "mustNotContain": [
+      "<form",
+      "<iframe",
+      "name=\"location\"",
+      "name=\"domain\"",
+      "name=\"cookie\"",
+      "name=\"attributes\""
+    ]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["raw-html-blocked"]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}

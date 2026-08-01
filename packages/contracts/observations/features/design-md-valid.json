@@ -1,0 +1,33 @@
+{
+  "fixture": "features/design-md-valid.md",
+  "category": "features",
+  "description": "Valid DESIGN.md with front matter and token definitions: colors, typography, spacing, radii",
+  "html": {
+    "mustContain": ["color-on-surface", "color-link", "color-surface"],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      { "level": 1, "text": "Design System", "slug": "design-system" },
+      { "level": 2, "text": "Color", "slug": "color" },
+      { "level": 2, "text": "Typography", "slug": "typography" },
+      { "level": 2, "text": "Spacing", "slug": "spacing" },
+      { "level": 2, "text": "Radii", "slug": "radii" }
+    ]
+  },
+  "metadata": {
+    "title": "Design System Spec",
+    "description": "A sample DESIGN.md fixture for the kmd design mode"
+  },
+  "detectedFeatures": {
+    "hasDesignDoc": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "optional"
+}

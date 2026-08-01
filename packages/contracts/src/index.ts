@@ -69,3 +69,30 @@ export type {
 
 export type { CapabilityErrorCode, RenderErrorCode } from "./errors";
 export { CapabilityError, RenderError } from "./errors";
+
+// ---------------------------------------------------------------------------
+// Conformance contracts (fixtures, observations, runner)
+// ---------------------------------------------------------------------------
+
+export type {
+  AssertionApplicability,
+  AssertionGroup,
+  AssertionResult,
+  AssetObservation,
+  ConformanceManifest,
+  ContractRenderer,
+  ContractRunResult,
+  DiagnosticObservation,
+  ExpectedOutlineEntry,
+  FeaturesObservation,
+  FixtureAssertionResult,
+  FixtureCategory,
+  FixtureObservation,
+  HtmlObservation,
+  LinkClassificationObservation,
+  LinkObservation,
+  ManifestFixtureEntry,
+  MetadataObservation,
+  OutlineObservation,
+} from "./conformance";
+export { MANIFEST_SCHEMA_VERSION } from "./conformance";

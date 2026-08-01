@@ -1,0 +1,329 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractsVersion": "0.1.0",
+  "platforms": ["kmd-web", "kmd-unity"],
+  "fixtures": [
+    {
+      "fixture": "markdown/commonmark.md",
+      "category": "markdown",
+      "description": "CommonMark basics: paragraphs, inline styles, headings, lists, blockquotes, links, images, code, horizontal rules, escaping",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": [
+        "paragraphs",
+        "inline-styles",
+        "headings",
+        "lists",
+        "blockquotes",
+        "links",
+        "images",
+        "code",
+        "horizontal-rules",
+        "escaping"
+      ],
+      "security": false
+    },
+    {
+      "fixture": "markdown/gfm-extensions.md",
+      "category": "markdown",
+      "description": "GFM extensions: tables, task lists, strikethrough, autolinks",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["tables", "task-lists", "strikethrough", "autolinks"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/alerts.md",
+      "category": "markdown",
+      "description": "GitHub-style alert blocks: NOTE, TIP, IMPORTANT, WARNING, CAUTION, plus regular blockquote",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["alerts"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/footnotes.md",
+      "category": "markdown",
+      "description": "Footnote definitions and references, multi-paragraph footnote, undefined reference",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["footnotes"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/wikilinks.md",
+      "category": "markdown",
+      "description": "Wikilink syntax: [[link]], [[link|label]], [[path/to/page]], [[page#section]]",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["wikilinks"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/raw-html-allowed.md",
+      "category": "markdown",
+      "description": "Raw HTML from the strict allowlist: kbd, details, summary, sub, sup, mark, abbr, br",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["raw-html-allowlist"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/code-blocks.md",
+      "category": "markdown",
+      "description": "Fenced code blocks with and without language tags, indented code, inline code, diff code",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["code-blocks", "syntax-highlighting"],
+      "security": false
+    },
+    {
+      "fixture": "markdown/headings-outline.md",
+      "category": "markdown",
+      "description": "Heading hierarchy and slug deduplication for outline extraction",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["headings", "outline", "slug-deduplication"],
+      "security": false
+    },
+    {
+      "fixture": "security/xss.md",
+      "category": "security",
+      "description": "XSS attack vectors: javascript: links, vbscript:, data: URIs, file:, event handlers, SVG scripts, encoded URLs, object/embed, script/iframe/form/meta/style tags",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["sanitization", "url-policy"],
+      "security": true
+    },
+    {
+      "fixture": "security/dom-clobbering.md",
+      "category": "security",
+      "description": "DOM clobbering: form/anchor/img with id/name attributes that shadow globals, nested forms",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["sanitization", "dom-clobbering"],
+      "security": true
+    },
+    {
+      "fixture": "security/protocol-tricks.md",
+      "category": "security",
+      "description": "Protocol tricks: mixed case, whitespace, newlines, tabs, HTML entities, URL encoding, custom schemes, data: variants, file: variants",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "sanitization"],
+      "security": true
+    },
+    {
+      "fixture": "security/encoded-urls.md",
+      "category": "security",
+      "description": "Encoded URL attacks: double encoding, unicode, HTML entities, mixed encoding, null bytes, UTF-8 overlong",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "sanitization"],
+      "security": true
+    },
+    {
+      "fixture": "security/svg-attacks.md",
+      "category": "security",
+      "description": "SVG attack vectors: inline SVG with script, onload, external references, xlink, data URI, foreignObject, animate, set, style",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["sanitization", "svg-safety"],
+      "security": true
+    },
+    {
+      "fixture": "security/path-traversal.md",
+      "category": "security",
+      "description": "Path traversal in links and images: relative, absolute, URL-encoded, double-encoded, null byte, UNC, mixed separators",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "asset-policy", "path-policy"],
+      "security": true
+    },
+    {
+      "fixture": "security/pathological.md",
+      "category": "security",
+      "description": "Pathological input: deeply nested lists, nested blockquotes, very long line, many emphasis markers, nested emphasis, excessive heading hashes, repeated rules, malformed structure",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["parser-robustness", "depth-limits"],
+      "security": true
+    },
+    {
+      "fixture": "features/mermaid.md",
+      "category": "features",
+      "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["mermaid", "mermaid-safety"],
+      "security": true
+    },
+    {
+      "fixture": "features/math.md",
+      "category": "features",
+      "description": "Math expressions: inline math, block/display math, mixed inline and block, special symbols, pathological input, math in code blocks (should NOT render)",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["math", "katex"],
+      "security": false
+    },
+    {
+      "fixture": "features/design-md-valid.md",
+      "category": "features",
+      "description": "Valid DESIGN.md with front matter and token definitions: colors, typography, spacing, radii",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["design-md", "front-matter"],
+      "security": false
+    },
+    {
+      "fixture": "features/design-md-invalid.md",
+      "category": "features",
+      "description": "Invalid DESIGN.md with deliberate errors: not-a-color, missing refs, bad units, bad values",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["design-md", "design-md-validation"],
+      "security": false
+    },
+    {
+      "fixture": "features/front-matter.md",
+      "category": "features",
+      "description": "YAML front matter with title, description, lang, author, date, tags, nested objects, numbers, booleans",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["front-matter", "metadata-extraction"],
+      "security": false
+    },
+    {
+      "fixture": "features/highlighting.md",
+      "category": "features",
+      "description": "Syntax highlighting fixtures: TypeScript, Python, Rust, Diff, JSON, plain, Shell, SQL",
+      "applicability": "optional",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["syntax-highlighting", "shiki"],
+      "security": false
+    }
+  ],
+  "assertionGroups": [
+    {
+      "name": "commonmark",
+      "description": "CommonMark baseline rendering: paragraphs, inline styles, headings, lists, blockquotes, links, images, code, horizontal rules, escaping",
+      "fixtures": ["markdown/commonmark.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "gfm",
+      "description": "GitHub Flavored Markdown extensions: tables, task lists, strikethrough, autolinks",
+      "fixtures": ["markdown/gfm-extensions.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "alerts",
+      "description": "GitHub-style alert blocks (NOTE, TIP, IMPORTANT, WARNING, CAUTION)",
+      "fixtures": ["markdown/alerts.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "footnotes",
+      "description": "Footnote definitions and references",
+      "fixtures": ["markdown/footnotes.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "wikilinks",
+      "description": "Wikilink syntax support",
+      "fixtures": ["markdown/wikilinks.md"],
+      "applicability": "optional"
+    },
+    {
+      "name": "raw-html-allowlist",
+      "description": "Strict raw HTML allowlist: kbd, details, summary, sub, sup, mark, abbr, br",
+      "fixtures": ["markdown/raw-html-allowed.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "code-blocks",
+      "description": "Fenced and indented code blocks with language tags",
+      "fixtures": ["markdown/code-blocks.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "outline",
+      "description": "Heading hierarchy and slug deduplication",
+      "fixtures": ["markdown/headings-outline.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-xss",
+      "description": "XSS attack vectors: script injection, event handlers, dangerous schemes, SVG scripts, object/embed",
+      "fixtures": ["security/xss.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-dom-clobbering",
+      "description": "DOM clobbering: id/name attributes that shadow browser globals",
+      "fixtures": ["security/dom-clobbering.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-protocol-tricks",
+      "description": "Protocol tricks: mixed case, whitespace, newlines, tabs, entities, URL encoding, custom schemes",
+      "fixtures": ["security/protocol-tricks.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-encoded-urls",
+      "description": "Encoded URL attacks: double encoding, unicode, HTML entities, null bytes, UTF-8 overlong",
+      "fixtures": ["security/encoded-urls.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-svg",
+      "description": "SVG attack vectors: script, onload, external references, xlink, foreignObject, animate, set, style",
+      "fixtures": ["security/svg-attacks.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-path-traversal",
+      "description": "Path traversal in links and images: relative, absolute, encoded, null byte, UNC",
+      "fixtures": ["security/path-traversal.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-pathological",
+      "description": "Pathological input: deeply nested structures, very long lines, malformed emphasis, excessive headings",
+      "fixtures": ["security/pathological.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "feature-mermaid",
+      "description": "Mermaid diagram rendering and safety (fallback to code block when disabled)",
+      "fixtures": ["features/mermaid.md"],
+      "applicability": "optional"
+    },
+    {
+      "name": "feature-math",
+      "description": "Math expression rendering via KaTeX (fallback to plain text when disabled)",
+      "fixtures": ["features/math.md"],
+      "applicability": "optional"
+    },
+    {
+      "name": "feature-design-md",
+      "description": "DESIGN.md token extraction and validation (valid and invalid fixtures)",
+      "fixtures": ["features/design-md-valid.md", "features/design-md-invalid.md"],
+      "applicability": "optional"
+    },
+    {
+      "name": "feature-front-matter",
+      "description": "YAML front matter parsing and metadata extraction",
+      "fixtures": ["features/front-matter.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "feature-highlighting",
+      "description": "Syntax highlighting via Shiki (fallback to plain code blocks when disabled)",
+      "fixtures": ["features/highlighting.md"],
+      "applicability": "optional"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "fixture": "security/protocol-tricks.md",
+  "category": "security",
+  "description": "Protocol tricks: mixed case, whitespace, newlines, tabs, HTML entities, URL encoding, custom schemes, data: variants, file: variants",
+  "html": {
+    "mustNotContain": [
+      "javascript:",
+      "JaVaScRiPt:",
+      "JAVASCRIPT:",
+      "vbscript:",
+      "data:text/html",
+      "data:application/javascript",
+      "file://",
+      "File://",
+      "myapp://",
+      "intent://",
+      "chrome://",
+      "alert(",
+      "onerror",
+      "onload"
+    ]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["unsafe-url"],
+    "minSeverity": "warning"
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "links": {
+    "classifications": [
+      { "url": "JaVaScRiPt:alert(1)", "kind": "blocked" },
+      { "url": "myapp://deep-link", "kind": "blocked" },
+      { "url": "chrome://settings", "kind": "blocked" },
+      { "url": "file:///etc/passwd", "kind": "blocked" },
+      { "url": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", "kind": "blocked" }
+    ]
+  },
+  "applicability": "required"
+}

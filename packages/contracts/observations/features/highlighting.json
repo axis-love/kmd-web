@@ -1,0 +1,48 @@
+{
+  "fixture": "features/highlighting.md",
+  "category": "features",
+  "description": "Syntax highlighting fixtures: TypeScript, Python, Rust, Diff, JSON, plain, Shell, SQL",
+  "html": {
+    "mustContain": [
+      "<pre>",
+      "<code",
+      "typescript",
+      "python",
+      "rust",
+      "diff",
+      "json",
+      "bash",
+      "sql"
+    ],
+    "mustNotContain": ["<script"]
+  },
+  "outline": {
+    "entries": [
+      {
+        "level": 1,
+        "text": "Syntax Highlighting Fixtures",
+        "slug": "syntax-highlighting-fixtures"
+      },
+      { "level": 2, "text": "TypeScript", "slug": "typescript" },
+      { "level": 2, "text": "Python", "slug": "python" },
+      { "level": 2, "text": "Rust", "slug": "rust" },
+      { "level": 2, "text": "Diff", "slug": "diff" },
+      { "level": 2, "text": "JSON", "slug": "json" },
+      { "level": 2, "text": "Plain (no language)", "slug": "plain-no-language" },
+      { "level": 2, "text": "Shell", "slug": "shell" },
+      { "level": 2, "text": "SQL", "slug": "sql" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasCodeHighlighting": true,
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "fallback": "When syntax highlighting is disabled, fenced code blocks render as plain <pre><code> elements without language-specific coloring. The language tag is still present in the HTML as a data attribute or class.",
+  "applicability": "optional"
+}

@@ -1,0 +1,23 @@
+{
+  "fixture": "security/encoded-urls.md",
+  "category": "security",
+  "description": "Encoded URL attacks: double encoding, unicode, HTML entities, mixed encoding, null bytes, UTF-8 overlong",
+  "html": {
+    "mustNotContain": ["javascript:", "alert(", "onerror", "<script"]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["unsafe-url"],
+    "minSeverity": "warning"
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}
