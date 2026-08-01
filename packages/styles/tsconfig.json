@@ -5,5 +5,12 @@
     "rootDir": "src"
   },
   "include": ["src"],
-  "exclude": ["dist", "node_modules", "src/**/*.test.ts", "src/**/*.test.tsx"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "tokens",
+    "generated"
+  ]
 }

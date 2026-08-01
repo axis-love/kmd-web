@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axis-love/kmd-web/styles/tokens.schema.json",
+  "title": "kmd-web canonical design token schema",
+  "description": "The single source of truth for cross-platform design tokens. Read by the generator to produce CSS custom properties and Unity-consumable data. Do not edit generated outputs — edit this file and re-run the generator.",
+  "type": "object",
+  "required": [
+    "version",
+    "themes",
+    "colors",
+    "typography",
+    "spacing",
+    "radii",
+    "widths",
+    "motion",
+    "accessibility",
+    "platformExceptions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the token schema. Incremented when token names, structure, or semantics change in a breaking way.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "themes": {
+      "type": "object",
+      "description": "Theme identifiers. The first theme is the default.",
+      "required": ["default", "variants"],
+      "additionalProperties": false,
+      "properties": {
+        "default": { "type": "string", "description": "Default theme identifier." },
+        "variants": {
+          "type": "array",
+          "description": "All theme identifiers.",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "colors": {
+      "type": "array",
+      "description": "Color tokens with per-theme values. Each token maps to a CSS custom property --kmd-color-<name>.",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "values"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Token name without prefix. Becomes --kmd-color-<name>.",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "description": { "type": "string" },
+          "values": {
+            "type": "object",
+            "description": "Per-theme color values. Keys must match theme variants. Values must be hex (#rrggbb or #rgb) or rgba(r,g,b,a).",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$|^rgba\\("
+            }
+          }
+        }
+      }
+    },
+    "semanticColors": {
+      "type": "array",
+      "description": "Semantic color aliases that reference base color tokens by name. Maps to --kmd-color-<name>.",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "reference"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "description": { "type": "string" },
+          "reference": {
+            "type": "string",
+            "description": "Name of the base color token this semantic role references."
+          }
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "description": "Typography tokens: font families, sizes, weights, line heights, letter spacing.",
+      "required": ["fontFamilies", "fontSizes", "fontWeights", "lineHeights", "letterSpacings"],
+      "additionalProperties": false,
+      "properties": {
+        "fontFamilies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value", "unityFallback"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "string",
+                "description": "CSS font-family stack."
+              },
+              "unityFallback": {
+                "type": "string",
+                "description": "Font family name for Unity. Unity uses font assets, not CSS stacks."
+              }
+            }
+          }
+        },
+        "fontSizes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "string",
+                "description": "CSS length value (px, rem, em).",
+                "pattern": "^\\d+(\\.\\d+)?(px|rem|em|pt)$"
+              }
+            }
+          }
+        },
+        "fontWeights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 900
+              }
+            }
+          }
+        },
+        "lineHeights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "letterSpacings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "string",
+                "description": "CSS length value (em or px).",
+                "pattern": "^\\d+(\\.\\d+)?(em|px)$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "spacing": {
+      "type": "array",
+      "description": "Spacing scale tokens.",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "value": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(px|rem)$"
+          }
+        }
+      }
+    },
+    "radii": {
+      "type": "array",
+      "description": "Border radius tokens.",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "value": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(px|rem|%)$"
+          }
+        }
+      }
+    },
+    "widths": {
+      "type": "array",
+      "description": "Layout width tokens.",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "value": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(px|rem|%)$"
+          }
+        }
+      }
+    },
+    "motion": {
+      "type": "object",
+      "description": "Motion and transition tokens.",
+      "required": ["durations", "easings"],
+      "additionalProperties": false,
+      "properties": {
+        "durations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "string",
+                "pattern": "^\\d+(\\.\\d+)?(ms|s)$"
+              }
+            }
+          }
+        },
+        "easings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "value": {
+                "type": "string",
+                "description": "CSS easing function."
+              }
+            }
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "description": "Accessibility-related tokens and flags.",
+      "required": ["reducedMotion", "focusOutline"],
+      "additionalProperties": false,
+      "properties": {
+        "reducedMotion": {
+          "type": "object",
+          "description": "prefers-reduced-motion behavior. CSS media query that overrides motion.",
+          "required": ["query", "durationOverride", "iterationOverride"],
+          "additionalProperties": false,
+          "properties": {
+            "query": { "type": "string" },
+            "durationOverride": { "type": "string" },
+            "iterationOverride": { "type": "string" }
+          }
+        },
+        "focusOutline": {
+          "type": "object",
+          "description": "Focus outline token for keyboard navigation accessibility.",
+          "required": ["width", "style", "colorToken"],
+          "additionalProperties": false,
+          "properties": {
+            "width": { "type": "string" },
+            "style": { "type": "string", "enum": ["solid", "dashed", "dotted", "double"] },
+            "colorToken": {
+              "type": "string",
+              "description": "Name of the color token to use for focus outline."
+            }
+          }
+        }
+      }
+    },
+    "platformExceptions": {
+      "type": "array",
+      "description": "Platform-specific escape hatches for values that cannot map faithfully to UIToolkit. Each entry documents a token, the affected platform, the reason, and the platform-specific alternative.",
+      "items": {
+        "type": "object",
+        "required": ["token", "platform", "reason", "webValue", "platformValue"],
+        "additionalProperties": false,
+        "properties": {
+          "token": { "type": "string", "description": "Token name that has a platform exception." },
+          "platform": {
+            "type": "string",
+            "description": "Platform where the exception applies (e.g. unity)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the value cannot map faithfully."
+          },
+          "webValue": {
+            "type": "string",
+            "description": "The web (CSS) value."
+          },
+          "platformValue": {
+            "type": "string",
+            "description": "The platform-specific alternative value."
+          }
+        }
+      }
+    }
+  }
+}

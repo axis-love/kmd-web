@@ -13,7 +13,8 @@
       "**/*.md",
       "!**/dist",
       "!**/node_modules",
-      "!**/coverage"
+      "!**/coverage",
+      "!**/packages/*/generated"
     ]
   },
   "formatter": {

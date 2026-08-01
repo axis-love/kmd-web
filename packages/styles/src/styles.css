@@ -1,7 +1,19 @@
 /* @axis-love/styles — Scoped reader CSS */
-/* Placeholder — production styles arrive in KWEB-012 */
+/* Production reader styles arrive in KWEB-012. This file currently uses */
+/* the generated tokens to prove the token pipeline is wired correctly. */
+
+@import "./tokens.css";
 
 .kmd-reader {
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  font-family: var(--kmd-font-body);
+  font-size: var(--kmd-font-size-body-md);
+  line-height: var(--kmd-line-height-body-md);
+  color: var(--kmd-color-body);
+  background-color: var(--kmd-color-background);
+}
+
+.kmd-reader :focus-visible {
+  outline-width: var(--kmd-focus-outline-width);
+  outline-style: var(--kmd-focus-outline-style);
+  outline-color: var(--kmd-focus-outline-color);
 }

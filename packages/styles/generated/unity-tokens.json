@@ -1,0 +1,198 @@
+{
+  "tokenVersion": "1.0.0",
+  "defaultTheme": "dark",
+  "themes": {
+    "dark": {
+      "primary": "#e8eaed",
+      "secondary": "#9aa0ab",
+      "tertiary": "#9b6dff",
+      "neutral": "#1a1c1f",
+      "surface": "#222428",
+      "surface-muted": "#2c2f35",
+      "on-primary": "#1a1c1f",
+      "on-surface": "#e8eaed",
+      "border": "#3a3f48",
+      "info": "#5b9cf5",
+      "success": "#3ebd82",
+      "warning": "#d4a735",
+      "danger": "#e8594e",
+      "code-bg": "#2c2f35",
+      "code-text": "#e8eaed",
+      "blockquote-border": "#3a3f48",
+      "blockquote-text": "#9aa0ab",
+      "table-border": "#3a3f48",
+      "table-header-bg": "#2c2f35",
+      "link": "#9b6dff",
+      "link-hover": "#b794ff",
+      "selection-bg": "#9b6dff",
+      "scrollbar-thumb": "#3a3f48",
+      "scrollbar-track": "#222428",
+      "outline-depth-0": "#e8eaed",
+      "outline-depth-1": "#e8eaed",
+      "outline-depth-2": "#9aa0ab",
+      "outline-depth-3": "#6b7280",
+      "outline-active-bg": "#2c2f35",
+      "outline-active-border": "#9b6dff",
+      "heading": "#e8eaed",
+      "body": "#e8eaed",
+      "muted": "#9aa0ab",
+      "accent": "#9b6dff",
+      "background": "#1a1c1f",
+      "card": "#222428"
+    },
+    "light": {
+      "primary": "#15171a",
+      "secondary": "#626872",
+      "tertiary": "#7c4dff",
+      "neutral": "#f5f7f8",
+      "surface": "#ffffff",
+      "surface-muted": "#eceff3",
+      "on-primary": "#ffffff",
+      "on-surface": "#15171a",
+      "border": "#d8dee6",
+      "info": "#2563eb",
+      "success": "#0f8a5f",
+      "warning": "#b7791f",
+      "danger": "#b42318",
+      "code-bg": "#eceff3",
+      "code-text": "#15171a",
+      "blockquote-border": "#d8dee6",
+      "blockquote-text": "#626872",
+      "table-border": "#d8dee6",
+      "table-header-bg": "#eceff3",
+      "link": "#7c4dff",
+      "link-hover": "#9b6dff",
+      "selection-bg": "#9b6dff",
+      "scrollbar-thumb": "#d8dee6",
+      "scrollbar-track": "#222428",
+      "outline-depth-0": "#15171a",
+      "outline-depth-1": "#15171a",
+      "outline-depth-2": "#626872",
+      "outline-depth-3": "#808890",
+      "outline-active-bg": "#2c2f35",
+      "outline-active-border": "#7c4dff",
+      "heading": "#15171a",
+      "body": "#15171a",
+      "muted": "#626872",
+      "accent": "#7c4dff",
+      "background": "#f5f7f8",
+      "card": "#ffffff"
+    }
+  },
+  "typography": {
+    "fontFamilies": {
+      "body": "Inter",
+      "mono": "Roboto Mono"
+    },
+    "fontSizes": {
+      "headline-lg": "34px",
+      "headline-md": "24px",
+      "h3": "20px",
+      "body-md": "17px",
+      "h4": "17px",
+      "body-sm": "14px",
+      "code-md": "14px",
+      "label-caps": "12px",
+      "h5": "14px",
+      "h6": "14px"
+    },
+    "fontWeights": {
+      "headline-lg": 700,
+      "headline-md": 650,
+      "label-caps": 650
+    },
+    "lineHeights": {
+      "headline-lg": 1.12,
+      "headline-md": 1.2,
+      "body-md": 1.62,
+      "body-sm": 1.5,
+      "code-md": 1.55
+    },
+    "letterSpacings": {
+      "label-caps": "0.08em"
+    }
+  },
+  "spacing": {
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px",
+    "xl": "36px",
+    "xxl": "56px"
+  },
+  "radii": {
+    "sm": "6px",
+    "md": "8px",
+    "lg": "12px",
+    "xl": "16px",
+    "full": "9999px"
+  },
+  "widths": {
+    "content-max": "800px",
+    "toolbar-height": "48px",
+    "sidebar-width": "240px",
+    "toggle-width": "20px"
+  },
+  "motion": {
+    "durations": {
+      "fast": "150ms",
+      "normal": "250ms",
+      "slow": "400ms"
+    },
+    "easings": {
+      "ease": "ease",
+      "ease-in": "ease-in",
+      "ease-out": "ease-out",
+      "ease-in-out": "ease-in-out"
+    }
+  },
+  "accessibility": {
+    "reducedMotion": {
+      "query": "(prefers-reduced-motion: reduce)",
+      "durationOverride": "0.01ms",
+      "iterationOverride": "1"
+    },
+    "focusOutline": {
+      "width": "2px",
+      "style": "solid",
+      "color": "#9b6dff"
+    }
+  },
+  "platformExceptions": [
+    {
+      "token": "selection-bg",
+      "platform": "unity",
+      "reason": "Unity UIToolkit does not support rgba() with alpha in USS color properties. Use a solid color with the closest perceptual match.",
+      "webValue": "rgba(155,109,255,0.3)",
+      "platformValue": "#9b6dff"
+    },
+    {
+      "token": "outline-active-bg",
+      "platform": "unity",
+      "reason": "Unity UIToolkit does not support rgba() with alpha in USS color properties. Use a solid color with the closest perceptual match.",
+      "webValue": "rgba(155,109,255,0.12)",
+      "platformValue": "#2c2f35"
+    },
+    {
+      "token": "scrollbar-track",
+      "platform": "unity",
+      "reason": "Unity UIToolkit scrollbars are styled via ScrollView USS, not a CSS custom property. Transparent track maps to the surface background.",
+      "webValue": "transparent",
+      "platformValue": "#222428"
+    },
+    {
+      "token": "font-body",
+      "platform": "unity",
+      "reason": "Unity uses font assets, not CSS font-family stacks. The web stack (Inter, system-ui, ...) maps to Inter as a single font asset.",
+      "webValue": "\"Inter\", system-ui, -apple-system, sans-serif",
+      "platformValue": "Inter"
+    },
+    {
+      "token": "font-mono",
+      "platform": "unity",
+      "reason": "Unity uses font assets, not CSS font-family stacks. The web stack (SF Mono, Fira Code, ...) maps to Roboto Mono as a single font asset.",
+      "webValue": "\"SF Mono\", \"Fira Code\", \"Cascadia Code\", \"JetBrains Mono\", monospace",
+      "platformValue": "Roboto Mono"
+    }
+  ]
+}

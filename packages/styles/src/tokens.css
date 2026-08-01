@@ -1,10 +1,6 @@
-/* @axis-love/styles — Generated design tokens */
-/* Placeholder — generated tokens arrive in KWEB-006 */
+/* @axis-love/styles — Token re-export */
+/* This file re-exports the generated tokens from generated/tokens.css. */
+/* The generated file is the source of truth; this shim exists so that */
+/* consumers importing "@axis-love/styles/tokens.css" get the full token set. */
 
-:root {
-  --kmd-color-bg: #ffffff;
-  --kmd-color-fg: #1a1a1a;
-  --kmd-color-accent: #0066cc;
-  --kmd-font-size-base: 16px;
-  --kmd-spacing-unit: 4px;
-}
+@import "./generated/tokens.css";
