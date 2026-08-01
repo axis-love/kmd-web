@@ -320,6 +320,45 @@ function checkFeatures(result: RenderResult, observation: FixtureObservation): A
   return assertions;
 }
 
+function checkLinks(result: RenderResult, observation: FixtureObservation): AssertionResult[] {
+  const assertions: AssertionResult[] = [];
+  const linkObs = observation.links;
+  if (!linkObs) return assertions;
+
+  const links = result.links;
+
+  for (const expected of linkObs.classifications) {
+    const match = links.find((l) => l.rawUrl === expected.url);
+    if (!match) {
+      assertions.push({
+        name: `links.classification:${expected.url}`,
+        passed: false,
+        message: `Expected link classification for "${expected.url}" but no link with that URL was found`,
+        severity: "error",
+      });
+      continue;
+    }
+
+    assertions.push({
+      name: `links.classification:${expected.url}.kind`,
+      passed: match.kind === expected.kind,
+      message: `Link "${expected.url}" kind: expected "${expected.kind}", got "${match.kind}"`,
+      severity: "error",
+    });
+
+    if (expected.resolvedUrl !== undefined) {
+      assertions.push({
+        name: `links.classification:${expected.url}.resolvedUrl`,
+        passed: match.resolvedUrl === expected.resolvedUrl,
+        message: `Link "${expected.url}" resolvedUrl: expected "${expected.resolvedUrl}", got "${match.resolvedUrl ?? "undefined"}"`,
+        severity: "error",
+      });
+    }
+  }
+
+  return assertions;
+}
+
 // ---------------------------------------------------------------------------
 // Main runner
 // ---------------------------------------------------------------------------
@@ -345,6 +384,7 @@ export async function runFixture(
   assertions.push(...checkOutline(result, observation));
   assertions.push(...checkDiagnostics(result, observation));
   assertions.push(...checkAssets(result, observation));
+  assertions.push(...checkLinks(result, observation));
   assertions.push(...checkMetadata(result, observation));
   assertions.push(...checkFeatures(result, observation));
 

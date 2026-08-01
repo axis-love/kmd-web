@@ -9,7 +9,9 @@
       "name=\"location\"",
       "name=\"domain\"",
       "name=\"cookie\"",
-      "name=\"attributes\""
+      "name=\"attributes\"",
+      "id=\"location\"",
+      "id=\"x\""
     ]
   },
   "diagnostics": {

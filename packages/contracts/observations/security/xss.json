@@ -42,7 +42,7 @@
       { "url": "javascript:alert('xss')", "kind": "blocked" },
       { "url": "javascript:void(0)", "kind": "blocked" },
       { "url": "vbscript:MsgBox('xss')", "kind": "blocked" },
-      { "url": "data:text/html,<script>alert(1)</script>", "kind": "blocked" },
+      { "url": "data:text/html,%3Cscript%3Ealert(1)%3C/script%3E", "kind": "blocked" },
       { "url": "file:///etc/passwd", "kind": "blocked" },
       { "url": "https://example.com", "kind": "external" }
     ]

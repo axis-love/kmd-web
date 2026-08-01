@@ -64,6 +64,7 @@ const _checkRenderResult: RenderResult = {
   outline: [],
   diagnostics: [],
   assets: [],
+  links: [],
   metadata: {},
   detectedFeatures: _checkDetectedFeatures,
   rendererVersion: "0.1.0",

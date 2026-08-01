@@ -1,0 +1,67 @@
+{
+  "fixture": "security/bypass-attempts.md",
+  "category": "security",
+  "description": "Bypass attempts: percent-encoded colons, encoded scheme names, control char injection, mixed-case with encoding, style injection, xlink, srcset, source/track/poster, nested anchors, base href",
+  "html": {
+    "mustNotContain": [
+      "javascript:",
+      "vbscript:",
+      "JaVaScRiPt:",
+      "VBScript:",
+      "data:text/html",
+      "data:text",
+      "file://",
+      "FILE://",
+      "myapp:",
+      "chrome:",
+      "expression(",
+      "alert(",
+      "onerror",
+      "onload",
+      "<script",
+      "<iframe",
+      "<object",
+      "<embed",
+      "<form",
+      "<meta",
+      "<base",
+      "<style",
+      "xlink:href",
+      "<svg",
+      "<use",
+      "<source",
+      "<track"
+    ]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["unsafe-url"],
+    "minSeverity": "warning"
+  },
+  "links": {
+    "classifications": [
+      { "url": "javascript%3Aalert(1)", "kind": "blocked" },
+      { "url": "javascript%253Aalert(1)", "kind": "blocked" },
+      { "url": "%6a%61%76%61%73%63%72%69%70%74:alert(1)", "kind": "blocked" },
+      { "url": "JaVaScRiPt%3Aalert(1)", "kind": "blocked" },
+      { "url": "vbscript%3AMsgBox(1)", "kind": "blocked" },
+      { "url": "VBScript:MsgBox(1)", "kind": "blocked" },
+      { "url": "data%3Atext/html,alert(1)", "kind": "blocked" },
+      { "url": "DATA:text/html,alert(1)", "kind": "blocked" },
+      { "url": "file%3A/etc/passwd", "kind": "blocked" },
+      { "url": "FILE:///etc/passwd", "kind": "blocked" },
+      { "url": "myapp%3Adeep-link", "kind": "blocked" },
+      { "url": "chrome%3Asettings", "kind": "blocked" }
+    ]
+  },
+  "detectedFeatures": {
+    "hasMath": false,
+    "hasMermaid": false,
+    "hasDesignDoc": false,
+    "hasCodeHighlighting": false,
+    "hasTables": false,
+    "hasTaskLists": false,
+    "hasFootnotes": false,
+    "hasAlerts": false
+  },
+  "applicability": "required"
+}

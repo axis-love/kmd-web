@@ -4,6 +4,8 @@
 // They are consumed by both JavaScript (kmd-web) and native (Unity)
 // implementations and must remain serializable (JSON-compatible).
 
+import type { LinkTarget } from "./links";
+
 // ---------------------------------------------------------------------------
 // Outline
 // ---------------------------------------------------------------------------
@@ -173,6 +175,7 @@ export interface DetectedFeatures {
  *   be empty. Fatal errors that prevent rendering are thrown as
  *   `RenderError` instead of appearing here.
  * - `assets` lists every media asset reference found. May be empty.
+ * - `links` lists every link classification found. May be empty.
  * - `metadata` is the extracted document metadata. May be an empty
  *   object if no metadata was found.
  * - `detectedFeatures` records which optional features the document
@@ -186,6 +189,7 @@ export interface RenderResult {
   readonly outline: readonly OutlineEntry[];
   readonly diagnostics: readonly Diagnostic[];
   readonly assets: readonly AssetReference[];
+  readonly links: readonly LinkTarget[];
   readonly metadata: DocumentMetadata;
   readonly detectedFeatures: DetectedFeatures;
   readonly rendererVersion: string;

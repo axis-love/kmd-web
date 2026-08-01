@@ -54,6 +54,7 @@ const _checkRenderResult: RenderResult = {
   outline: [],
   diagnostics: [],
   assets: [],
+  links: [],
   metadata: {},
   detectedFeatures: {
     hasMath: false,

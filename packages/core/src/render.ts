@@ -11,6 +11,7 @@ import type {
   DetectedFeatures,
   Diagnostic,
   DocumentMetadata,
+  LinkTarget,
   OutlineEntry,
   RenderOptions,
   RenderResult,
@@ -27,6 +28,7 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import { extractAssets } from "./assets.js";
 import { DiagnosticCollector } from "./diagnostics.js";
+import { extractLinks, extractLinksFromSource, mergeLinks } from "./extract-links.js";
 import { detectFeatures } from "./feature-detection.js";
 import { splitYamlFrontMatter } from "./front-matter.js";
 import { extractMetadata } from "./metadata.js";
@@ -283,6 +285,7 @@ export async function render(source: string, options?: RenderOptions): Promise<R
 
   let capturedOutline: OutlineEntry[] = [];
   let capturedAssets: AssetReference[] = [];
+  let capturedLinks: LinkTarget[] = [];
 
   const captureOutline = () => (tree: HastRoot) => {
     capturedOutline = extractOutline(tree);
@@ -290,6 +293,10 @@ export async function render(source: string, options?: RenderOptions): Promise<R
 
   const captureAssets = () => (tree: HastRoot) => {
     capturedAssets = extractAssets(tree);
+  };
+
+  const captureLinks = () => (tree: HastRoot) => {
+    capturedLinks = extractLinks(tree, allowedSchemes);
   };
 
   // Build the pipeline — unified/HAST stays internal
@@ -309,6 +316,7 @@ export async function render(source: string, options?: RenderOptions): Promise<R
 
   pipeline
     .use(rehypeResponsiveTables)
+    .use(captureLinks)
     .use(createRehypeUrlPolicy(allowedSchemes, collector))
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStripRaw)
@@ -340,6 +348,12 @@ export async function render(source: string, options?: RenderOptions): Promise<R
     allowedSchemes,
   );
 
+  // Merge HAST-extracted links with source-extracted links.
+  // Source extraction catches links the parser broke (e.g. URLs
+  // containing < that get parsed as raw HTML instead of URL content).
+  const sourceLinks = extractLinksFromSource(source, allowedSchemes);
+  const allLinks = mergeLinks(capturedLinks, sourceLinks);
+
   const diagnostics: Diagnostic[] = [...collector.all];
 
   return {
@@ -347,6 +361,7 @@ export async function render(source: string, options?: RenderOptions): Promise<R
     outline: capturedOutline,
     diagnostics,
     assets: filteredAssets,
+    links: allLinks,
     metadata,
     detectedFeatures: features,
     rendererVersion: CORE_VERSION,

@@ -12,7 +12,7 @@
 
 ## data: URIs
 
-[data uri link](data:text/html,<script>alert(1)</script>)
+[data uri link](<data:text/html,%3Cscript%3Ealert(1)%3C/script%3E>)
 
 ![data image](data:image/svg+xml,<svg onload=alert(1)>)
 

@@ -65,6 +65,7 @@ function createMockRenderer(result: Partial<RenderResult>): ContractRenderer {
     outline: [],
     diagnostics: [],
     assets: [],
+    links: [],
     metadata: {},
     detectedFeatures: {
       hasMath: false,
@@ -404,6 +405,69 @@ describe("contract runner", () => {
 
     const result = await runFixture(renderer, "test", observation);
     expect(result.passed).toBe(true);
+  });
+
+  it("checks link classifications", async () => {
+    const renderer = createMockRenderer({
+      links: [
+        { kind: "external", rawUrl: "https://example.com", resolvedUrl: "https://example.com" },
+        { kind: "blocked", rawUrl: "javascript:alert(1)", reason: "unsafe-url" },
+      ],
+    });
+    const observation: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      links: {
+        classifications: [
+          { url: "https://example.com", kind: "external" },
+          { url: "javascript:alert(1)", kind: "blocked" },
+        ],
+      },
+    };
+
+    const result = await runFixture(renderer, "test", observation);
+    expect(result.passed).toBe(true);
+  });
+
+  it("fails when link classification kind mismatches", async () => {
+    const renderer = createMockRenderer({
+      links: [
+        { kind: "external", rawUrl: "https://example.com", resolvedUrl: "https://example.com" },
+      ],
+    });
+    const observation: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      links: {
+        classifications: [{ url: "https://example.com", kind: "blocked" }],
+      },
+    };
+
+    const result = await runFixture(renderer, "test", observation);
+    expect(result.passed).toBe(false);
+    const fail = result.assertions.find((a) => !a.passed);
+    expect(fail?.name).toContain("links.classification");
+  });
+
+  it("fails when link URL not found in classifications", async () => {
+    const renderer = createMockRenderer({
+      links: [],
+    });
+    const observation: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      links: {
+        classifications: [{ url: "javascript:alert(1)", kind: "blocked" }],
+      },
+    };
+
+    const result = await runFixture(renderer, "test", observation);
+    expect(result.passed).toBe(false);
+    const fail = result.assertions.find((a) => !a.passed);
+    expect(fail?.name).toContain("links.classification");
   });
 
   it("formatRunSummary produces readable output", async () => {

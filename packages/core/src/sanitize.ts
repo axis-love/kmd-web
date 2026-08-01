@@ -82,7 +82,10 @@ export const sanitizeSchema: Schema = {
     span: [...(defaultAttributes.span ?? []), "className", "style"],
     pre: [...(defaultAttributes.pre ?? []), "className", "dataLanguage", "tabindex", "style"],
     code: [...(defaultAttributes.code ?? []), "className"],
-    "*": [...(defaultAttributes["*"] ?? []).filter((attr) => attr !== "name"), "className"],
+    "*": [
+      ...(defaultAttributes["*"] ?? []).filter((attr) => attr !== "name" && attr !== "id"),
+      "className",
+    ],
     math: ["xmlns", "display"],
     annotation: ["encoding"],
   },
@@ -150,15 +153,65 @@ export function isSafeUrl(url: string, allowedSchemes?: ReadonlySet<string>): bo
 
   if (trimmed === "" || trimmed.startsWith("#")) return true;
 
-  if (isPathTraversal(trimmed)) return false;
+  // Strip control characters (tab, newline, carriage return, null, etc.)
+  // that browsers ignore when parsing URLs. An attacker can insert these
+  // to break scheme detection (e.g. "java\tscript:" is treated as
+  // "javascript:" by browsers).
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — stripping control chars is the security purpose
+  const stripped = trimmed.replace(/[\x00-\x1F\x7F]/g, "");
 
-  if (/^[./]/.test(trimmed) || !/:/.test(trimmed)) return true;
+  if (isPathTraversal(stripped)) return false;
 
-  const colonIdx = trimmed.indexOf(":");
-  if (colonIdx === -1) return true;
+  // Check for scheme: both the raw and percent-decoded forms.
+  // A URL like "javascript%3Aalert(1)" has no raw ":" but decodes to
+  // "javascript:alert(1)" which is dangerous. Browsers decode %3A → :
+  // before scheme resolution.
+  const colonIdx = stripped.indexOf(":");
+  if (colonIdx !== -1) {
+    const scheme = stripped.slice(0, colonIdx).toLowerCase();
+    // Reject if there's a scheme that's not in the allow-list.
+    // Also reject if the scheme portion contains whitespace or control
+    // chars (browsers strip these, e.g. "java\nscript:" → "javascript:").
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — detecting control chars in scheme is the security purpose
+    const cleanScheme = scheme.replace(/[\x00-\x20]/g, "");
+    if (cleanScheme !== scheme) {
+      // Scheme had whitespace/control chars — treat as unsafe
+      return false;
+    }
+    return schemes.has(scheme);
+  }
 
-  const scheme = trimmed.slice(0, colonIdx).toLowerCase();
-  return schemes.has(scheme);
+  // No raw colon — check decoded form for an encoded colon (%3A, %253A)
+  const decoded = decodeUrlOnce(stripped);
+  if (decoded !== stripped) {
+    const decodedColon = decoded.indexOf(":");
+    if (decodedColon !== -1) {
+      const decodedScheme = decoded.slice(0, decodedColon).toLowerCase();
+      // Only treat as scheme if it looks like a scheme (alpha chars + digits)
+      // Avoid treating "./path" decoded as "./path" with a colon in a query
+      // string as a scheme. A valid scheme is [a-zA-Z][a-zA-Z0-9+.-]*
+      if (/^[a-z][a-z0-9+.-]*$/i.test(decodedScheme)) {
+        return schemes.has(decodedScheme);
+      }
+    }
+    // Double-decode for double-encoded attacks
+    const decodedTwice = decodeUrlOnce(decoded);
+    if (decodedTwice !== decoded) {
+      const decodedTwiceColon = decodedTwice.indexOf(":");
+      if (decodedTwiceColon !== -1) {
+        const decodedTwiceScheme = decodedTwice.slice(0, decodedTwiceColon).toLowerCase();
+        if (/^[a-z][a-z0-9+.-]*$/i.test(decodedTwiceScheme)) {
+          return schemes.has(decodedTwiceScheme);
+        }
+      }
+    }
+  }
+
+  // Relative path — safe
+  if (/^[./]/.test(stripped) || !/:/.test(stripped)) return true;
+
+  // Should not reach here, but fail closed
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,17 +292,44 @@ export function createRehypeUrlPolicy(
 
         // Check src on media/embed elements — remove entire element if unsafe
         if (SRC_ELEMENTS.has(tag)) {
-          for (const urlAttr of ["src", "srcset", "data", "poster"] as const) {
+          for (const urlAttr of ["src", "data", "poster"] as const) {
             const val = props[urlAttr];
             if (typeof val === "string" && !isSafeUrl(val, allowedSchemes)) {
               collector.unsafeUrl(val);
               if (parent && typeof index === "number" && "children" in parent) {
-                // Remove the element entirely
                 parent.children.splice(index, 1);
                 return SKIP;
               }
             }
           }
+
+          // srcset contains comma-separated URL candidates.
+          // Each candidate is "url descriptor" (e.g. "image.png 1x").
+          // Check every URL in the srcset.
+          const srcset = props.srcset;
+          if (typeof srcset === "string") {
+            const candidates = srcset.split(",");
+            let unsafe = false;
+            for (const candidate of candidates) {
+              const url = candidate.trim().split(/\s+/)[0];
+              if (url && !isSafeUrl(url, allowedSchemes)) {
+                collector.unsafeUrl(url);
+                unsafe = true;
+              }
+            }
+            if (unsafe && parent && typeof index === "number" && "children" in parent) {
+              parent.children.splice(index, 1);
+              return SKIP;
+            }
+          }
+        }
+
+        // Check xlink:href on any element (SVG xlink attacks)
+        const xlink = props["xlink:href"];
+        if (typeof xlink === "string" && !isSafeUrl(xlink, allowedSchemes)) {
+          collector.unsafeUrl(xlink);
+          // Remove the attribute — the element itself may be safe
+          delete props["xlink:href"];
         }
       });
 

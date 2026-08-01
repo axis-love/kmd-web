@@ -59,6 +59,7 @@ const _checkRenderResult: RenderResult = {
   outline: [],
   diagnostics: [],
   assets: [],
+  links: [],
   metadata: {},
   detectedFeatures: _checkDetectedFeatures,
   rendererVersion: "0.1.0",
@@ -256,5 +257,134 @@ describe("@axis-love/core render", () => {
     expect(result.html).toContain("Simple");
     expect(result.html).not.toContain("shiki");
     expect(result.html).not.toContain("katex");
+  });
+
+  // -------------------------------------------------------------------------
+  // Security regression tests (KWEB-008)
+  // -------------------------------------------------------------------------
+
+  it("blocks percent-encoded javascript%3A in links", async () => {
+    const result = await render("[click](javascript%3Aalert(1))");
+    expect(result.html).not.toContain("javascript:");
+    expect(result.html).not.toContain("javascript%3A");
+  });
+
+  it("blocks double-encoded javascript%253A in links", async () => {
+    const result = await render("[click](javascript%253Aalert(1))");
+    expect(result.html).not.toContain("javascript");
+  });
+
+  it("blocks encoded scheme name %6a%61%76%61%73%63%72%69%70%74:", async () => {
+    const result = await render("[click](%6a%61%76%61%73%63%72%69%70%74:alert(1))");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("blocks mixed-case JaVaScRiPt: in links", async () => {
+    const result = await render("[click](JaVaScRiPt:alert(1))");
+    expect(result.html).not.toContain("JaVaScRiPt:");
+    expect(result.html).not.toContain("javascript:");
+  });
+
+  it("blocks tab in scheme java\\tscript:", async () => {
+    const result = await render("[click](java\tscript:alert(1))");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("blocks newline in scheme java\\nscript:", async () => {
+    const result = await render("[click](java\nscript:alert(1))");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("blocks null byte prefix in URL", async () => {
+    const result = await render("[click](\x00javascript:alert(1))");
+    expect(result.html).not.toContain("javascript:");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("removes links with unsafe URLs entirely (no dangerous text survives)", async () => {
+    const result = await render("[javascript:alert('xss')](javascript:alert('xss'))");
+    expect(result.html).not.toContain("javascript:");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("strips event-handler attributes (onerror, onclick, onload)", async () => {
+    const result = await render('<img src="x" onerror="alert(1)">');
+    expect(result.html).not.toContain("onerror");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("strips style attributes with javascript: URLs", async () => {
+    const result = await render('<div style="background:url(javascript:alert(1))">styled</div>');
+    expect(result.html).not.toContain("javascript:");
+  });
+
+  it("blocks SVG inline with script", async () => {
+    const result = await render("<svg><script>alert('svg-xss')</script></svg>");
+    expect(result.html).not.toContain("<svg");
+    expect(result.html).not.toContain("<script");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("blocks SVG with onload event", async () => {
+    const result = await render("<svg onload=\"alert('xss')\">");
+    expect(result.html).not.toContain("<svg");
+    expect(result.html).not.toContain("onload");
+    expect(result.html).not.toContain("alert(");
+  });
+
+  it("blocks DOM clobbering via id attribute on anchors", async () => {
+    const result = await render('<a id="location" href="https://evil.example.com">click</a>');
+    expect(result.html).not.toContain('id="location"');
+  });
+
+  it("blocks DOM clobbering via name attribute on img", async () => {
+    const result = await render('<img name="domain" src="x.png">');
+    expect(result.html).not.toContain('name="domain"');
+  });
+
+  it("classifies links in RenderResult", async () => {
+    const result = await render(
+      "[safe](https://example.com) [unsafe](javascript:alert(1)) [doc](other.md)",
+    );
+    // 3 unique links — HAST + source extraction merged and deduped
+    const safe = result.links.find((l) => l.rawUrl === "https://example.com");
+    expect(safe).toBeDefined();
+    expect(safe?.kind).toBe("external");
+    const unsafe = result.links.find((l) => l.rawUrl === "javascript:alert(1)");
+    expect(unsafe).toBeDefined();
+    expect(unsafe?.kind).toBe("blocked");
+    const doc = result.links.find((l) => l.rawUrl === "other.md");
+    expect(doc).toBeDefined();
+    expect(doc?.kind).toBe("document");
+  });
+
+  it("classifies blocked links even when parser breaks the URL", async () => {
+    // The URL contains < which the parser interprets as raw HTML.
+    // Source-level extraction still captures and classifies it.
+    const result = await render("[link](<data:text/html,%3Cscript%3Ealert(1)%3C/script%3E>)");
+    const blocked = result.links.find((l) => l.kind === "blocked");
+    expect(blocked).toBeDefined();
+  });
+
+  it("adds rel=noopener noreferrer to external links only", async () => {
+    const result = await render(
+      "[external](https://example.com) [internal](#section) [doc](other.md)",
+    );
+    expect(result.html).toContain("noopener");
+    expect(result.html).toContain("noreferrer");
+    // Internal and document links should not have rel attributes
+    const externalLink = result.links.find((l) => l.kind === "external");
+    expect(externalLink).toBeDefined();
+  });
+
+  it("enforces maxSourceSize limit", async () => {
+    const huge = "x".repeat(1000);
+    await expect(render(huge, { maxSourceSize: 10 })).rejects.toThrow();
+  });
+
+  it("replaces pathological dollar-sign runs before parsing", async () => {
+    const result = await render("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n# Heading");
+    expect(result.outline).toHaveLength(1);
+    expect(result.outline[0]?.text).toBe("Heading");
   });
 });
