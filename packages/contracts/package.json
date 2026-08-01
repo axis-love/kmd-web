@@ -1,0 +1,21 @@
+{
+  "name": "@axis-love/contracts",
+  "version": "0.1.0",
+  "description": "Versioned schemas, fixtures, expected results, feature matrix for the kmd ecosystem.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist"
+  ]
+}

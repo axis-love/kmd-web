@@ -1,0 +1,21 @@
+{
+  "name": "@axis-love/mermaid",
+  "version": "0.1.0",
+  "description": "Optional Mermaid diagram rendering integration.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist"
+  ]
+}

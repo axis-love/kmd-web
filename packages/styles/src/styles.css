@@ -1,0 +1,7 @@
+/* @axis-love/styles — Scoped reader CSS */
+/* Placeholder — production styles arrive in KWEB-012 */
+
+.kmd-reader {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}

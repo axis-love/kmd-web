@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/contracts" },
+    { "path": "./packages/core" },
+    { "path": "./packages/browser" },
+    { "path": "./packages/styles" },
+    { "path": "./packages/react" },
+    { "path": "./packages/element" },
+    { "path": "./packages/design" },
+    { "path": "./packages/highlighting" },
+    { "path": "./packages/mermaid" },
+    { "path": "./packages/math" },
+    { "path": "./packages/kmd-web" },
+    { "path": "./tsconfig.test.json" }
+  ]
+}

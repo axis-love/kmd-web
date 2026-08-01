@@ -1,0 +1,25 @@
+{
+  "name": "@axis-love/styles",
+  "version": "0.1.0",
+  "description": "Scoped reader CSS and generated design tokens for kmd-web.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./tokens.css": "./dist/tokens.css"
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist"
+  ]
+}

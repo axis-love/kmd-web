@@ -1,0 +1,21 @@
+{
+  "name": "@axis-love/highlighting",
+  "version": "0.1.0",
+  "description": "Optional Shiki syntax highlighting integration.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist"
+  ]
+}
