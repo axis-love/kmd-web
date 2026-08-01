@@ -45,7 +45,7 @@ function checkHtml(result: RenderResult, observation: FixtureObservation): Asser
 
   const output = result.html;
 
-  for (const expected of html.mustContain) {
+  for (const expected of html.mustContain ?? []) {
     assertions.push({
       name: `html.mustContain:${expected}`,
       passed: output.includes(expected),
@@ -54,7 +54,7 @@ function checkHtml(result: RenderResult, observation: FixtureObservation): Asser
     });
   }
 
-  for (const forbidden of html.mustNotContain) {
+  for (const forbidden of html.mustNotContain ?? []) {
     assertions.push({
       name: `html.mustNotContain:${forbidden}`,
       passed: !output.includes(forbidden),

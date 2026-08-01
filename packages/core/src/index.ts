@@ -10,7 +10,22 @@
 // Package version
 // ---------------------------------------------------------------------------
 
-export const CORE_VERSION = "0.1.0";
+export { CORE_VERSION, render } from "./render.js";
+
+// ---------------------------------------------------------------------------
+// Policy decisions that remain inside core
+//
+// The following capabilities are intentionally NOT exposed as host
+// capabilities — they are core security responsibilities:
+// - URL scheme classification (isSafeUrl)
+// - External vs. internal link detection
+// - Raw HTML tag allowlist enforcement
+// - Sanitization
+// - Feature detection (DetectedFeatures)
+// ---------------------------------------------------------------------------
+
+export { classifyLink } from "./links.js";
+export { isExternalUrl, isSafeUrl } from "./sanitize.js";
 
 // ---------------------------------------------------------------------------
 // Re-export public types from contracts
@@ -42,19 +57,3 @@ export type {
   SecurityOptions,
 } from "@axis-love/contracts";
 export { CapabilityError, defaultRenderOptions, RenderError } from "@axis-love/contracts";
-
-// ---------------------------------------------------------------------------
-// Policy decisions that remain inside core
-//
-// The following capabilities are intentionally NOT exposed as host
-// capabilities — they are core security responsibilities:
-//
-// - URL scheme classification (isSafeUrl)
-// - External vs. internal link detection
-// - Raw HTML tag allowlist enforcement
-// - Sanitization
-// - Feature detection (DetectedFeatures)
-//
-// Host capabilities (AssetResolver, LinkHandler, ClipboardProvider) only
-// carry out already-classified actions. They do not re-classify.
-// ---------------------------------------------------------------------------
