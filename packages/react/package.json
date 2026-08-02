@@ -22,6 +22,12 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
+  "dependencies": {
+    "@axis-love/contracts": "*",
+    "@axis-love/core": "*",
+    "@axis-love/browser": "*",
+    "@axis-love/styles": "*"
+  },
   "devDependencies": {
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2"
