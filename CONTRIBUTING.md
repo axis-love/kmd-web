@@ -77,6 +77,27 @@ Include the Flow task key (e.g. `KWEB-007`) in the subject for traceability.
 5. For security-sensitive changes, describe the threat model and how fixtures cover it.
 6. For package changes, include a package-contents check and size observation.
 
+## CI
+
+Every pull request and push to `main` runs:
+
+- Lint (Biome)
+- Typecheck (`tsc --build --noEmit`)
+- Test (Vitest)
+- Build (`tsc --build`)
+- Package contents check (`scripts/check-package-contents.mjs`)
+- API surface check (`scripts/check-api-surface.mjs`)
+- Size report (`scripts/size-report.mjs`)
+- Security audit (`npm audit`)
+
+Build artifacts and size reports are uploaded as workflow artifacts.
+
+## Releases
+
+Releases are automated via `.github/workflows/release.yml`. See
+[RELEASING.md](./RELEASING.md) for the full release process, version policy,
+and rollback procedure.
+
 ## Security
 
 See [SECURITY.md](./SECURITY.md) and the [Security Specification](https://github.com/axis-love/kmd/blob/main/docs/planning/09-security-privacy.md).

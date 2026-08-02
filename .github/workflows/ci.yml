@@ -39,6 +39,19 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Package contents check
+        run: node scripts/check-package-contents.mjs
+
+      - name: API surface check
+        run: node scripts/check-api-surface.mjs
+
+      - name: Size report
+        run: node scripts/size-report.mjs
+
+      - name: Security audit
+        run: npm audit --omit=dev --audit-level=moderate
+        continue-on-error: true
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -47,13 +60,10 @@ jobs:
           path: packages/*/dist
           retention-days: 7
 
-  # Publishing remains disabled until KWEB-016.
-  # This job is a placeholder that documents the future release pipeline.
-  publish:
-    name: Publish (disabled)
-    runs-on: ubuntu-latest
-    needs: verify
-    if: false # Disabled until KWEB-016
-    steps:
-      - name: Placeholder
-        run: echo "Publishing is disabled until KWEB-016"
+      - name: Upload size report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: size-report
+          path: size-report.json
+          retention-days: 30

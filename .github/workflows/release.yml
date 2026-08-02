@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # ── verify: never skip, same checks as CI ──────────────────────────────
+  verify:
+    name: Verify (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Package contents check
+        run: node scripts/check-package-contents.mjs
+
+      - name: API surface check
+        run: node scripts/check-api-surface.mjs
+
+  # ── dry-run: pack tarballs and verify in fresh consumer projects ──────
+  dry-run:
+    name: Dry-run (pack and consumer verification)
+    runs-on: ubuntu-latest
+    needs: verify
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Dry-run release verification
+        run: node scripts/dry-run-release.mjs
+
+      - name: Upload tarballs
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tarballs
+          path: .tarballs/*.tgz
+          retention-days: 7
+
+  # ── publish: only on tag push, OIDC trusted publishing ────────────────
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: [verify, dry-run]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package contents check
+        run: node scripts/check-package-contents.mjs
+
+      - name: API surface check
+        run: node scripts/check-api-surface.mjs
+
+      - name: Publish packages
+        run: |
+          for pkg in packages/*/; do
+            name=$(node -p "require('./${pkg}package.json').name")
+            private=$(node -p "require('./${pkg}package.json').private")
+            if [ "$private" = "true" ]; then
+              echo "Skipping $name (private)"
+              continue
+            fi
+            echo "Publishing $name..."
+            npm publish --access public --provenance
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

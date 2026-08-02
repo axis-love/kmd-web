@@ -20,7 +20,11 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "clean": "tsc --build --clean && rm -rf packages/*/dist",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "check:contents": "node scripts/check-package-contents.mjs",
+    "check:api": "node scripts/check-api-surface.mjs",
+    "check:size": "node scripts/size-report.mjs",
+    "check:release": "node scripts/dry-run-release.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
