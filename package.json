@@ -28,6 +28,7 @@
     "@shikijs/themes": "^4.0.2",
     "@types/katex": "^0.16.8",
     "@types/node": "^22.20.1",
+    "happy-dom": "^20.11.1",
     "katex": "^0.16.47",
     "mermaid": "^11.14.0",
     "rehype-katex": "^7.0.1",

@@ -5,16 +5,37 @@
 
 import type {
   AssetResolver,
+  BrowserReaderOptions,
   ClipboardProvider,
+  CodeCopyOptions,
+  CopyNotifier,
   DocumentTarget,
+  FeatureCoordinationOptions,
+  FeaturePassResult,
   HostCapabilities,
   LinkHandler,
+  LinkPolicyOptions,
   LinkTarget,
+  ParseCacheOptions,
+  RenderFn,
+  ScrollTrackerOptions,
+  WorkerBridgeOptions,
   WorkerFactory,
   WorkerRenderRequest,
   WorkerRenderResponse,
 } from "@axis-love/browser";
-import { BROWSER_VERSION } from "@axis-love/browser";
+import {
+  AssetLifecycle,
+  BROWSER_VERSION,
+  BrowserReader,
+  CodeCopyEnhancer,
+  FeatureCoordinator,
+  LinkPolicy,
+  ParseCache,
+  RAW_IMAGE_SRC_ATTR,
+  ScrollTracker,
+  WorkerBridge,
+} from "@axis-love/browser";
 import { describe, expect, it } from "vitest";
 
 // ---------------------------------------------------------------------------
@@ -69,6 +90,7 @@ const _workerSuccess: WorkerRenderResponse = {
     outline: [],
     diagnostics: [],
     assets: [],
+    links: [],
     metadata: {},
     detectedFeatures: {
       hasMath: false,
@@ -107,4 +129,33 @@ describe("@axis-love/browser public API", () => {
     expect(typeof BROWSER_VERSION).toBe("string");
     expect(BROWSER_VERSION).toBe("0.1.0");
   });
+
+  it("exports RAW_IMAGE_SRC_ATTR", () => {
+    expect(typeof RAW_IMAGE_SRC_ATTR).toBe("string");
+  });
 });
+
+// Verify new runtime module exports are accessible
+void [
+  ParseCache,
+  WorkerBridge,
+  CodeCopyEnhancer,
+  LinkPolicy,
+  AssetLifecycle,
+  FeatureCoordinator,
+  BrowserReader,
+  ScrollTracker,
+];
+
+// Verify type exports are accessible
+void 0 as unknown as AssetLifecycle;
+void 0 as unknown as RenderFn;
+void 0 as unknown as ParseCacheOptions;
+void 0 as unknown as WorkerBridgeOptions;
+void 0 as unknown as CodeCopyOptions;
+void 0 as unknown as CopyNotifier;
+void 0 as unknown as LinkPolicyOptions;
+void 0 as unknown as BrowserReaderOptions;
+void 0 as unknown as FeatureCoordinationOptions;
+void 0 as unknown as FeaturePassResult;
+void 0 as unknown as ScrollTrackerOptions;

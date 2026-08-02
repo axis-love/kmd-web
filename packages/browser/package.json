@@ -19,6 +19,12 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "*"
+    "@axis-love/contracts": "*",
+    "@axis-love/core": "*"
+  },
+  "devDependencies": {
+    "@axis-love/highlighting": "*",
+    "@axis-love/math": "*",
+    "@axis-love/mermaid": "*"
   }
 }

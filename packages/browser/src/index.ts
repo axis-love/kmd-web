@@ -148,3 +148,27 @@ export interface HostCapabilities {
 // ---------------------------------------------------------------------------
 
 export type { DocumentTarget, LinkTarget } from "@axis-love/contracts";
+
+// ---------------------------------------------------------------------------
+// Runtime modules (KWEB-011)
+// ---------------------------------------------------------------------------
+
+export {
+  findAnchorTarget,
+  getReaderScrollTopForTarget,
+  ScrollTracker,
+  type ScrollTrackerOptions,
+  scrollContainerToTarget,
+} from "./anchor-navigation.js";
+export { AssetLifecycle, type AssetLifecycleOptions } from "./asset-lifecycle.js";
+export { CodeCopyEnhancer, type CodeCopyOptions, type CopyNotifier } from "./code-copy.js";
+export { morphMarkdownBody, RAW_IMAGE_SRC_ATTR } from "./dom-morph.js";
+export {
+  type FeatureCoordinationOptions,
+  FeatureCoordinator,
+  type FeaturePassResult,
+} from "./feature-coordination.js";
+export { LinkPolicy, type LinkPolicyOptions } from "./link-policy.js";
+export { ParseCache, type ParseCacheOptions } from "./parse-cache.js";
+export { BrowserReader, type BrowserReaderOptions } from "./reader-runtime.js";
+export { type RenderFn, WorkerBridge, type WorkerBridgeOptions } from "./worker-bridge.js";
