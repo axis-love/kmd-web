@@ -63,7 +63,9 @@
   --kmd-focus-outline-color: var(--kmd-color-tertiary);
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+[data-kmd-theme="dark"],
+.kmd-theme-dark {
   --kmd-color-primary: #e8eaed;
   --kmd-color-secondary: #9aa0ab;
   --kmd-color-tertiary: #9b6dff;
@@ -103,7 +105,9 @@
   --kmd-color-card: var(--kmd-color-surface);
 }
 
-[data-theme="light"] {
+[data-theme="light"],
+[data-kmd-theme="light"],
+.kmd-theme-light {
   --kmd-color-primary: #15171a;
   --kmd-color-secondary: #626872;
   --kmd-color-tertiary: #7c4dff;

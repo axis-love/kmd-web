@@ -322,9 +322,15 @@ function validateFocusOutlineReference(tokens: TokenSchema): void {
  *   :root {
  *     --kmd-...: <value>;
  *   }
- *   [data-theme="dark"] { ... }
- *   [data-theme="light"] { ... }
+ *   [data-theme="dark"], [data-kmd-theme="dark"], .kmd-theme-dark { ... }
+ *   [data-theme="light"], [data-kmd-theme="light"], .kmd-theme-light { ... }
  *   @media (prefers-reduced-motion: reduce) { ... }
+ *
+ * Each theme is activated by any of three equivalent selectors so consumers
+ * can use whichever convention fits their host application:
+ *   - [data-theme="dark"]  — original kmd attribute
+ *   - [data-kmd-theme="dark"] — kmd-web scoped attribute
+ *   - .kmd-theme-dark — class-based
  */
 function generateCss(tokens: TokenSchema): string {
   const lines: string[] = [];
@@ -411,7 +417,11 @@ function generateCss(tokens: TokenSchema): string {
   // Theme-specific color tokens
   for (const theme of tokens.themes.variants) {
     lines.push("");
-    lines.push(`[data-theme="${theme}"] {`);
+    // Group three equivalent selectors so consumers can use whichever
+    // convention fits their host: attribute, scoped attribute, or class.
+    lines.push(`[data-theme="${theme}"],`);
+    lines.push(`[data-kmd-theme="${theme}"],`);
+    lines.push(`.kmd-theme-${theme} {`);
 
     // Base colors
     for (const c of tokens.colors) {

@@ -1,8 +1,162 @@
-/* @axis-love/styles — Scoped reader CSS */
-/* Production reader styles arrive in KWEB-012. This file currently uses */
-/* the generated tokens to prove the token pipeline is wired correctly. */
+/* @axis-love/styles — Scoped reader CSS
+ *
+ * Public API:
+ *   .kmd-reader           — root scope for all reader body styles
+ *   .kmd-document-shell   — root scope for document layout (outline + content)
+ *
+ * All CSS values reference --kmd-* custom properties from generated/tokens.css.
+ * Consumers override themes and values through documented CSS custom properties.
+ *
+ * Theme activation (any of three equivalent methods):
+ *   [data-theme="dark"]     — original kmd attribute
+ *   [data-kmd-theme="dark"] — kmd-web scoped attribute
+ *   .kmd-theme-dark         — class-based
+ *
+ * Font fallback policy (no @font-face — fonts distributed separately, KWEB-026):
+ *   Body: Inter → system-ui → -apple-system → sans-serif
+ *   Mono: SF Mono → Fira Code → Cascadia Code → JetBrains Mono → monospace
+ */
 
 @import "./tokens.css";
+
+/* ---------------------------------------------------------------------------
+ * Default theme: dark (applies when no explicit theme selector is present)
+ * --------------------------------------------------------------------------- */
+
+:root {
+  --kmd-color-primary: #e8eaed;
+  --kmd-color-secondary: #9aa0ab;
+  --kmd-color-tertiary: #9b6dff;
+  --kmd-color-neutral: #1a1c1f;
+  --kmd-color-surface: #222428;
+  --kmd-color-surface-muted: #2c2f35;
+  --kmd-color-on-primary: #1a1c1f;
+  --kmd-color-on-surface: #e8eaed;
+  --kmd-color-border: #3a3f48;
+  --kmd-color-info: #5b9cf5;
+  --kmd-color-success: #3ebd82;
+  --kmd-color-warning: #d4a735;
+  --kmd-color-danger: #e8594e;
+  --kmd-color-code-bg: #2c2f35;
+  --kmd-color-code-text: #e8eaed;
+  --kmd-color-blockquote-border: #3a3f48;
+  --kmd-color-blockquote-text: #9aa0ab;
+  --kmd-color-table-border: #3a3f48;
+  --kmd-color-table-header-bg: #2c2f35;
+  --kmd-color-link: #9b6dff;
+  --kmd-color-link-hover: #b794ff;
+  --kmd-color-selection-bg: rgba(155, 109, 255, 0.3);
+  --kmd-color-scrollbar-thumb: #3a3f48;
+  --kmd-color-scrollbar-track: transparent;
+  --kmd-color-outline-depth-0: #e8eaed;
+  --kmd-color-outline-depth-1: #e8eaed;
+  --kmd-color-outline-depth-2: #9aa0ab;
+  --kmd-color-outline-depth-3: #6b7280;
+  --kmd-color-outline-active-bg: rgba(155, 109, 255, 0.12);
+  --kmd-color-outline-active-border: #9b6dff;
+  --kmd-color-heading: var(--kmd-color-primary);
+  --kmd-color-body: var(--kmd-color-on-surface);
+  --kmd-color-muted: var(--kmd-color-secondary);
+  --kmd-color-accent: var(--kmd-color-tertiary);
+  --kmd-color-background: var(--kmd-color-neutral);
+  --kmd-color-card: var(--kmd-color-surface);
+}
+
+/* ---------------------------------------------------------------------------
+ * System preference: light when OS prefers light and no explicit theme set
+ * --------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]):not([data-kmd-theme]):not(.kmd-theme-light):not(.kmd-theme-dark):not(
+    .kmd-theme-sepia
+  ) {
+    --kmd-color-primary: #15171a;
+    --kmd-color-secondary: #626872;
+    --kmd-color-tertiary: #7c4dff;
+    --kmd-color-neutral: #f5f7f8;
+    --kmd-color-surface: #ffffff;
+    --kmd-color-surface-muted: #eceff3;
+    --kmd-color-on-primary: #ffffff;
+    --kmd-color-on-surface: #15171a;
+    --kmd-color-border: #d8dee6;
+    --kmd-color-info: #2563eb;
+    --kmd-color-success: #0f8a5f;
+    --kmd-color-warning: #b7791f;
+    --kmd-color-danger: #b42318;
+    --kmd-color-code-bg: #eceff3;
+    --kmd-color-code-text: #15171a;
+    --kmd-color-blockquote-border: #d8dee6;
+    --kmd-color-blockquote-text: #626872;
+    --kmd-color-table-border: #d8dee6;
+    --kmd-color-table-header-bg: #eceff3;
+    --kmd-color-link: #7c4dff;
+    --kmd-color-link-hover: #9b6dff;
+    --kmd-color-selection-bg: rgba(124, 77, 255, 0.15);
+    --kmd-color-scrollbar-thumb: #d8dee6;
+    --kmd-color-scrollbar-track: transparent;
+    --kmd-color-outline-depth-0: #15171a;
+    --kmd-color-outline-depth-1: #15171a;
+    --kmd-color-outline-depth-2: #626872;
+    --kmd-color-outline-depth-3: #808890;
+    --kmd-color-outline-active-bg: rgba(124, 77, 255, 0.1);
+    --kmd-color-outline-active-border: #7c4dff;
+    --kmd-color-heading: var(--kmd-color-primary);
+    --kmd-color-body: var(--kmd-color-on-surface);
+    --kmd-color-muted: var(--kmd-color-secondary);
+    --kmd-color-accent: var(--kmd-color-tertiary);
+    --kmd-color-background: var(--kmd-color-neutral);
+    --kmd-color-card: var(--kmd-color-surface);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Sepia theme — warm filter on light, reduced contrast
+ * Activated via [data-kmd-theme="sepia"] or .kmd-theme-sepia
+ * --------------------------------------------------------------------------- */
+
+[data-kmd-theme="sepia"],
+.kmd-theme-sepia {
+  --kmd-color-primary: #3b2f1f;
+  --kmd-color-secondary: #7a6a55;
+  --kmd-color-tertiary: #8b6914;
+  --kmd-color-neutral: #f4ecd8;
+  --kmd-color-surface: #faf3e0;
+  --kmd-color-surface-muted: #efe6cf;
+  --kmd-color-on-primary: #faf3e0;
+  --kmd-color-on-surface: #3b2f1f;
+  --kmd-color-border: #d4c4a8;
+  --kmd-color-info: #4a6fa5;
+  --kmd-color-success: #4a7c59;
+  --kmd-color-warning: #b7791f;
+  --kmd-color-danger: #a0392f;
+  --kmd-color-code-bg: #efe6cf;
+  --kmd-color-code-text: #3b2f1f;
+  --kmd-color-blockquote-border: #d4c4a8;
+  --kmd-color-blockquote-text: #7a6a55;
+  --kmd-color-table-border: #d4c4a8;
+  --kmd-color-table-header-bg: #efe6cf;
+  --kmd-color-link: #8b6914;
+  --kmd-color-link-hover: #a47d1a;
+  --kmd-color-selection-bg: rgba(139, 105, 20, 0.2);
+  --kmd-color-scrollbar-thumb: #d4c4a8;
+  --kmd-color-scrollbar-track: transparent;
+  --kmd-color-outline-depth-0: #3b2f1f;
+  --kmd-color-outline-depth-1: #3b2f1f;
+  --kmd-color-outline-depth-2: #7a6a55;
+  --kmd-color-outline-depth-3: #a09080;
+  --kmd-color-outline-active-bg: rgba(139, 105, 20, 0.12);
+  --kmd-color-outline-active-border: #8b6914;
+  --kmd-color-heading: var(--kmd-color-primary);
+  --kmd-color-body: var(--kmd-color-on-surface);
+  --kmd-color-muted: var(--kmd-color-secondary);
+  --kmd-color-accent: var(--kmd-color-tertiary);
+  --kmd-color-background: var(--kmd-color-neutral);
+  --kmd-color-card: var(--kmd-color-surface);
+}
+
+/* ---------------------------------------------------------------------------
+ * .kmd-reader — root scope for all reader body styles
+ * --------------------------------------------------------------------------- */
 
 .kmd-reader {
   font-family: var(--kmd-font-body);
@@ -10,10 +164,891 @@
   line-height: var(--kmd-line-height-body-md);
   color: var(--kmd-color-body);
   background-color: var(--kmd-color-background);
+  padding-bottom: calc(var(--kmd-space-xxl) + var(--kmd-space-md));
 }
+
+/* ---- Focus visibility ---- */
 
 .kmd-reader :focus-visible {
   outline-width: var(--kmd-focus-outline-width);
   outline-style: var(--kmd-focus-outline-style);
   outline-color: var(--kmd-focus-outline-color);
+}
+
+/* ---- Headings ---- */
+
+.kmd-reader h1,
+.kmd-reader h2,
+.kmd-reader h3,
+.kmd-reader h4,
+.kmd-reader h5,
+.kmd-reader h6 {
+  color: var(--kmd-color-heading);
+  margin-top: var(--kmd-space-xl);
+  margin-bottom: var(--kmd-space-sm);
+  line-height: var(--kmd-line-height-headline-md);
+}
+
+.kmd-reader h1 {
+  font-size: var(--kmd-font-size-headline-lg);
+  font-weight: var(--kmd-font-weight-headline-lg);
+  line-height: var(--kmd-line-height-headline-lg);
+  letter-spacing: -0.01em;
+  padding-bottom: var(--kmd-space-sm);
+  border-bottom: 1px solid var(--kmd-color-border);
+}
+
+.kmd-reader h2 {
+  font-size: var(--kmd-font-size-headline-md);
+  font-weight: var(--kmd-font-weight-headline-md);
+  padding-bottom: var(--kmd-space-xs);
+  border-bottom: 1px solid var(--kmd-color-border);
+}
+
+.kmd-reader h3 {
+  font-size: var(--kmd-font-size-h3);
+  font-weight: 600;
+}
+
+.kmd-reader h4 {
+  font-size: var(--kmd-font-size-h4);
+  font-weight: 600;
+}
+
+.kmd-reader h5 {
+  font-size: var(--kmd-font-size-h5);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kmd-reader h6 {
+  font-size: var(--kmd-font-size-h6);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kmd-color-secondary);
+}
+
+/* ---- Paragraphs ---- */
+
+.kmd-reader p {
+  margin-bottom: var(--kmd-space-md);
+  line-height: var(--kmd-line-height-body-md);
+}
+
+/* ---- Links ---- */
+
+.kmd-reader a {
+  color: var(--kmd-color-link);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color var(--kmd-duration-fast) var(--kmd-easing-ease),
+    color var(--kmd-duration-fast) var(--kmd-easing-ease);
+}
+
+.kmd-reader a:hover {
+  color: var(--kmd-color-link-hover);
+  border-bottom-color: var(--kmd-color-link-hover);
+}
+
+/* ---- Lists ---- */
+
+.kmd-reader ul,
+.kmd-reader ol {
+  margin-bottom: var(--kmd-space-md);
+  padding-left: var(--kmd-space-lg);
+}
+
+.kmd-reader li {
+  margin-bottom: var(--kmd-space-xs);
+  line-height: var(--kmd-line-height-body-md);
+}
+
+.kmd-reader li > ul,
+.kmd-reader li > ol {
+  margin-top: var(--kmd-space-xs);
+  margin-bottom: 0;
+}
+
+/* ---- Blockquotes ---- */
+
+.kmd-reader blockquote {
+  border-left: 3px solid var(--kmd-color-blockquote-border);
+  padding: var(--kmd-space-md) var(--kmd-space-lg);
+  margin: var(--kmd-space-md) 0;
+  color: var(--kmd-color-blockquote-text);
+  background-color: var(--kmd-color-surface);
+  border-radius: 0 var(--kmd-radius-md) var(--kmd-radius-md) 0;
+}
+
+.kmd-reader blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Code — inline ---- */
+
+.kmd-reader code {
+  font-family: var(--kmd-font-mono);
+  font-size: 0.9em;
+}
+
+.kmd-reader p code,
+.kmd-reader li code,
+.kmd-reader td code,
+.kmd-reader h1 code,
+.kmd-reader h2 code,
+.kmd-reader h3 code {
+  background-color: var(--kmd-color-surface-muted);
+  color: var(--kmd-color-tertiary);
+  padding: 2px var(--kmd-space-xs);
+  border-radius: var(--kmd-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+}
+
+.kmd-reader p code:hover,
+.kmd-reader li code:hover,
+.kmd-reader td code:hover,
+.kmd-reader h1 code:hover,
+.kmd-reader h2 code:hover,
+.kmd-reader h3 code:hover {
+  background-color: var(--kmd-color-surface);
+}
+
+/* ---- Code — fenced blocks (plain pre) ---- */
+
+.kmd-reader pre {
+  background-color: var(--kmd-color-code-bg);
+  color: var(--kmd-color-code-text);
+  border-radius: var(--kmd-radius-md);
+  padding: var(--kmd-space-md);
+  overflow-x: auto;
+  font-family: var(--kmd-font-mono);
+  font-size: var(--kmd-font-size-code-md);
+  line-height: var(--kmd-line-height-code-md);
+  margin-bottom: var(--kmd-space-md);
+  tab-size: 2;
+  position: relative;
+}
+
+.kmd-reader pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* ---- Tables ---- */
+
+.kmd-reader table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--kmd-space-md);
+  font-size: var(--kmd-font-size-body-sm);
+  line-height: var(--kmd-line-height-body-sm);
+}
+
+/* Wide tables scroll horizontally inside their wrapper instead of stretching
+   the whole document. The margin moves to the wrapper so it sits below the
+   scroll area rather than inside it. */
+
+.kmd-reader .table-wrapper {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-bottom: var(--kmd-space-md);
+}
+
+.kmd-reader .table-wrapper > table {
+  width: max-content;
+  min-width: 100%;
+  margin-bottom: 0;
+}
+
+.kmd-reader thead th {
+  background-color: var(--kmd-color-table-header-bg);
+  font-weight: var(--kmd-font-weight-label-caps);
+  font-size: var(--kmd-font-size-label-caps);
+  letter-spacing: var(--kmd-letter-spacing-label-caps);
+  text-transform: uppercase;
+  color: var(--kmd-color-secondary);
+  padding: var(--kmd-space-sm) var(--kmd-space-md);
+  text-align: left;
+  border-bottom: 2px solid var(--kmd-color-border);
+}
+
+.kmd-reader tbody td {
+  padding: var(--kmd-space-sm) var(--kmd-space-md);
+  border-bottom: 1px solid var(--kmd-color-border);
+}
+
+.kmd-reader tbody tr:hover {
+  background-color: var(--kmd-color-surface-muted);
+}
+
+/* ---- Horizontal rules ---- */
+
+.kmd-reader hr {
+  border: none;
+  border-top: 1px solid var(--kmd-color-border);
+  margin: var(--kmd-space-xl) 0;
+}
+
+/* ---- Images — responsive ---- */
+
+.kmd-reader img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: var(--kmd-space-md) auto;
+  border-radius: var(--kmd-radius-md);
+}
+
+/* ---- Footnotes ---- */
+
+.kmd-reader sup {
+  font-size: 0.8em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+.kmd-reader sup a,
+.kmd-reader .footnote-ref a {
+  color: var(--kmd-color-link);
+  text-decoration: none;
+}
+
+.kmd-reader .footnotes {
+  margin-top: var(--kmd-space-xl);
+  padding-top: var(--kmd-space-md);
+  border-top: 1px solid var(--kmd-color-border);
+  font-size: var(--kmd-font-size-body-sm);
+  color: var(--kmd-color-secondary);
+}
+
+.kmd-reader .footnotes ol {
+  padding-left: var(--kmd-space-lg);
+}
+
+.kmd-reader .footnotes li {
+  margin-bottom: var(--kmd-space-xs);
+}
+
+/* ---- Task list checkboxes ---- */
+
+.kmd-reader ul:has(input[type="checkbox"]) {
+  list-style: none;
+  padding-left: var(--kmd-space-xs);
+}
+
+.kmd-reader li:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: var(--kmd-space-sm);
+}
+
+.kmd-reader input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--kmd-color-border);
+  border-radius: var(--kmd-radius-sm);
+  flex-shrink: 0;
+  position: relative;
+  cursor: default;
+  margin: 0;
+}
+
+.kmd-reader input[type="checkbox"]:checked {
+  background-color: var(--kmd-color-tertiary);
+  border-color: var(--kmd-color-tertiary);
+}
+
+.kmd-reader input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--kmd-color-on-primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ---- GitHub Alerts (NOTE/TIP/IMPORTANT/WARNING/CAUTION) ---- */
+
+.kmd-reader .markdown-alert {
+  padding: var(--kmd-space-sm) var(--kmd-space-md);
+  margin: var(--kmd-space-md) 0;
+  border-radius: var(--kmd-radius-md);
+  border-left: 4px solid var(--kmd-color-border);
+  background-color: var(--kmd-color-surface);
+}
+
+.kmd-reader .markdown-alert-title {
+  font-size: var(--kmd-font-size-label-caps);
+  font-weight: var(--kmd-font-weight-label-caps);
+  letter-spacing: var(--kmd-letter-spacing-label-caps);
+  text-transform: uppercase;
+  margin-bottom: var(--kmd-space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--kmd-space-sm);
+}
+
+/* NOTE → info (blue) */
+.kmd-reader .markdown-alert-note {
+  border-left-color: var(--kmd-color-info);
+}
+.kmd-reader .markdown-alert-note .markdown-alert-title {
+  color: var(--kmd-color-info);
+}
+
+/* TIP → success (green) */
+.kmd-reader .markdown-alert-tip {
+  border-left-color: var(--kmd-color-success);
+}
+.kmd-reader .markdown-alert-tip .markdown-alert-title {
+  color: var(--kmd-color-success);
+}
+
+/* IMPORTANT → tertiary/accent */
+.kmd-reader .markdown-alert-important {
+  border-left-color: var(--kmd-color-tertiary);
+}
+.kmd-reader .markdown-alert-important .markdown-alert-title {
+  color: var(--kmd-color-tertiary);
+}
+
+/* WARNING → warning (yellow) */
+.kmd-reader .markdown-alert-warning {
+  border-left-color: var(--kmd-color-warning);
+}
+.kmd-reader .markdown-alert-warning .markdown-alert-title {
+  color: var(--kmd-color-warning);
+}
+
+/* CAUTION → danger (red) */
+.kmd-reader .markdown-alert-caution {
+  border-left-color: var(--kmd-color-danger);
+}
+.kmd-reader .markdown-alert-caution .markdown-alert-title {
+  color: var(--kmd-color-danger);
+}
+
+.kmd-reader .markdown-alert p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Shiki code highlighting ---- */
+
+.kmd-reader .shiki-code-block {
+  background-color: var(--kmd-color-code-bg) !important;
+  color: var(--kmd-color-code-text);
+  border-radius: var(--kmd-radius-md);
+  padding: var(--kmd-space-md);
+  overflow-x: auto;
+  font-family: var(--kmd-font-mono);
+  font-size: var(--kmd-font-size-code-md);
+  line-height: var(--kmd-line-height-code-md);
+  margin-bottom: var(--kmd-space-md);
+  tab-size: 2;
+}
+
+.kmd-reader .shiki-code-block code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.kmd-reader .shiki-code-block code span[style] {
+  cursor: pointer;
+  transition: background-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.kmd-reader .shiki-code-block code span[style]:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-kmd-theme="light"] .kmd-reader .shiki-code-block code span[style]:hover,
+.kmd-theme-light .kmd-reader .shiki-code-block code span[style]:hover,
+[data-theme="light"] .kmd-reader .shiki-code-block code span[style]:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Shiki dual-theme: show dark theme in dark mode, light in light mode */
+.kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
+  color: var(--shiki-dark, inherit);
+}
+
+[data-theme="dark"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
+[data-kmd-theme="dark"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
+.kmd-theme-dark .kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg, transparent) !important;
+}
+
+[data-theme="light"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
+[data-kmd-theme="light"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
+.kmd-theme-light .kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
+  color: var(--shiki-light, inherit) !important;
+  background-color: var(--shiki-light-bg, transparent) !important;
+}
+
+/* ---- Copy button (enhanced by browser layer) ---- */
+
+.kmd-reader .code-copy-button {
+  position: absolute;
+  top: var(--kmd-space-sm);
+  right: var(--kmd-space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--kmd-color-border);
+  border-radius: var(--kmd-radius-sm);
+  background: transparent;
+  color: var(--kmd-color-secondary);
+  cursor: pointer;
+  transition:
+    color var(--kmd-duration-fast) var(--kmd-easing-ease),
+    border-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+  opacity: 0;
+  z-index: 10;
+}
+
+.kmd-reader pre:hover .code-copy-button {
+  opacity: 1;
+}
+
+.kmd-reader .code-copy-button:hover {
+  background-color: var(--kmd-color-surface);
+  color: var(--kmd-color-on-surface);
+  border-color: var(--kmd-color-on-surface);
+}
+
+.kmd-reader .code-copy-button:active {
+  transform: scale(0.95);
+}
+
+.kmd-reader .code-copy-button svg {
+  display: block;
+}
+
+/* ---- Mermaid diagrams ---- */
+
+.kmd-reader .mermaid-placeholder {
+  margin: var(--kmd-space-md) 0;
+  text-align: center;
+}
+
+.kmd-reader .mermaid-render-target svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.kmd-reader .mermaid-error {
+  background-color: var(--kmd-color-surface-muted);
+  padding: var(--kmd-space-sm);
+  border-radius: var(--kmd-radius-sm);
+  font-family: var(--kmd-font-mono);
+  font-size: var(--kmd-font-size-body-sm);
+  text-align: left;
+  overflow-x: auto;
+}
+
+.kmd-reader .mermaid-error-msg {
+  color: var(--kmd-color-danger);
+  font-size: var(--kmd-font-size-body-sm);
+  margin-top: var(--kmd-space-xs);
+}
+
+/* ---- KaTeX math ---- */
+
+.kmd-reader .katex-display {
+  margin: var(--kmd-space-md) 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--kmd-space-sm) 0;
+}
+
+.kmd-reader .katex-display > .katex {
+  text-align: center;
+}
+
+.kmd-reader .katex {
+  font-size: 1.05em;
+}
+
+/* ---- Error state ---- */
+
+.kmd-reader .mdr-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--kmd-space-xxl);
+  color: var(--kmd-color-danger);
+}
+
+.kmd-reader .mdr-error pre {
+  background-color: var(--kmd-color-surface-muted);
+  padding: var(--kmd-space-md);
+  border-radius: var(--kmd-radius-md);
+  max-width: 600px;
+  overflow: auto;
+  margin-top: var(--kmd-space-md);
+}
+
+/* ---- Empty file state ---- */
+
+.kmd-reader .mdr-empty {
+  color: var(--kmd-color-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: var(--kmd-space-xl) 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * .kmd-document-shell — document layout: outline sidebar + content area
+ * --------------------------------------------------------------------------- */
+
+.kmd-document-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.kmd-document-shell .kmd-doc {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  padding: var(--kmd-space-xl) var(--kmd-space-md) var(--kmd-space-md);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transition: margin-left var(--kmd-duration-normal) var(--kmd-easing-ease);
+}
+
+.kmd-document-shell .kmd-content {
+  width: 100%;
+  min-width: 0;
+  max-width: var(--kmd-width-content-max);
+}
+
+/* ---- Outline sidebar ---- */
+
+.kmd-document-shell .kmd-outline-sidebar {
+  width: var(--kmd-width-sidebar-width);
+  min-height: 0;
+  flex-shrink: 0;
+  border-right: 1px solid var(--kmd-color-border);
+  background-color: var(--kmd-color-surface);
+  overflow-y: auto;
+  padding: var(--kmd-space-md);
+  transition:
+    width var(--kmd-duration-normal) var(--kmd-easing-ease),
+    padding var(--kmd-duration-normal) var(--kmd-easing-ease),
+    opacity var(--kmd-duration-normal) var(--kmd-easing-ease);
+}
+
+.kmd-document-shell .kmd-outline-sidebar.collapsed {
+  width: 0;
+  padding: 0;
+  border-right: none;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.kmd-document-shell .kmd-outline-title {
+  font-size: var(--kmd-font-size-label-caps);
+  font-weight: var(--kmd-font-weight-label-caps);
+  letter-spacing: var(--kmd-letter-spacing-label-caps);
+  text-transform: uppercase;
+  color: var(--kmd-color-secondary);
+  margin-bottom: var(--kmd-space-sm);
+}
+
+.kmd-document-shell .kmd-outline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.kmd-document-shell .kmd-outline-list li {
+  position: relative;
+  min-width: 0;
+}
+
+.kmd-document-shell .kmd-outline-item {
+  display: block;
+  position: relative;
+  z-index: 0;
+  padding: var(--kmd-space-xs) 14px;
+  color: var(--kmd-color-secondary);
+  text-decoration: none;
+  font-size: var(--kmd-font-size-body-sm);
+  line-height: var(--kmd-line-height-body-sm);
+  border-radius: var(--kmd-radius-sm);
+  transition:
+    color var(--kmd-duration-fast) var(--kmd-easing-ease),
+    border-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kmd-document-shell .kmd-outline-item:hover {
+  color: var(--kmd-color-on-surface);
+}
+
+.kmd-document-shell .kmd-outline-item::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 2px -2px;
+  border-radius: var(--kmd-radius-sm);
+  pointer-events: none;
+  transition: background-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+}
+
+.kmd-document-shell .kmd-outline-item:hover::before {
+  background-color: var(--kmd-color-surface-muted);
+}
+
+.kmd-document-shell .kmd-outline-item[data-depth="0"] {
+  font-weight: 700;
+  font-size: var(--kmd-font-size-body-md);
+  color: var(--kmd-color-outline-depth-0);
+  margin-bottom: var(--kmd-space-xs);
+}
+
+.kmd-document-shell .kmd-outline-item[data-depth="1"] {
+  font-weight: 600;
+  color: var(--kmd-color-outline-depth-1);
+  margin-top: var(--kmd-space-sm);
+}
+
+.kmd-document-shell .kmd-outline-item[data-depth="2"] {
+  padding-left: calc(14px + var(--kmd-space-md));
+  color: var(--kmd-color-outline-depth-2);
+}
+
+.kmd-document-shell .kmd-outline-item[data-depth="3"] {
+  padding-left: calc(14px + var(--kmd-space-md) * 2);
+  font-size: var(--kmd-font-size-label-caps);
+  color: var(--kmd-color-outline-depth-3);
+}
+
+.kmd-document-shell .kmd-outline-item.active {
+  color: var(--kmd-color-on-surface);
+  border-left: 2px solid var(--kmd-color-outline-active-border);
+}
+
+.kmd-document-shell .kmd-outline-item.active::before {
+  background-color: var(--kmd-color-outline-active-bg);
+}
+
+/* ---- Outline toggle button ---- */
+
+.kmd-document-shell .kmd-outline-toggle {
+  width: var(--kmd-width-toggle-width);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--kmd-color-surface);
+  border: 1px solid var(--kmd-color-border);
+  border-left: none;
+  border-right: none;
+  color: var(--kmd-color-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  transition:
+    color var(--kmd-duration-fast) var(--kmd-easing-ease),
+    background-color var(--kmd-duration-fast) var(--kmd-easing-ease);
+  align-self: stretch;
+}
+
+.kmd-document-shell .kmd-outline-toggle:hover {
+  color: var(--kmd-color-on-surface);
+  background-color: var(--kmd-color-surface-muted);
+}
+
+/* ---- Scrollbar styling (scoped) ---- */
+
+.kmd-reader {
+  scrollbar-color: var(--kmd-color-scrollbar-thumb) var(--kmd-color-scrollbar-track);
+}
+
+@supports selector(::-webkit-scrollbar) {
+  .kmd-reader ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .kmd-reader ::-webkit-scrollbar-track {
+    background: var(--kmd-color-scrollbar-track);
+  }
+
+  .kmd-reader ::-webkit-scrollbar-thumb {
+    background: var(--kmd-color-scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: var(--kmd-radius-full);
+    background-clip: padding-box;
+  }
+
+  .kmd-reader ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(
+      in srgb,
+      var(--kmd-color-scrollbar-thumb) 82%,
+      var(--kmd-color-on-surface)
+    );
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+/* ---- Text selection ---- */
+
+.kmd-reader ::selection {
+  background-color: var(--kmd-color-selection-bg);
+}
+
+/* ---------------------------------------------------------------------------
+ * High contrast media query — increase border widths, adjust colors
+ * --------------------------------------------------------------------------- */
+
+@media (prefers-contrast: high) {
+  .kmd-reader {
+    --kmd-color-border: var(--kmd-color-on-surface);
+  }
+
+  .kmd-reader blockquote {
+    border-left-width: 4px;
+  }
+
+  .kmd-reader .markdown-alert {
+    border-left-width: 5px;
+  }
+
+  .kmd-reader .code-copy-button {
+    border-width: 2px;
+    opacity: 1;
+  }
+
+  .kmd-reader .kmd-outline-item.active {
+    border-left-width: 3px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Reduced motion — disable all transitions and animations
+ * (Also handled by generated tokens.css for the global reset)
+ * --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .kmd-reader *,
+  .kmd-reader *::before,
+  .kmd-reader *::after,
+  .kmd-document-shell *,
+  .kmd-document-shell *::before,
+  .kmd-document-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Print — hide interactive elements, ensure readable output
+ * --------------------------------------------------------------------------- */
+
+@media print {
+  .kmd-document-shell .kmd-outline-sidebar,
+  .kmd-document-shell .kmd-outline-toggle,
+  .kmd-reader .code-copy-button {
+    display: none !important;
+  }
+
+  .kmd-document-shell {
+    display: block;
+    overflow: visible;
+  }
+
+  .kmd-document-shell .kmd-doc {
+    display: block;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .kmd-reader {
+    background-color: #ffffff;
+    color: #000000;
+    padding-bottom: 0;
+  }
+
+  .kmd-reader h1,
+  .kmd-reader h2,
+  .kmd-reader h3,
+  .kmd-reader h4,
+  .kmd-reader h5,
+  .kmd-reader h6,
+  .kmd-reader p,
+  .kmd-reader li,
+  .kmd-reader blockquote,
+  .kmd-reader .footnotes {
+    color: #000000;
+  }
+
+  .kmd-reader pre,
+  .kmd-reader .shiki-code-block,
+  .kmd-reader code {
+    background-color: #f5f5f5;
+    color: #000000;
+  }
+
+  .kmd-reader a,
+  .kmd-reader a:hover {
+    color: #000000;
+    text-decoration: underline;
+    border-bottom: none;
+  }
+
+  .kmd-reader table,
+  .kmd-reader thead th,
+  .kmd-reader tbody td {
+    border-color: #999999;
+  }
+
+  /* Avoid breaking inside headings, code blocks, tables */
+  .kmd-reader h1,
+  .kmd-reader h2,
+  .kmd-reader h3,
+  .kmd-reader h4,
+  .kmd-reader h5,
+  .kmd-reader h6 {
+    break-after: avoid;
+  }
+
+  .kmd-reader pre,
+  .kmd-reader .shiki-code-block,
+  .kmd-reader table,
+  .kmd-reader .table-wrapper,
+  .kmd-reader blockquote,
+  .kmd-reader .markdown-alert {
+    break-inside: avoid;
+  }
 }
