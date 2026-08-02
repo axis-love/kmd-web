@@ -17,5 +17,10 @@
   "module": "./dist/index.js",
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@axis-love/contracts": "*",
+    "@axis-love/core": "*",
+    "@axis-love/browser": "*"
+  }
 }
