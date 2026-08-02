@@ -1,7 +1,7 @@
 {
   "fixture": "features/design-md-invalid.md",
   "category": "features",
-  "description": "Invalid DESIGN.md with deliberate errors: not-a-color, missing refs, bad units, bad values",
+  "description": "Invalid DESIGN.md with deliberate errors: not-a-color, missing refs, bad units, bad values. Core detects design-doc presence but does NOT validate design tokens — validation is in the optional @axis-love/design package (KWEB-010).",
   "html": {
     "mustContain": ["color-on-surface", "not-a-color"],
     "mustNotContain": ["<script"]
@@ -27,9 +27,6 @@
     "hasTaskLists": false,
     "hasFootnotes": false,
     "hasAlerts": false
-  },
-  "diagnostics": {
-    "minSeverity": "warning"
   },
   "applicability": "optional"
 }

@@ -66,9 +66,16 @@ describe("import graph — core must not pull feature implementations", () => {
 
   it("core should not reference the math package", () => {
     const indexFile = join(coreDistDir, "index.js");
-    if (!existsSync(indexFile)) return;
+    if (!existsSync(indexFile)) return; // dist may not be built yet
     const content = readFileSync(indexFile, "utf-8");
     expect(content).not.toContain("@axis-love/math");
+  });
+
+  it("core should not reference the design package", () => {
+    const indexFile = join(coreDistDir, "index.js");
+    if (!existsSync(indexFile)) return; // dist may not be built yet
+    const content = readFileSync(indexFile, "utf-8");
+    expect(content).not.toContain("@axis-love/design");
   });
 });
 
@@ -120,5 +127,54 @@ describe("import graph — feature packages are independent", () => {
     const mod = await import("@axis-love/math");
     expect((mod as Record<string, unknown>).rehypeShiki).toBeUndefined();
     expect((mod as Record<string, unknown>).renderMermaid).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Design package should export its pipeline and not import heavy features
+// ---------------------------------------------------------------------------
+
+describe("import graph — design package exports and independence", () => {
+  const designDistDir = join(ROOT, "packages", "design", "dist");
+
+  it("design should export runDesignPipeline", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.runDesignPipeline).toBeDefined();
+  });
+
+  it("design should export runDesignPipelineCached", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.runDesignPipelineCached).toBeDefined();
+  });
+
+  it("design should export detectDesignDocumentCheap", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.detectDesignDocumentCheap).toBeDefined();
+  });
+
+  it("design should export detectDesignDocument", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.detectDesignDocument).toBeDefined();
+  });
+
+  it("design should export scanDesignDoc", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.scanDesignDoc).toBeDefined();
+    expect(typeof mod.scanDesignDoc).toBe("function");
+  });
+
+  it("design should export DESIGN_VERSION", async () => {
+    const mod = await import("@axis-love/design");
+    expect(mod.DESIGN_VERSION).toBeDefined();
+    expect(typeof mod.DESIGN_VERSION).toBe("string");
+  });
+
+  it("design should not import highlighting, mermaid, or math packages", () => {
+    const indexFile = join(designDistDir, "index.js");
+    if (!existsSync(indexFile)) return; // dist may not be built yet
+    const content = readFileSync(indexFile, "utf-8");
+    expect(content).not.toContain("@axis-love/highlighting");
+    expect(content).not.toContain("@axis-love/mermaid");
+    expect(content).not.toContain("@axis-love/math");
   });
 });

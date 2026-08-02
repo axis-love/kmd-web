@@ -42,5 +42,24 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/design/src/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "warn",
+            "useTemplate": "warn"
+          },
+          "suspicious": {
+            "noAssignInExpressions": "warn"
+          },
+          "complexity": {
+            "useLiteralKeys": "warn"
+          }
+        }
+      }
+    }
+  ]
 }

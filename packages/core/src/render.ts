@@ -197,43 +197,6 @@ function filterAssets(
 }
 
 // ---------------------------------------------------------------------------
-// Design doc validation
-// ---------------------------------------------------------------------------
-
-const COLOR_LINE_RE = /^(color-\S+):\s*["']?([^"'\n]+)["']?\s*$/gm;
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{3,8}$/;
-const VAR_REF_RE = /^var\(--[\w-]+\)$/;
-
-function scanDesignDoc(source: string, collector: DiagnosticCollector): void {
-  const { body } = splitYamlFrontMatter(source);
-
-  let match: RegExpExecArray | null;
-  COLOR_LINE_RE.lastIndex = 0;
-  match = COLOR_LINE_RE.exec(body);
-  while (match !== null) {
-    const name = match[1] ?? "";
-    const value = (match[2] ?? "").trim();
-
-    if (value) {
-      // Check if it's a valid hex color or a var() reference
-      if (
-        !HEX_COLOR_RE.test(value) &&
-        !VAR_REF_RE.test(value) &&
-        !value.startsWith("rgb") &&
-        !value.startsWith("hsl")
-      ) {
-        collector.add({
-          severity: "warning",
-          message: `Invalid color value for ${name}: "${value}"`,
-          code: "design-validation",
-        });
-      }
-    }
-    match = COLOR_LINE_RE.exec(body);
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Main render function
 // ---------------------------------------------------------------------------
 
@@ -272,10 +235,9 @@ export async function render(source: string, options?: RenderOptions): Promise<R
   scanRawHtml(source, allowedRawHtmlTags, collector);
   scanUnsafeUrls(source, allowedSchemes, collector);
 
-  // Design doc validation: emit warnings for invalid design token values
-  if (features.hasDesignDoc) {
-    scanDesignDoc(source, collector);
-  }
+  // Design doc validation is now handled by the optional @axis-love/design
+  // package. Core only detects hasDesignDoc; it does not validate design tokens.
+  // See KWEB-010: scanDesignDoc moved to @axis-love/design.
 
   // Sanitize pathological math sequences: replace runs of 4+ dollar signs
   // with a harmless placeholder to prevent remark-math from consuming
