@@ -17,5 +17,17 @@
   "module": "./dist/index.js",
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@axis-love/contracts": "*",
+    "@axis-love/core": "*"
+  },
+  "devDependencies": {
+    "katex": "0.16.47",
+    "rehype-katex": "7.0.1",
+    "@types/katex": "0.16.8",
+    "@types/hast": "^3.0.4",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
+  }
 }

@@ -17,5 +17,12 @@
   "module": "./dist/index.js",
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@axis-love/contracts": "*",
+    "@axis-love/core": "*"
+  },
+  "devDependencies": {
+    "mermaid": "11.14.0"
+  }
 }
