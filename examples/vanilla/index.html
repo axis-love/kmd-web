@@ -4,12 +4,46 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>kmd-web — vanilla example</title>
-    <!-- Placeholder: will use published package once available -->
-    <!-- <script type="module" src="./main.js"></script> -->
+    <!--
+      Content Security Policy: compatible with kmd-web defaults.
+      - default-src 'self': all resources from the same origin
+      - style-src 'self': stylesheets from same origin (no inline styles)
+      - script-src 'self': scripts from same origin (no inline scripts)
+      - img-src 'self' data: blob:: images from same origin, data:, and blob: URLs
+        (blob: needed for resolved assets, data: for inlined images)
+      - worker-src 'self': web workers from same origin
+      No 'unsafe-inline' anywhere.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: blob:; worker-src 'self'"
+    />
   </head>
   <body>
-    <main id="reader">
-      <p>Vanilla example placeholder. Production example arrives in KWEB-015.</p>
-    </main>
+    <h1>kmd-web — Vanilla Example</h1>
+
+    <!-- Reader container with dark theme. The library scopes all styles
+         under .kmd-reader and activates the theme via [data-kmd-theme]. -->
+    <div id="reader" class="kmd-reader" data-kmd-theme="dark"></div>
+
+    <!-- Diagnostics panel — populated via textContent only (no innerHTML) -->
+    <section id="diagnostics">
+      <h2>Diagnostics</h2>
+      <ul id="diagnostic-list"></ul>
+    </section>
+
+    <!-- Outline panel — populated via textContent only -->
+    <section id="outline-section">
+      <h2>Outline</h2>
+      <ul id="outline-list"></ul>
+    </section>
+
+    <!-- Feature flags panel -->
+    <section id="features-section">
+      <h2>Detected Features</h2>
+      <ul id="feature-list"></ul>
+    </section>
+
+    <script type="module" src="./main.js"></script>
   </body>
 </html>

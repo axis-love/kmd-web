@@ -43,7 +43,39 @@ import {
   RenderError,
   VERSION,
 } from "@axis-love/kmd-web";
+import type { KmdReaderElement, KmdRenderedDetail } from "@axis-love/kmd-web/element";
+
+// Subpath export compile-time checks — verify ./react and ./element resolve
+import type { MarkdownReaderProps } from "@axis-love/kmd-web/react";
 import { describe, expect, it } from "vitest";
+
+const _checkMarkdownReaderProps: MarkdownReaderProps = {
+  source: "",
+};
+const _checkKmdRenderedDetail: KmdRenderedDetail = {
+  result: {
+    html: "",
+    outline: [],
+    diagnostics: [],
+    assets: [],
+    links: [],
+    metadata: {},
+    detectedFeatures: {
+      hasMath: false,
+      hasMermaid: false,
+      hasDesignDoc: false,
+      hasCodeHighlighting: false,
+      hasTables: false,
+      hasTaskLists: false,
+      hasFootnotes: false,
+      hasAlerts: false,
+    },
+    rendererVersion: "0.1.0",
+  },
+};
+void _checkMarkdownReaderProps;
+void _checkKmdRenderedDetail;
+void null as KmdReaderElement;
 
 // ---------------------------------------------------------------------------
 // Compile-time type checks — verify all re-exports resolve

@@ -1,0 +1,14 @@
+{
+  "name": "kmd-web-vanilla-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Vanilla HTML + ESM example for @axis-love/kmd-web",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "@axis-love/kmd-web": "*"
+  }
+}

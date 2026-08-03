@@ -10,7 +10,16 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js"
+    },
+    "./styles.css": "@axis-love/styles/styles.css"
   },
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -21,6 +30,9 @@
   "dependencies": {
     "@axis-love/contracts": "*",
     "@axis-love/core": "*",
-    "@axis-love/browser": "*"
+    "@axis-love/browser": "*",
+    "@axis-love/react": "*",
+    "@axis-love/element": "*",
+    "@axis-love/styles": "*"
   }
 }
