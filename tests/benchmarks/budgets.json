@@ -1,0 +1,123 @@
+{
+  "$schema": "budget-schema.json",
+  "$comment": "Evidence-based performance and bundle size budgets for kmd-web. Baseline measured on Node v22, linux arm64. Update with rationale — do NOT silently replace. See tests/benchmarks/budgets.README.md for the override process.",
+  "version": 1,
+  "measuredAt": "2026-08-02",
+  "environment": {
+    "node": "v22.22.2",
+    "platform": "linux arm64",
+    "notes": "Baseline measurements taken on the kmd-web development machine. Performance numbers are highly environment-dependent; bundle sizes are stable across environments."
+  },
+  "parseTime": {
+    "small": {
+      "warn": 15,
+      "fail": 25
+    },
+    "medium": {
+      "warn": 80,
+      "fail": 120
+    },
+    "large": {
+      "warn": 7000,
+      "fail": 10000
+    },
+    "code-heavy": {
+      "warn": 60,
+      "fail": 100
+    },
+    "diagram-heavy": {
+      "warn": 40,
+      "fail": 70
+    },
+    "design-heavy": {
+      "warn": 35,
+      "fail": 60
+    },
+    "pathological": {
+      "warn": 600,
+      "fail": 900
+    }
+  },
+  "repeatedUpdate": {
+    "warn": 50,
+    "fail": 80
+  },
+  "memory": {
+    "warn": 50000,
+    "fail": 100000
+  },
+  "bundle": {
+    "contracts": {
+      "rawWarn": 30,
+      "rawFail": 40,
+      "gzipWarn": 8,
+      "gzipFail": 12
+    },
+    "core": {
+      "rawWarn": 70,
+      "rawFail": 90,
+      "gzipWarn": 25,
+      "gzipFail": 35
+    },
+    "browser": {
+      "rawWarn": 65,
+      "rawFail": 85,
+      "gzipWarn": 20,
+      "gzipFail": 28
+    },
+    "styles": {
+      "rawWarn": 2,
+      "rawFail": 4,
+      "gzipWarn": 1,
+      "gzipFail": 2
+    },
+    "react": {
+      "rawWarn": 20,
+      "rawFail": 30,
+      "gzipWarn": 6,
+      "gzipFail": 9
+    },
+    "element": {
+      "rawWarn": 25,
+      "rawFail": 35,
+      "gzipWarn": 7,
+      "gzipFail": 10
+    },
+    "design": {
+      "rawWarn": 230,
+      "rawFail": 300,
+      "gzipWarn": 60,
+      "gzipFail": 80
+    },
+    "highlighting": {
+      "rawWarn": 15,
+      "rawFail": 25,
+      "gzipWarn": 5,
+      "gzipFail": 8
+    },
+    "mermaid": {
+      "rawWarn": 12,
+      "rawFail": 20,
+      "gzipWarn": 4,
+      "gzipFail": 7
+    },
+    "math": {
+      "rawWarn": 13,
+      "rawFail": 22,
+      "gzipWarn": 5,
+      "gzipFail": 8
+    },
+    "kmd-web": {
+      "rawWarn": 2,
+      "rawFail": 5,
+      "gzipWarn": 1,
+      "gzipFail": 2
+    }
+  },
+  "bundleBaseline": {
+    "$comment": "Baseline sizes excluding React and all optional heavy feature implementations. These are the baseline packages that every consumer must load. Optional features (highlighting, mermaid, math, design) are lazy-loaded and budgeted separately.",
+    "baselineRawKB": 137.6,
+    "baselineGzipKB": 46.3,
+    "baselinePackages": ["contracts", "core", "browser", "styles", "react", "element", "kmd-web"]
+  }
+}

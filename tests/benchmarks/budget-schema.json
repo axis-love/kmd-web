@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "budget-schema.json",
+  "title": "kmd-web performance and bundle size budgets",
+  "description": "Warning and failure thresholds for benchmark and bundle size measurements. Update with rationale — do NOT silently replace.",
+  "type": "object",
+  "required": ["version", "parseTime", "bundle"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Budget version. Increment on every intentional update."
+    },
+    "measuredAt": {
+      "type": "string",
+      "description": "Date when the baseline was measured (ISO 8601 date)."
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "node": { "type": "string" },
+        "platform": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["node", "platform"]
+    },
+    "parseTime": {
+      "type": "object",
+      "description": "Median parse time (render()) budgets in milliseconds per fixture.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "warn": { "type": "number", "description": "Warning threshold in ms" },
+          "fail": { "type": "number", "description": "Failure threshold in ms" }
+        }
+      }
+    },
+    "repeatedUpdate": {
+      "type": "object",
+      "description": "Repeated update (10 sequential renders) median time in ms.",
+      "properties": {
+        "warn": { "type": "number" },
+        "fail": { "type": "number" }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "description": "Heap delta after rendering large document in KB.",
+      "properties": {
+        "warn": { "type": "number" },
+        "fail": { "type": "number" }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "description": "Bundle size budgets per package in KB. rawWarn/rawFail for minified, gzipWarn/gzipFail for gzipped.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rawWarn": { "type": "number" },
+          "rawFail": { "type": "number" },
+          "gzipWarn": { "type": "number" },
+          "gzipFail": { "type": "number" }
+        }
+      }
+    },
+    "bundleBaseline": {
+      "type": "object",
+      "description": "Aggregate baseline bundle size (excluding React and optional features).",
+      "properties": {
+        "baselineRawKB": { "type": "number" },
+        "baselineGzipKB": { "type": "number" },
+        "baselinePackages": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
