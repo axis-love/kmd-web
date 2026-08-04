@@ -24,7 +24,10 @@
     "check:contents": "node scripts/check-package-contents.mjs",
     "check:api": "node scripts/check-api-surface.mjs",
     "check:size": "node scripts/size-report.mjs",
-    "check:release": "node scripts/dry-run-release.mjs"
+    "check:release": "node scripts/dry-run-release.mjs",
+    "test:visual": "playwright test --config=playwright.config.ts",
+    "test:visual:update": "playwright test --config=playwright.config.ts --update-snapshots",
+    "build:visual": "npx tsx tests/visual/prerender.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",

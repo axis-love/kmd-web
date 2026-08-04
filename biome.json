@@ -14,7 +14,10 @@
       "!**/dist",
       "!**/node_modules",
       "!**/coverage",
-      "!**/packages/*/generated"
+      "!**/packages/*/generated",
+      "!**/test-results",
+      "!**/tests/visual/fixtures",
+      "!**/playwright-report"
     ]
   },
   "formatter": {

@@ -29,3 +29,8 @@ npm-debug.log*
 # CI artifacts
 .tarballs/
 size-report.json
+
+# Playwright
+test-results/
+playwright-report/
+tests/visual/fixtures/
