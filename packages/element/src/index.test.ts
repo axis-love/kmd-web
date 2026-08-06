@@ -7,9 +7,12 @@ import { KmdReaderElement, registerKmdReader } from "./index";
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/** Flush pending microtasks so async BrowserReader.update() completes. */
+/** Flush pending microtasks so async BrowserReader.update() completes.
+ * The renderFn now does `await import("@axis-love/math")` and
+ * `await import("@axis-love/highlighting")` before calling render(),
+ * adding extra async ticks beyond a single setTimeout(0). */
 async function flushAsync(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await new Promise<void>((resolve) => setTimeout(resolve, 100));
 }
 
 /** Create a container div appended to document.body. */
@@ -108,7 +111,7 @@ describe("<kmd-reader> custom element", () => {
     const content = el.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1>");
     expect(content?.innerHTML).toContain("<p>");
-    expect(content?.innerHTML).toContain("<pre>");
+    expect(content?.innerHTML).toContain("<pre");
     expect(content?.innerHTML).toContain("<ul>");
   });
 

@@ -12,7 +12,10 @@ function createContainer(): HTMLDivElement {
 
 async function flushAsync(): Promise<void> {
   await act(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // The renderFn now does `await import("@axis-love/math")` and
+    // `await import("@axis-love/highlighting")` before calling render(),
+    // adding extra async ticks beyond a single setTimeout(0).
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
   });
 }
 
@@ -34,7 +37,7 @@ const FIXTURES: { name: string; source: string; expectations: string[] }[] = [
   {
     name: "code blocks",
     source: "```ts\nconst x: number = 42;\n```",
-    expectations: ["<pre>", "<code"],
+    expectations: ["<pre", "shiki-code-block"],
   },
   {
     name: "inline code",
@@ -165,7 +168,7 @@ See [the docs](https://example.com) for more.
     expect(content?.innerHTML).toContain("<h2>");
     expect(content?.innerHTML).toContain("<strong>");
     expect(content?.innerHTML).toContain("<em>");
-    expect(content?.innerHTML).toContain("<pre>");
+    expect(content?.innerHTML).toContain("<pre");
     expect(content?.innerHTML).toContain("<table>");
     expect(content?.innerHTML).toContain("<ul>");
     expect(content?.innerHTML).toContain("markdown-alert");

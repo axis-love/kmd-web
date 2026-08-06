@@ -18,6 +18,7 @@ import type {
   LinkTarget,
   LinkTargetKind,
   OutlineEntry,
+  RehypePluginEntry,
   RenderErrorCode,
   RenderOptions,
   RenderResult,
@@ -74,6 +75,9 @@ const _checkAssetRequest: AssetRequest = { url: "x", type: "image" };
 const _checkResolvedAsset: ResolvedAsset = { url: "blob:x", originalUrl: "x" };
 const _checkRenderErrorCode: RenderErrorCode = "render-timeout";
 const _checkCapabilityErrorCode: CapabilityErrorCode = "clipboard-denied";
+const _checkRehypePluginEntry: RehypePluginEntry = [
+  (() => ({})) as unknown as RehypePluginEntry[0],
+];
 
 void [
   _checkOutlineEntry,
@@ -94,6 +98,7 @@ void [
   _checkResolvedAsset,
   _checkRenderErrorCode,
   _checkCapabilityErrorCode,
+  _checkRehypePluginEntry,
 ];
 
 // ---------------------------------------------------------------------------
@@ -408,5 +413,48 @@ describe("@axis-love/core render", () => {
     expect(urls.some((u) => u.startsWith("http"))).toBe(false);
     expect(urls.some((u) => u.startsWith("ftp:"))).toBe(false);
     expect(urls.some((u) => u.startsWith("file:"))).toBe(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // KWEB-029: Injected rehype plugin tests (KaTeX + Shiki)
+  // -------------------------------------------------------------------------
+
+  it("renders math via injected rehypeKatex plugin", async () => {
+    const { rehypeKatex } = await import("@axis-love/math");
+    const result = await render("$$E = mc^2$$", undefined, [[rehypeKatex]]);
+    expect(result.html).toContain("katex");
+    expect(result.html).not.toContain("language-math");
+  });
+
+  it("renders inline math via injected rehypeKatex plugin", async () => {
+    const { rehypeKatex } = await import("@axis-love/math");
+    const result = await render("Inline $E=mc^2$ math", undefined, [[rehypeKatex]]);
+    expect(result.html).toContain("katex");
+    expect(result.html).not.toContain("language-math");
+  });
+
+  it("highlights code via injected rehypeShiki plugin", async () => {
+    const { rehypeShiki } = await import("@axis-love/highlighting");
+    const result = await render("```ts\nconst x = 1;\n```", undefined, [[rehypeShiki]]);
+    expect(result.html).toContain("shiki-code-block");
+  });
+
+  it("renders without plugins when none are injected (baseline)", async () => {
+    const result = await render("$$E = mc^2$$\n\n```ts\nconst x = 1;\n```");
+    // Without plugins, math stays as language-math and code stays plain
+    expect(result.html).toContain("language-math");
+    expect(result.html).not.toContain("shiki-code-block");
+  });
+
+  it("injects multiple rehype plugins in order", async () => {
+    const { rehypeKatex } = await import("@axis-love/math");
+    const { rehypeShiki } = await import("@axis-love/highlighting");
+    const result = await render("$$E = mc^2$$\n\n```ts\nconst x = 1;\n```", undefined, [
+      [rehypeKatex],
+      [rehypeShiki],
+    ]);
+    expect(result.html).toContain("katex");
+    expect(result.html).toContain("shiki-code-block");
+    expect(result.html).not.toContain("language-math");
   });
 });

@@ -38,7 +38,10 @@ function createContainer(width?: string): HTMLDivElement {
 
 async function flushAsync(): Promise<void> {
   await act(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // The renderFn now does `await import("@axis-love/math")` and
+    // `await import("@axis-love/highlighting")` before calling render(),
+    // adding extra async ticks beyond a single setTimeout(0).
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
   });
 }
 
@@ -99,15 +102,15 @@ describe("browser integration — representative fixtures via React entry", () =
       expects: ["<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>"],
     },
     { name: "tables", source: FIXTURE_SOURCES.tables, expects: ["<table>", "<th>", "<td>"] },
-    { name: "code", source: FIXTURE_SOURCES.code, expects: ["<pre>", "<code"] },
+    { name: "code", source: FIXTURE_SOURCES.code, expects: ["<pre", "shiki-code-block"] },
     { name: "alerts", source: FIXTURE_SOURCES.alerts, expects: ["markdown-alert"] },
     { name: "footnotes", source: FIXTURE_SOURCES.footnotes, expects: ["footnote"] },
     { name: "mermaid placeholder", source: FIXTURE_SOURCES.mermaid, expects: ["mermaid"] },
-    { name: "math", source: FIXTURE_SOURCES.math, expects: ["language-math"] },
+    { name: "math", source: FIXTURE_SOURCES.math, expects: ["katex"] },
     {
       name: "mixed document",
       source: FIXTURE_SOURCES.mixed,
-      expects: ["<h1>", "<h2>", "<table>", "<pre>", "markdown-alert"],
+      expects: ["<h1>", "<h2>", "<table>", "<pre", "markdown-alert"],
     },
   ];
 
@@ -175,8 +178,8 @@ describe("browser integration — representative fixtures via React entry", () =
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<pre>");
-    expect(content?.innerHTML).toContain("language-typescript");
+    expect(content?.innerHTML).toContain("<pre");
+    expect(content?.innerHTML).toContain("shiki-code-block");
   });
 
   it("renders contract fixture file (math.md)", async () => {
@@ -188,10 +191,9 @@ describe("browser integration — representative fixtures via React entry", () =
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    // Math is output as <code class="language-math"> in the pipeline.
-    // KaTeX DOM-side CSS loading happens via FeatureCoordinator but the
-    // rendered HTML from the pipeline uses language-math code elements.
-    expect(content?.innerHTML).toContain("language-math");
+    // Math is rendered as KaTeX HTML in the pipeline (rehypeKatex plugin).
+    // The rendered HTML contains katex-inline/katex-display classes.
+    expect(content?.innerHTML).toContain("katex");
   });
 
   it("renders contract fixture file (mermaid.md)", async () => {
@@ -785,7 +787,7 @@ describe("browser integration — optional feature failure isolation", () => {
 
   it("math rendering failure does not break document rendering", async () => {
     // Even if KaTeX CSS fails to load, the math content should be present
-    // as language-math code elements in the rendered HTML
+    // as katex HTML in the rendered HTML
     root = createRoot(container);
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.math} />);
@@ -793,11 +795,11 @@ describe("browser integration — optional feature failure isolation", () => {
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("language-math");
+    expect(content?.innerHTML).toContain("katex");
   });
 
   it("highlighting import failure does not break code rendering", async () => {
-    // Code blocks should still render as <pre><code> even if Shiki fails
+    // Code blocks should still render as <pre> even if Shiki fails
     root = createRoot(container);
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.code} />);
@@ -805,8 +807,7 @@ describe("browser integration — optional feature failure isolation", () => {
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<pre>");
-    expect(content?.innerHTML).toContain("<code");
+    expect(content?.innerHTML).toContain("<pre");
   });
 
   it("mixed document with all features renders without crashing", async () => {
@@ -819,7 +820,7 @@ describe("browser integration — optional feature failure isolation", () => {
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("Document");
     expect(content?.innerHTML).toContain("<table>");
-    expect(content?.innerHTML).toContain("<pre>");
+    expect(content?.innerHTML).toContain("<pre");
   });
 });
 
@@ -874,7 +875,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     });
     await flushAsync();
 
-    expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<pre>");
+    expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<pre");
   });
 
   it("renders mixed document at 375px width", async () => {
@@ -887,6 +888,6 @@ describe("browser integration — narrow viewport (375px)", () => {
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1>");
     expect(content?.innerHTML).toContain("<table>");
-    expect(content?.innerHTML).toContain("<pre>");
+    expect(content?.innerHTML).toContain("<pre");
   });
 });

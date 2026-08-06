@@ -43,9 +43,12 @@ export interface FeatureCoordinationOptions {
  * - Mermaid: dynamically imports `@axis-love/mermaid` and calls
  *   `renderMermaidPlaceholders` on the container
  * - Math: dynamically imports `@axis-love/math` and calls
- *   `ensureKatexCss` to load the KaTeX stylesheet
- * - Highlighting: dynamically imports `@axis-love/highlighting` for
- *   DOM-side Shiki application
+ *   `ensureKatexCss` to load the KaTeX stylesheet (rendering itself
+ *   is done in the rehype pipeline via injected `rehypeKatex`)
+ * - Highlighting: dynamically imports `@axis-love/highlighting`
+ *   and checks for unhighlighted code blocks (Shiki runs in the
+ *   rehype pipeline via injected `rehypeShiki`; this pass detects
+ *   blocks that fell through, e.g. on the worker path)
  * - Design: no DOM-side action (design is a parse-time feature)
  *
  * Each pass is independent — if one fails, others still run. If a
@@ -74,8 +77,9 @@ export class FeatureCoordinator {
       results.push(await this.runMermaidPass(container));
     }
 
-    // Math — ensure KaTeX CSS is loaded (actual rendering is done in
-    // the rehype pipeline, not DOM-side; we only need CSS)
+    // Math — KaTeX rendering is done in the rehype pipeline (injected by
+    // reader-runtime's renderFn). This DOM-side pass only ensures the
+    // KaTeX stylesheet is loaded so the rendered HTML displays correctly.
     if (features.hasMath) {
       results.push(await this.runMathPass());
     }
@@ -131,14 +135,15 @@ export class FeatureCoordinator {
 
   private async runHighlightingPass(container: HTMLElement): Promise<FeaturePassResult> {
     try {
-      // Shiki highlighting runs in the rehype pipeline (core's render
-      // function). For DOM-side re-highlighting after morph, we
-      // check if there are unhighlighted code blocks. If all blocks
-      // already have the shiki class, the pass is a no-op.
-      const codeBlocks = container.querySelectorAll(
+      // Shiki highlighting runs in the rehype pipeline (injected by
+      // reader-runtime's renderFn). By the time this DOM-side pass runs,
+      // code blocks already have the "shiki-code-block" class. If any
+      // blocks are missing it (e.g. worker path without plugin injection),
+      // they are reported here for potential DOM-side fallback.
+      const unhighlighted = container.querySelectorAll(
         "pre > code[class*='language-']:not(.shiki-code-block)",
       );
-      if (codeBlocks.length === 0) {
+      if (unhighlighted.length === 0) {
         return {
           feature: "highlighting",
           applied: false,
@@ -146,10 +151,9 @@ export class FeatureCoordinator {
         };
       }
 
-      // Dynamically import the highlighting package. In the pipeline
-      // approach, Shiki runs as a rehype plugin on HAST. For DOM-side,
-      // we skip — the pipeline already handled it. This pass exists
-      // to detect whether highlighting was applied.
+      // Dynamically import the highlighting package for potential DOM-side
+      // re-highlighting. The pipeline already handled the common case;
+      // this pass detects blocks that fell through (worker path limitation).
       await import("@axis-love/highlighting");
       return { feature: "highlighting", applied: true };
     } catch (err) {

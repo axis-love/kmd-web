@@ -45,6 +45,27 @@ import { createRehypeUrlPolicy, isSafeUrl, sanitizeSchema } from "./sanitize.js"
 export const CORE_VERSION = "0.1.0";
 
 // ---------------------------------------------------------------------------
+// Plugin injection types
+// ---------------------------------------------------------------------------
+
+/**
+ * A rehype plugin entry: a plugin function followed by its options.
+ *
+ * Core cannot statically import optional feature packages (KaTeX, Shiki)
+ * — they are heavy and must remain lazy-loaded. Instead, the host injects
+ * them via this type. The plugins run after `raw` and before `rehypeSanitize`
+ * so their HTML output passes through the sanitizer.
+ *
+ * This is a direct-call-only feature — plugin functions are NOT serializable
+ * and cannot cross worker boundaries.
+ *
+ * The plugin is typed as `unknown` (not `Plugin`) because unified's `Plugin`
+ * type is invariant in its input/output node types. The host is responsible
+ * for passing valid rehype plugins.
+ */
+export type RehypePluginEntry = readonly [plugin: unknown, ...options: unknown[]];
+
+// ---------------------------------------------------------------------------
 // Options normalization
 // ---------------------------------------------------------------------------
 
@@ -210,10 +231,22 @@ function filterAssets(
  *
  * @param source - The Markdown source text to render.
  * @param options - Optional render options (features, security, limits).
+ *   These are JSON-serializable and can cross worker boundaries.
+ * @param rehypePlugins - Optional rehype plugin entries to inject into the
+ *   pipeline after `raw` (so raw HTML is parsed) and before `rehypeSanitize`
+ *   (so plugin output is sanitized). Core does not statically import the
+ *   optional feature packages — the host injects them here. Plugin functions
+ *   are NOT serializable, so this parameter only works for direct (non-worker)
+ *   calls. When rendering through a worker, the worker's internal `render()`
+ *   will not have these plugins.
  * @returns A serializable RenderResult with HTML, outline, diagnostics, assets, metadata, and detected features.
  * @throws RenderError if the source exceeds maxSourceSize or the render times out.
  */
-export async function render(source: string, options?: RenderOptions): Promise<RenderResult> {
+export async function render(
+  source: string,
+  options?: RenderOptions,
+  rehypePlugins?: readonly RehypePluginEntry[],
+): Promise<RenderResult> {
   const resolved = resolveOptions(options);
 
   // Source size check
@@ -270,8 +303,24 @@ export async function render(source: string, options?: RenderOptions): Promise<R
     .use(remarkMath)
     .use(remarkWikilinks)
     .use(remarkAlerts)
-    .use(remarkRehype, { allowDangerousHtml: true })
-    .use(raw);
+    .use(remarkRehype, { allowDangerousHtml: true });
+
+  // Inject optional rehype plugins (KaTeX, Shiki) after remarkRehype
+  // and before rehype-raw. The plugins transform <code class="language-math">
+  // and <pre><code class="language-X"> elements, producing raw HTML nodes.
+  // The subsequent rehype-raw pass converts those raw nodes into proper
+  // HAST elements so rehypeSanitize can process them.
+  // Core does not import these packages — the host injects them.
+  // The cast is necessary because unified's Plugin type is invariant in
+  // its input/output node types — we accept unknown plugins from the host.
+  if (rehypePlugins) {
+    for (const entry of rehypePlugins) {
+      const [plugin, ...pluginOpts] = entry;
+      (pipeline.use as (p: unknown, ...opts: unknown[]) => void)(plugin, ...pluginOpts);
+    }
+  }
+
+  pipeline.use(raw);
 
   // Mermaid placeholder (structural only — no DOM execution)
   if (resolved.features.mermaid) {

@@ -27,9 +27,12 @@ function render(
 
 // Flush all pending microtasks/effects. React 19 act() flushes effects
 // synchronously, but async BrowserReader.update() needs an extra tick.
+// The renderFn now does `await import("@axis-love/math")` and
+// `await import("@axis-love/highlighting")` before calling render(),
+// adding extra async ticks beyond a single setTimeout(0).
 async function flushAsync(): Promise<void> {
   await act(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
   });
 }
 

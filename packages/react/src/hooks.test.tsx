@@ -38,7 +38,10 @@ function renderHook<T>(hook: () => T): {
 
 async function flushAsync(): Promise<void> {
   await act(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // The renderFn now does `await import("@axis-love/math")` and
+    // `await import("@axis-love/highlighting")` before calling render(),
+    // adding extra async ticks beyond a single setTimeout(0).
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
   });
 }
 

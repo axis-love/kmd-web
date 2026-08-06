@@ -87,8 +87,10 @@ export class CodeCopyEnhancer {
         const pre = copyButton.closest("pre");
         if (pre) {
           const code = pre.querySelector("code");
-          if (code) {
-            const text = code.textContent ?? "";
+          // For Shiki blocks, the <code> element may have empty text content
+          // if the language grammar didn't load. Fall back to pre.textContent.
+          const text = code?.textContent?.trim() ? code.textContent : (pre.textContent ?? "");
+          if (text.trim()) {
             void this.copy(text);
           }
         }

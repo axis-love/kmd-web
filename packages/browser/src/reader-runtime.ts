@@ -14,7 +14,7 @@
 // - Graceful degradation for missing capabilities.
 
 import type { OutlineEntry, RenderOptions, RenderResult } from "@axis-love/contracts";
-import { render } from "@axis-love/core";
+import { type RehypePluginEntry, render } from "@axis-love/core";
 import { ScrollTracker } from "./anchor-navigation.js";
 import { AssetLifecycle } from "./asset-lifecycle.js";
 import { CodeCopyEnhancer } from "./code-copy.js";
@@ -105,7 +105,31 @@ export class BrowserReader {
     const caps = options.capabilities ?? {};
     this.cache = options.cache ?? new ParseCache({ maxSize: 8 });
 
-    const renderFn: RenderFn = (source, opts) => render(source, opts);
+    const renderFn: RenderFn = async (source, opts) => {
+      const plugins: RehypePluginEntry[] = [];
+
+      // Inject KaTeX if math is enabled (default: true)
+      if (opts?.features?.math !== false) {
+        try {
+          const math = await import("@axis-love/math");
+          plugins.push([math.rehypeKatex]);
+        } catch {
+          // Math package not available — skip
+        }
+      }
+
+      // Inject Shiki if code highlighting is enabled (default: true)
+      if (opts?.features?.codeHighlighting !== false) {
+        try {
+          const highlighting = await import("@axis-love/highlighting");
+          plugins.push([highlighting.rehypeShiki]);
+        } catch {
+          // Highlighting package not available — skip
+        }
+      }
+
+      return render(source, opts, plugins.length > 0 ? plugins : undefined);
+    };
 
     this.bridge = new WorkerBridge({
       workerFactory: caps.workerFactory,

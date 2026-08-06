@@ -10,6 +10,7 @@
 // Package version
 // ---------------------------------------------------------------------------
 
+export type { RehypePluginEntry } from "./render.js";
 export { CORE_VERSION, render } from "./render.js";
 
 // ---------------------------------------------------------------------------

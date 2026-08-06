@@ -76,6 +76,12 @@ export interface SecurityOptions {
  *   render. The renderer checks the signal at cooperative checkpoints.
  *   This is the only non-serializable field; it is stripped before
  *   caching or cross-boundary transfer.
+ *
+ * Note: rehype plugin injection (for KaTeX, Shiki, etc.) is NOT part of
+ * RenderOptions because plugin functions are not serializable and cannot
+ * cross worker boundaries. Plugin injection is handled via a separate
+ * parameter to core's `render()` function — this is a direct-call-only
+ * feature. See `RehypePluginEntry` in `@axis-love/core`.
  */
 export interface RenderOptions {
   /** Control which heavy features are rendered. */
