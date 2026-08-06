@@ -11,11 +11,11 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { ConformanceManifest, ContractRenderer, FixtureObservation } from "./conformance";
-import { MANIFEST_SCHEMA_VERSION } from "./conformance";
-import type { RenderOptions } from "./options";
-import type { RenderResult } from "./render";
-import { formatRunSummary, runFixture } from "./runner/contract-runner";
+import type { ConformanceManifest, ContractRenderer, FixtureObservation } from "./conformance.js";
+import { MANIFEST_SCHEMA_VERSION } from "./conformance.js";
+import type { RenderOptions } from "./options.js";
+import type { RenderResult } from "./render.js";
+import { formatRunSummary, runFixture } from "./runner/contract-runner.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

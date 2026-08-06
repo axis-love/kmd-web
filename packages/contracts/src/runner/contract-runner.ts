@@ -21,8 +21,8 @@ import type {
   ContractRunResult,
   FixtureAssertionResult,
   FixtureObservation,
-} from "../conformance";
-import type { DiagnosticSeverity, RenderResult } from "../render";
+} from "../conformance.js";
+import type { DiagnosticSeverity, RenderResult } from "../render.js";
 
 // ---------------------------------------------------------------------------
 // Severity ordering for minSeverity checks

@@ -177,7 +177,8 @@ function filterAssets(
       return true;
     }
 
-    // Block remote images when allowRemoteImages is false
+    // Block remote images when allowRemoteImages is false.
+    // Only allow relative URLs (no scheme), data:, and blob:.
     if (
       url.startsWith("#") ||
       url.startsWith("./") ||
@@ -189,10 +190,11 @@ function filterAssets(
     const colonIdx = url.indexOf(":");
     if (colonIdx === -1) return true;
     const scheme = url.slice(0, colonIdx).toLowerCase();
-    if (scheme === "http" || scheme === "https") {
-      return false;
+    if (scheme === "data" || scheme === "blob") {
+      return true;
     }
-    return true;
+    // Block all other schemes (http, https, ftp, file, etc.)
+    return false;
   });
 }
 
@@ -286,7 +288,7 @@ export async function render(source: string, options?: RenderOptions): Promise<R
     .use(captureOutline)
     .use(captureAssets)
     .use(rehypeCopyButton)
-    .use(rehypeStringify);
+    .use(rehypeStringify, { allowDangerousHtml: true });
 
   // Render with optional timeout
   let htmlFile: { toString(): string };

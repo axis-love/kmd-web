@@ -387,4 +387,26 @@ describe("@axis-love/core render", () => {
     expect(result.outline).toHaveLength(1);
     expect(result.outline[0]?.text).toBe("Heading");
   });
+
+  // KWEB-031: filterAssets must block all remote schemes when allowRemoteImages is false
+  it("blocks ftp and other non-http remote schemes when allowRemoteImages is false", async () => {
+    const markdown = [
+      "![local](./local.png)",
+      "![http](https://example.com/a.png)",
+      "![ftp](ftp://example.com/a.png)",
+      "![file](file:///etc/passwd)",
+    ].join("\n\n");
+
+    const result = await render(markdown, {
+      security: { allowRemoteImages: false },
+    });
+
+    const urls = result.assets.map((a) => a.url);
+    // Relative URLs should be allowed
+    expect(urls).toContain("./local.png");
+    // http, https, ftp, file should all be blocked
+    expect(urls.some((u) => u.startsWith("http"))).toBe(false);
+    expect(urls.some((u) => u.startsWith("ftp:"))).toBe(false);
+    expect(urls.some((u) => u.startsWith("file:"))).toBe(false);
+  });
 });

@@ -5,7 +5,7 @@
 // re-classify. This keeps the security policy inside core and prevents
 // host adapters from bypassing URL or path policy.
 
-import type { AssetType } from "./render";
+import type { AssetType } from "./render.js";
 
 // ---------------------------------------------------------------------------
 // Link target classification

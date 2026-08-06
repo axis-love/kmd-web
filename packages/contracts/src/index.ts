@@ -42,14 +42,14 @@ export type {
   DocumentMetadata,
   OutlineEntry,
   RenderResult,
-} from "./render";
+} from "./render.js";
 
 // ---------------------------------------------------------------------------
 // Render options
 // ---------------------------------------------------------------------------
 
-export type { FeatureOptions, RenderOptions, SecurityOptions } from "./options";
-export { defaultRenderOptions } from "./options";
+export type { FeatureOptions, RenderOptions, SecurityOptions } from "./options.js";
+export { defaultRenderOptions } from "./options.js";
 
 // ---------------------------------------------------------------------------
 // Link / document target classification
@@ -61,14 +61,14 @@ export type {
   LinkTarget,
   LinkTargetKind,
   ResolvedAsset,
-} from "./links";
+} from "./links.js";
 
 // ---------------------------------------------------------------------------
 // Structured errors
 // ---------------------------------------------------------------------------
 
-export type { CapabilityErrorCode, RenderErrorCode } from "./errors";
-export { CapabilityError, RenderError } from "./errors";
+export type { CapabilityErrorCode, RenderErrorCode } from "./errors.js";
+export { CapabilityError, RenderError } from "./errors.js";
 
 // ---------------------------------------------------------------------------
 // Conformance contracts (fixtures, observations, runner)
@@ -94,5 +94,5 @@ export type {
   ManifestFixtureEntry,
   MetadataObservation,
   OutlineObservation,
-} from "./conformance";
-export { MANIFEST_SCHEMA_VERSION } from "./conformance";
+} from "./conformance.js";
+export { MANIFEST_SCHEMA_VERSION } from "./conformance.js";

@@ -4,7 +4,7 @@
 // They are consumed by both JavaScript (kmd-web) and native (Unity)
 // implementations and must remain serializable (JSON-compatible).
 
-import type { LinkTarget } from "./links";
+import type { LinkTarget } from "./links.js";
 
 // ---------------------------------------------------------------------------
 // Outline

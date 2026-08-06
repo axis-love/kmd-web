@@ -6,9 +6,9 @@
 // consumers implement the same observations without requiring byte-identical
 // HTML.
 
-import type { LinkTargetKind } from "./links";
-import type { RenderOptions } from "./options";
-import type { AssetType, DiagnosticSeverity, RenderResult } from "./render";
+import type { LinkTargetKind } from "./links.js";
+import type { RenderOptions } from "./options.js";
+import type { AssetType, DiagnosticSeverity, RenderResult } from "./render.js";
 
 // ---------------------------------------------------------------------------
 
