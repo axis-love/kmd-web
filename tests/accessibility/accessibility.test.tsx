@@ -30,7 +30,11 @@ function createContainer(): HTMLDivElement {
 
 async function flushAsync(): Promise<void> {
   await act(async () => {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    // Wait for async rendering (including dynamic imports of KaTeX/Shiki)
+    // to complete. Poll for up to 1 second.
+    for (let i = 0; i < 50; i++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    }
   });
 }
 
