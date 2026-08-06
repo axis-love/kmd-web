@@ -373,6 +373,53 @@ describe("font fallback policy", () => {
 // Document shell — outline sidebar, content area
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// GitHub alert icons — ::before pseudo-elements with data-URI SVG masks
+// ---------------------------------------------------------------------------
+
+describe("github alert icons", () => {
+  const css = readStyles();
+  const types = ["note", "tip", "important", "warning", "caution"] as const;
+
+  it("should define all 5 --kmd-alert-{type}-icon custom properties in :root", () => {
+    for (const type of types) {
+      expect(css, `missing --kmd-alert-${type}-icon custom property`).toContain(
+        `--kmd-alert-${type}-icon:`,
+      );
+    }
+  });
+
+  it("each custom property should be a data-URI SVG", () => {
+    for (const type of types) {
+      expect(css).toContain(`--kmd-alert-${type}-icon: url("data:image/svg+xml`);
+    }
+  });
+
+  it("should have ::before pseudo-element rules for all 5 alert types", () => {
+    for (const type of types) {
+      expect(css, `missing ::before rule for .markdown-alert-${type}`).toContain(
+        `.markdown-alert-${type} .markdown-alert-title::before`,
+      );
+    }
+  });
+
+  it("each ::before rule should use mask-image: var(--kmd-alert-{type}-icon)", () => {
+    for (const type of types) {
+      expect(css).toContain(`mask-image: var(--kmd-alert-${type}-icon)`);
+    }
+  });
+
+  it("each ::before rule should use -webkit-mask-image for compatibility", () => {
+    for (const type of types) {
+      expect(css).toContain(`-webkit-mask-image: var(--kmd-alert-${type}-icon)`);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Document shell — outline sidebar, content area
+// ---------------------------------------------------------------------------
+
 describe("document shell layout", () => {
   const css = readStyles();
 
