@@ -99,7 +99,7 @@ describe("browser integration — representative fixtures via React entry", () =
     {
       name: "headings",
       source: FIXTURE_SOURCES.headings,
-      expects: ["<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>"],
+      expects: ["<h1", "<h2", "<h3", "<h4", "<h5", "<h6"],
     },
     { name: "tables", source: FIXTURE_SOURCES.tables, expects: ["<table>", "<th>", "<td>"] },
     { name: "code", source: FIXTURE_SOURCES.code, expects: ["<pre", "shiki-code-block"] },
@@ -110,7 +110,7 @@ describe("browser integration — representative fixtures via React entry", () =
     {
       name: "mixed document",
       source: FIXTURE_SOURCES.mixed,
-      expects: ["<h1>", "<h2>", "<table>", "<pre", "markdown-alert"],
+      expects: ["<h1", "<h2", "<table>", "<pre", "markdown-alert"],
     },
   ];
 
@@ -852,7 +852,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     });
     await flushAsync();
 
-    expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<h1>");
+    expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<h1");
   });
 
   it("renders tables at 375px width (horizontal scroll wrapper)", async () => {
@@ -886,7 +886,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<h1>");
+    expect(content?.innerHTML).toContain("<h1");
     expect(content?.innerHTML).toContain("<table>");
     expect(content?.innerHTML).toContain("<pre");
   });

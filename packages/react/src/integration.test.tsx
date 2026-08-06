@@ -27,7 +27,7 @@ const FIXTURES: { name: string; source: string; expectations: string[] }[] = [
   {
     name: "headings",
     source: "# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6",
-    expectations: ["<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>"],
+    expectations: ["<h1", "<h2", "<h3", "<h4", "<h5", "<h6"],
   },
   {
     name: "tables",
@@ -164,8 +164,8 @@ See [the docs](https://example.com) for more.
     await flushAsync();
 
     const content = container.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<h1>");
-    expect(content?.innerHTML).toContain("<h2>");
+    expect(content?.innerHTML).toContain("<h1");
+    expect(content?.innerHTML).toContain("<h2");
     expect(content?.innerHTML).toContain("<strong>");
     expect(content?.innerHTML).toContain("<em>");
     expect(content?.innerHTML).toContain("<pre");

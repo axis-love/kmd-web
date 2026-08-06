@@ -15,7 +15,7 @@
 
 import type { OutlineEntry, RenderOptions, RenderResult } from "@axis-love/contracts";
 import { type RehypePluginEntry, render } from "@axis-love/core";
-import { ScrollTracker } from "./anchor-navigation.js";
+import { findAnchorTarget, ScrollTracker } from "./anchor-navigation.js";
 import { AssetLifecycle } from "./asset-lifecycle.js";
 import { CodeCopyEnhancer } from "./code-copy.js";
 import { morphMarkdownBody } from "./dom-morph.js";
@@ -216,7 +216,7 @@ export class BrowserReader {
    */
   scrollToFragment(fragmentId: string): void {
     if (!this.scrollContainer) return;
-    const target = this.container.querySelector<HTMLElement>(`[id="${fragmentId}"]`);
+    const target = findAnchorTarget(this.container, fragmentId);
     if (target) {
       this.scrollContainer.scrollTo({
         top:

@@ -20,6 +20,7 @@ import { defaultRenderOptions, RenderError } from "@axis-love/contracts";
 import type { Root as HastRoot } from "hast";
 import raw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
+import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -321,6 +322,11 @@ export async function render(
   }
 
   pipeline.use(raw);
+
+  // Add id attributes to heading elements (rehype-slug uses github-slugger).
+  // Runs after rehype-raw so headings from raw HTML also get ids.
+  // Sanitize preserves id/name (see sanitizeSchema) with clobber protection.
+  pipeline.use(rehypeSlug);
 
   // Mermaid placeholder (structural only — no DOM execution)
   if (resolved.features.mermaid) {

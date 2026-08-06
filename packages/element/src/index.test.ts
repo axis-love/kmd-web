@@ -98,7 +98,7 @@ describe("<kmd-reader> custom element", () => {
     await flushAsync();
 
     const content = el.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<h1>");
+    expect(content?.innerHTML).toContain("<h1");
     expect(content?.innerHTML).toContain("Hello World");
   });
 
@@ -109,7 +109,7 @@ describe("<kmd-reader> custom element", () => {
     await flushAsync();
 
     const content = el.querySelector(".kmd-reader-content");
-    expect(content?.innerHTML).toContain("<h1>");
+    expect(content?.innerHTML).toContain("<h1");
     expect(content?.innerHTML).toContain("<p>");
     expect(content?.innerHTML).toContain("<pre");
     expect(content?.innerHTML).toContain("<ul>");

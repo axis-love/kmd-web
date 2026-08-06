@@ -27,7 +27,7 @@ describe("BrowserReader lifecycle", () => {
   it("renders markdown and sets container innerHTML", async () => {
     const reader = new BrowserReader({ container });
     await reader.update("# Hello");
-    expect(container.innerHTML).toContain("<h1>");
+    expect(container.innerHTML).toContain("<h1");
     expect(container.innerHTML).toContain("Hello");
     reader.dispose();
   });
@@ -64,7 +64,7 @@ describe("BrowserReader lifecycle", () => {
     const reader = new BrowserReader({ container, onRendered });
     await reader.update("# Hello");
     expect(onRendered).toHaveBeenCalledTimes(1);
-    expect(onRendered.mock.calls[0][0].html).toContain("<h1>");
+    expect(onRendered.mock.calls[0][0].html).toContain("<h1");
     reader.dispose();
   });
 
@@ -184,7 +184,7 @@ describe("BrowserReader lifecycle", () => {
     const reader = new BrowserReader({ container });
     await reader.update("# Hello\n\n[link](https://example.com)");
 
-    expect(container.innerHTML).toContain("<h1>");
+    expect(container.innerHTML).toContain("<h1");
     expect(container.innerHTML).toContain("Hello");
     // Link should be present with rel="noopener noreferrer"
     const link = container.querySelector("a");
@@ -249,6 +249,26 @@ describe("BrowserReader lifecycle", () => {
       reader.scrollToFragment(target.id);
       expect(scrollContainer.scrollTo).toHaveBeenCalledOnce();
     }
+
+    reader.dispose();
+  });
+
+  it("scrollToFragment handles fragment IDs with CSS metacharacters without throwing", async () => {
+    const reader = new BrowserReader({
+      container,
+      scrollContainer,
+    });
+    await reader.update("# Title");
+
+    // Fragment IDs with CSS metacharacters should not throw or cause
+    // selector injection. findAnchorTarget iterates elements safely.
+    expect(() => {
+      reader.scrollToFragment("foo.bar");
+      reader.scrollToFragment("foo#bar");
+      reader.scrollToFragment("foo[bar]");
+      reader.scrollToFragment("foo]bar[");
+      reader.scrollToFragment("'; DROP TABLE--");
+    }).not.toThrow();
 
     reader.dispose();
   });

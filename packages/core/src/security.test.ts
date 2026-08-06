@@ -279,14 +279,14 @@ describe("classifyLink — classification", () => {
 // ---------------------------------------------------------------------------
 
 describe("sanitizeSchema — DOM clobbering", () => {
-  it("removes name from * wildcard attributes", () => {
+  it("preserves id in * wildcard attributes for heading anchors", () => {
     const starAttrs = sanitizeSchema.attributes?.["*"] as readonly string[];
-    expect(starAttrs).not.toContain("name");
+    expect(starAttrs).toContain("id");
   });
 
-  it("removes id from * wildcard attributes", () => {
+  it("preserves name in * wildcard attributes for anchor targets", () => {
     const starAttrs = sanitizeSchema.attributes?.["*"] as readonly string[];
-    expect(starAttrs).not.toContain("id");
+    expect(starAttrs).toContain("name");
   });
 
   it("does not include SVG tags in allowed tagNames", () => {
@@ -308,8 +308,8 @@ describe("sanitizeSchema — DOM clobbering", () => {
     expect(tags).not.toContain("base");
   });
 
-  it("sets clobberPrefix to empty string", () => {
-    expect(sanitizeSchema.clobberPrefix).toBe("");
+  it("sets clobberPrefix to user-content- for DOM clobber protection", () => {
+    expect(sanitizeSchema.clobberPrefix).toBe("user-content-");
   });
 });
 

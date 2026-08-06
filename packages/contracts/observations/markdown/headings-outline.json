@@ -14,7 +14,7 @@
       { "level": 2, "text": "Section Two", "slug": "section-two" },
       { "level": 3, "text": "Subsection B", "slug": "subsection-b" },
       { "level": 2, "text": "Duplicate Heading", "slug": "duplicate-heading" },
-      { "level": 2, "text": "Duplicate Heading", "slug": "duplicate-heading-2" },
+      { "level": 2, "text": "Duplicate Heading", "slug": "duplicate-heading-1" },
       { "level": 2, "text": "Section Three", "slug": "section-three" },
       { "level": 3, "text": "Deeply", "slug": "deeply" },
       { "level": 4, "text": "Nested", "slug": "nested" },

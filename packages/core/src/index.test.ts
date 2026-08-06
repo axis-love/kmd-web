@@ -457,4 +457,58 @@ describe("@axis-love/core render", () => {
     expect(result.html).toContain("shiki-code-block");
     expect(result.html).not.toContain("language-math");
   });
+
+  // -------------------------------------------------------------------------
+  // KWEB-030: Outline navigation, slug generation, selector injection
+  // -------------------------------------------------------------------------
+
+  it("heading elements have id attributes matching outline slugs", async () => {
+    const result = await render("# Hello World\n\n## Section Two\n\n### Third Heading");
+    expect(result.outline).toHaveLength(3);
+    // Each outline slug should match an id in the rendered HTML
+    // (sanitize prefixes ids with "user-content-" for clobber protection)
+    for (const entry of result.outline) {
+      expect(result.html).toContain(`id="user-content-${entry.slug}"`);
+    }
+  });
+
+  it("outline slugs match heading ids for duplicate headings", async () => {
+    const result = await render("# Section\n\n## Section\n\n### Section");
+    expect(result.outline).toHaveLength(3);
+    // rehype-slug deduplicates: section, section-1, section-2 (github-slugger convention)
+    const slugs = result.outline.map((e) => e.slug);
+    expect(new Set(slugs).size).toBe(3); // All unique
+    for (const entry of result.outline) {
+      expect(result.html).toContain(`id="user-content-${entry.slug}"`);
+    }
+  });
+
+  it("outline slugs match heading ids for Unicode headings", async () => {
+    const result = await render("# 中文标题\n\n## 日本語見出し");
+    expect(result.outline).toHaveLength(2);
+    for (const entry of result.outline) {
+      expect(result.html).toContain(`id="user-content-${entry.slug}"`);
+    }
+  });
+
+  it("preserves id attributes through sanitize", async () => {
+    const result = await render("# Heading One\n\nText");
+    expect(result.html).toContain('id="user-content-');
+    // The outline slug should match a heading id in the HTML (without prefix)
+    const slug = result.outline[0]?.slug;
+    expect(slug).toBeDefined();
+    expect(result.html).toContain(`id="user-content-${slug}"`);
+  });
+
+  it("blocks DOM clobbering via id attribute on anchors", async () => {
+    const result = await render('<a id="location" href="https://evil.example.com">click</a>');
+    // The clobber protection should still block id="location" even though
+    // we restored id attributes for headings
+    expect(result.html).not.toContain('id="location"');
+  });
+
+  it("blocks DOM clobbering via name attribute on img", async () => {
+    const result = await render('<img name="domain" src="x.png">');
+    expect(result.html).not.toContain('name="domain"');
+  });
 });

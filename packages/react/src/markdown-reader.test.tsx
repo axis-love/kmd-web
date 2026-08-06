@@ -65,7 +65,7 @@ describe("MarkdownReader", () => {
     expect(reader).not.toBeNull();
     const content = container.querySelector(".kmd-reader-content");
     expect(content).not.toBeNull();
-    expect(content?.innerHTML).toContain("<h1>");
+    expect(content?.innerHTML).toContain("<h1");
     expect(content?.innerHTML).toContain("Hello World");
   });
 

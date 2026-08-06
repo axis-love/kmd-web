@@ -1,10 +1,9 @@
-// @axis-love/core — outline extraction with slug generation
+// @axis-love/core — outline extraction
 //
-// Extracts heading entries from the HAST tree and generates URL-safe
-// slug IDs with deduplication matching the contract convention.
-//
-// The contract deduplication convention starts at -2 for the first
-// duplicate (e.g. "section", "section-2").
+// Extracts heading entries from the HAST tree. Slug IDs are read from
+// the `id` property set by rehype-slug (which uses github-slugger).
+// This ensures outline slugs match the id attributes on heading
+// elements in the rendered HTML.
 //
 // Headings inside the auto-generated footnotes section are excluded.
 //
@@ -36,45 +35,11 @@ function isFootnotesSectionHeading(node: Element): boolean {
 }
 
 /**
- * Convert heading text to a URL-safe slug.
- * Matches GitHub's slug algorithm: lowercase, replace spaces with hyphens,
- * strip special characters.
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "") // Remove non-word chars (except spaces and hyphens)
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Collapse multiple hyphens
-    .replace(/^-|-$/g, ""); // Strip leading/trailing hyphens
-}
-
-/**
- * Deduplicate slugs using the contract convention:
- * "section", "section-2", "section-3", ...
- */
-function deduplicateSlugs(entries: OutlineEntry[]): OutlineEntry[] {
-  const seen = new Map<string, number>();
-
-  return entries.map((entry) => {
-    const base = entry.slug;
-    const count = seen.get(base) ?? 0;
-
-    if (count === 0) {
-      seen.set(base, 1);
-      return entry;
-    }
-
-    const newSlug = `${base}-${count + 1}`;
-    seen.set(base, count + 1);
-    return { ...entry, slug: newSlug };
-  });
-}
-
-/**
  * Extract the heading outline from a HAST tree.
- * Generates URL-safe slug IDs from heading text with deduplication.
+ * Reads slug IDs from the `id` property set by rehype-slug.
+ * Headings without an `id` property are skipped (they won't be
+ * navigable via anchor links).
+ *
  * Headings inside the footnotes section are excluded.
  */
 export function extractOutline(tree: HastRoot): OutlineEntry[] {
@@ -88,11 +53,20 @@ export function extractOutline(tree: HastRoot): OutlineEntry[] {
 
     const level = Number.parseInt(node.tagName.charAt(1), 10);
     const text = extractText(node);
-    if (text) {
-      const slug = slugify(text);
-      entries.push({ text, level, slug });
-    }
+    if (!text) return;
+
+    // Read the id set by rehype-slug (runs earlier in the pipeline).
+    // rehype-slug uses github-slugger for slug generation, which handles
+    // Unicode, emoji, and deduplication automatically.
+    // Sanitize may prefix ids with "user-content-" for clobber protection —
+    // strip the prefix so outline slugs match fragment identifiers.
+    const rawId = typeof node.properties?.id === "string" ? node.properties.id : "";
+    if (!rawId) return;
+
+    const slug = rawId.startsWith("user-content-") ? rawId.slice("user-content-".length) : rawId;
+
+    entries.push({ text, level, slug });
   });
 
-  return deduplicateSlugs(entries);
+  return entries;
 }

@@ -88,7 +88,7 @@ describe("useMarkdownReader", () => {
     await flushAsync();
 
     const result = hook.getResult();
-    expect(result.html).toContain("<h1>");
+    expect(result.html).toContain("<h1");
     expect(result.outline).toHaveLength(1);
     expect(result.outline[0].text).toBe("Hello World");
     expect(result.isLoading).toBe(false);

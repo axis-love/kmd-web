@@ -25,7 +25,7 @@ const defaultAttributes = defaultSchema.attributes as Attributes;
 
 export const sanitizeSchema: Schema = {
   ...defaultSchema,
-  clobberPrefix: "",
+  clobberPrefix: "user-content-",
   tagNames: [
     ...(defaultSchema.tagNames as string[]),
     // Safe inline HTML tags from security policy
@@ -82,10 +82,7 @@ export const sanitizeSchema: Schema = {
     span: [...(defaultAttributes.span ?? []), "className", "style"],
     pre: [...(defaultAttributes.pre ?? []), "className", "dataLanguage", "tabindex", "style"],
     code: [...(defaultAttributes.code ?? []), "className"],
-    "*": [
-      ...(defaultAttributes["*"] ?? []).filter((attr) => attr !== "name" && attr !== "id"),
-      "className",
-    ],
+    "*": [...(defaultAttributes["*"] ?? []), "className"],
     math: ["xmlns", "display"],
     annotation: ["encoding"],
   },
