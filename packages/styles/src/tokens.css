@@ -3,4 +3,4 @@
 /* The generated file is the source of truth; this shim exists so that */
 /* consumers importing "@axis-love/styles/tokens.css" get the full token set. */
 
-@import "./generated/tokens.css";
+@import "../generated/tokens.css";
