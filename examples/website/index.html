@@ -7,11 +7,31 @@
   <title>kmd-web Demo</title>
   <link rel="stylesheet" href="/src/styles-import.css" />
   <style>
-    /* Page-level horizontal gutter for the centered reader column, mirroring
-       the kmd desktop app's .mdr-doc scroll-container padding (16px). The
-       library scopes all reader styles to .kmd-reader and intentionally does
-       not style the host page, so the demo provides this itself. */
-    body { padding: 0 var(--kmd-space-md); }
+    /* Page shell — mirrors the kmd desktop app's global.css reset so the
+       demo page has the same baseline as the app. The library scopes all
+       reader styles to .kmd-reader and intentionally does not reset the
+       host page, so without this the browser's default element margins
+       (e.g. p { margin: 1em 0 }) stack on top of the library's margins,
+       producing larger-than-app vertical gaps around alerts, blockquotes,
+       and paragraph text. */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      padding: 0 var(--kmd-space-md);
+      font-family: var(--kmd-font-body);
+      color: var(--kmd-color-on-surface);
+      background-color: var(--kmd-color-neutral);
+    }
   </style>
   <script>
     // Match the kmd desktop app's theme boot: set data-theme on <html> so the
