@@ -174,6 +174,26 @@
   padding-bottom: calc(var(--kmd-space-xxl) + var(--kmd-space-md));
 }
 
+/*
+ * Reader content layout — applied to the inner content wrapper that
+ * MarkdownReader renders (<div class="kmd-reader-content">). This makes a
+ * library-only consumer self-sufficient: content is centered and width-capped
+ * without the host having to mirror the kmd desktop app's shell layout.
+ *
+ * Consumers that mount BrowserReader directly on a custom container (e.g. the
+ * kmd desktop app uses .mdr-body.kmd-reader inside its own .mdr-content) do not
+ * render .kmd-reader-content, so this rule is a no-op for them — they keep
+ * their existing shell layout and are unaffected.
+ */
+.kmd-reader .kmd-reader-content {
+  max-width: var(--kmd-width-content-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--kmd-space-md);
+  padding-right: var(--kmd-space-md);
+  padding-top: var(--kmd-space-xl);
+}
+
 /* ---- Focus visibility ---- */
 
 .kmd-reader :focus-visible {
