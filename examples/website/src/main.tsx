@@ -1,7 +1,6 @@
 import { MarkdownReader } from "@axis-love/kmd-web/react";
-import type { OutlineEntry } from "@axis-love/contracts";
+import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { useState, type ReactNode } from "react";
 
 // A representative kmd document exercising the full feature set:
 // headings, code+Shiki, KaTeX math, alerts, tables, outline nav, assets.
@@ -92,4 +91,4 @@ function App() {
 }
 
 const root = createRoot(document.getElementById("root")!);
-root.render(<App /> as ReactNode);
+root.render((<App />) as ReactNode);
