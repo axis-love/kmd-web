@@ -60,6 +60,12 @@ function checkPackage(pkgDir, pkg) {
         continue;
       }
 
+      // Bare specifiers (e.g. "@axis-love/styles/styles.css") — cross-package
+      // redirect, not a local file. Skip local file existence check.
+      if (!path.startsWith("./") && !path.startsWith("../")) {
+        continue;
+      }
+
       const fullPath = join(pkgDir, path);
       if (!existsSync(fullPath)) {
         const label = condition ? `${exportKey} (${condition})` : exportKey;
