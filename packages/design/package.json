@@ -24,16 +24,16 @@
   ],
   "dependencies": {
     "@axis-love/contracts": "0.1.0-rc.0",
-    "@axis-love/core": "0.1.0-rc.0"
-  },
-  "devDependencies": {
+    "@axis-love/core": "0.1.0-rc.0",
     "js-yaml": "^4.1.1",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm-table": "^2.0.0",
     "micromark-extension-gfm-table": "^2.1.1",
-    "unist-util-visit": "^5.1.0",
-    "@types/mdast": "^4.0.4",
-    "@types/js-yaml": "^4.0.9"
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/mdast": "^4.0.4"
   },
   "publishConfig": {
     "access": "public"
