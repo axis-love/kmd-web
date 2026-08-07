@@ -1,0 +1,2 @@
+/* Re-export kmd-web styles so Vite bundles them */
+@import "@axis-love/styles/styles.css";
