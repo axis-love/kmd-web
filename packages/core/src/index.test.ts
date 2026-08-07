@@ -202,18 +202,14 @@ describe("@axis-love/core render", () => {
   it("renders alerts with a clean title and stripped body", async () => {
     const result = await render("> [!NOTE]\n> This is a note.");
     expect(result.html).toContain("markdown-alert markdown-alert-note");
-    expect(result.html).toContain(
-      '<p class="markdown-alert-title">Note</p>',
-    );
+    expect(result.html).toContain('<p class="markdown-alert-title">Note</p>');
     expect(result.html).toContain("This is a note.");
     expect(result.html).not.toContain("[!NOTE]");
   });
 
   it("uses an inline alert title when provided after the marker", async () => {
     const result = await render("> [!NOTE] Custom Title\n> Body text.");
-    expect(result.html).toContain(
-      '<p class="markdown-alert-title">Custom Title</p>',
-    );
+    expect(result.html).toContain('<p class="markdown-alert-title">Custom Title</p>');
     expect(result.html).not.toContain("[!NOTE]");
   });
 
