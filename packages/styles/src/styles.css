@@ -180,18 +180,23 @@
  * library-only consumer self-sufficient: content is centered and width-capped
  * without the host having to mirror the kmd desktop app's shell layout.
  *
+ * Geometry matches the kmd desktop app's DocumentShell exactly: the app puts a
+ * 16px horizontal gutter on the scroll container (.mdr-doc) OUTSIDE the
+ * --kmd-width-content-max cap on .mdr-content, so the content column is the
+ * full 800px. Reproduce that on a single centered element by capping the
+ * padded box at (content-max + gutter*2) so the content area inside the
+ * padding equals --kmd-width-content-max. Top/bottom padding mirrors .mdr-doc.
+ *
  * Consumers that mount BrowserReader directly on a custom container (e.g. the
  * kmd desktop app uses .mdr-body.kmd-reader inside its own .mdr-content) do not
  * render .kmd-reader-content, so this rule is a no-op for them — they keep
  * their existing shell layout and are unaffected.
  */
 .kmd-reader .kmd-reader-content {
-  max-width: var(--kmd-width-content-max);
+  max-width: calc(var(--kmd-width-content-max) + var(--kmd-space-md) * 2);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--kmd-space-md);
-  padding-right: var(--kmd-space-md);
-  padding-top: var(--kmd-space-xl);
+  padding: var(--kmd-space-xl) var(--kmd-space-md) var(--kmd-space-md);
 }
 
 /* ---- Focus visibility ---- */
