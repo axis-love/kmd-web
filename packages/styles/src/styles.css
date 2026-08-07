@@ -175,6 +175,27 @@
 }
 
 /*
+ * Scoped content reset — zero UA-default margins/paddings and force
+ * border-box sizing on every element inside the reader, so the explicit
+ * margins/paddings set below are the SINGLE source of truth. Without this,
+ * a consumer that doesn't apply a global * { margin: 0 } reset (any browser
+ * host, the web demo) gets UA-default element margins (e.g. p { margin: 1em 0 },
+ * ul { margin: 1em 0 }) stacking on top of the library's scoped margins,
+ * producing larger-than-expected vertical gaps around paragraphs, lists,
+ * alerts, and blockquotes.
+ *
+ * Scoped to .kmd-reader descendants only — does not touch host-page elements
+ * outside the reader, so the collision-isolation guarantee holds: host
+ * elements keep their own (UA or author) styles. The scope test allows this
+ * because the selector starts with .kmd-reader.
+ */
+.kmd-reader * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/*
  * Reader content layout — applied to the inner content wrapper that
  * MarkdownReader renders (<div class="kmd-reader-content">). This makes a
  * library-only consumer self-sufficient: content is centered and width-capped
