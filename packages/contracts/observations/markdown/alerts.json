@@ -3,8 +3,20 @@
   "category": "markdown",
   "description": "GitHub-style alert blocks: NOTE, TIP, IMPORTANT, WARNING, CAUTION, plus a regular blockquote for negative assertion",
   "html": {
-    "mustContain": ["[!NOTE]", "[!TIP]", "[!IMPORTANT]", "[!WARNING]", "[!CAUTION]"],
-    "mustNotContain": ["<script"]
+    "mustContain": [
+      "markdown-alert-note",
+      "markdown-alert-tip",
+      "markdown-alert-important",
+      "markdown-alert-warning",
+      "markdown-alert-caution",
+      "markdown-alert-title",
+      "Note",
+      "Tip",
+      "Important",
+      "Warning",
+      "Caution"
+    ],
+    "mustNotContain": ["<script", "[!NOTE]", "[!TIP]", "[!IMPORTANT]", "[!WARNING]", "[!CAUTION]"]
   },
   "outline": {
     "entries": [
