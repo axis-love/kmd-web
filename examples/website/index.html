@@ -3,8 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
   <title>kmd-web Demo</title>
   <link rel="stylesheet" href="/src/styles-import.css" />
+  <script>
+    // Match the kmd desktop app's theme boot: set data-theme on <html> so the
+    // Shiki dual-theme (github-dark/github-light) CSS in @axis-love/styles
+    // resolves to readable colors. Default to the OS preference, persisted
+    // under the same "kmd-theme" key the kmd app uses.
+    (function () {
+      var saved = localStorage.getItem("kmd-theme");
+      var theme =
+        saved === "light" || saved === "dark"
+          ? saved
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.style.backgroundColor =
+        theme === "dark" ? "#222428" : "#ffffff";
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

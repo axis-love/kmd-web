@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 // A representative kmd document exercising the full feature set:
-// headings, code+Shiki, KaTeX math, alerts, tables, outline nav, assets.
+// headings, code+Shiki, KaTeX math, alerts, tables, Mermaid diagrams,
+// links, and security (script tag stripping).
 const demoDoc = `# kmd-web Demo Page
 
 This page renders a representative kmd document using the packed
@@ -50,6 +51,23 @@ fn main() {
 | browser | DOM enhancement | Stable |
 | react | React wrapper | Stable |
 | styles | Scoped CSS + tokens | Stable |
+
+## Mermaid Diagrams
+
+Mermaid code blocks render as SVG diagrams via the optional \`@axis-love/mermaid\` integration (security level \`strict\`, no external fetches, 10s timeout per diagram).
+
+\`\`\`mermaid
+flowchart LR
+    A[Markdown] --> B(core) --> C[safe HTML] --> D[DOM morph]
+\`\`\`
+
+\`\`\`mermaid
+sequenceDiagram
+    participant U as Reader
+    participant C as core
+    U->>C: render(source)
+    C-->>U: HTML + outline
+\`\`\`
 
 ## Alerts
 
