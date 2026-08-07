@@ -6,6 +6,13 @@
   <meta name="color-scheme" content="dark light" />
   <title>kmd-web Demo</title>
   <link rel="stylesheet" href="/src/styles-import.css" />
+  <style>
+    /* Page-level horizontal gutter for the centered reader column, mirroring
+       the kmd desktop app's .mdr-doc scroll-container padding (16px). The
+       library scopes all reader styles to .kmd-reader and intentionally does
+       not style the host page, so the demo provides this itself. */
+    body { padding: 0 var(--kmd-space-md); }
+  </style>
   <script>
     // Match the kmd desktop app's theme boot: set data-theme on <html> so the
     // Shiki dual-theme (github-dark/github-light) CSS in @axis-love/styles
