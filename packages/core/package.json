@@ -1,10 +1,10 @@
 {
   "name": "@axis-love/core",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.0",
   "description": "DOM-free Markdown-to-safe-HTML rendering core. No DOM, React, Tauri, or Node I/O.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "exports": {
     ".": {
@@ -19,7 +19,7 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "*"
+    "@axis-love/contracts": "0.1.0-rc.0"
   },
   "devDependencies": {
     "unified": "^11.0.5",
@@ -37,5 +37,8 @@
     "@types/hast": "^3.0.4",
     "@types/mdast": "^4.0.4",
     "@types/js-yaml": "^4.0.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

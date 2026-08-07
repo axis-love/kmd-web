@@ -1,10 +1,10 @@
 {
   "name": "@axis-love/element",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.0",
   "description": "Optional <kmd-reader> Web Component wrapper.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "exports": {
     ".": {
@@ -19,8 +19,11 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "*",
-    "@axis-love/core": "*",
-    "@axis-love/browser": "*"
+    "@axis-love/contracts": "0.1.0-rc.0",
+    "@axis-love/core": "0.1.0-rc.0",
+    "@axis-love/browser": "0.1.0-rc.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

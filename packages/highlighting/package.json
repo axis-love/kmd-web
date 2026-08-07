@@ -1,10 +1,10 @@
 {
   "name": "@axis-love/highlighting",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.0",
   "description": "Optional Shiki syntax highlighting integration.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "exports": {
     ".": {
@@ -19,8 +19,8 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "*",
-    "@axis-love/core": "*"
+    "@axis-love/contracts": "0.1.0-rc.0",
+    "@axis-love/core": "0.1.0-rc.0"
   },
   "devDependencies": {
     "shiki": "4.0.2",
@@ -29,5 +29,8 @@
     "@types/hast": "^3.0.4",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,10 +1,10 @@
 {
   "name": "@axis-love/styles",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.0",
   "description": "Scoped reader CSS and generated design tokens for kmd-web.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "sideEffects": [
     "**/*.css"
   ],
@@ -27,5 +27,8 @@
     "src/tokens.css",
     "generated/tokens.css",
     "generated/unity-tokens.json"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

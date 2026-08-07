@@ -1,10 +1,10 @@
 {
   "name": "@axis-love/mermaid",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.0",
   "description": "Optional Mermaid diagram rendering integration.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "exports": {
     ".": {
@@ -19,10 +19,13 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "*",
-    "@axis-love/core": "*"
+    "@axis-love/contracts": "0.1.0-rc.0",
+    "@axis-love/core": "0.1.0-rc.0"
   },
   "devDependencies": {
     "mermaid": "11.14.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
