@@ -7,20 +7,13 @@
   <title>kmd-web Demo</title>
   <link rel="stylesheet" href="/src/styles-import.css" />
   <style>
-    /* Page shell — mirrors the kmd desktop app's global.css reset so the
-       demo page has the same baseline as the app. The library scopes all
-       reader styles to .kmd-reader and intentionally does not reset the
-       host page, so without this the browser's default element margins
-       (e.g. p { margin: 1em 0 }) stack on top of the library's margins,
-       producing larger-than-app vertical gaps around alerts, blockquotes,
-       and paragraph text. */
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* Page shell only — styles the area OUTSIDE .kmd-reader, which the library
+       intentionally does not touch (it scopes all reader styles to .kmd-reader
+       and now resets element margins/paddings inside the reader itself).
+       The demo provides: font smoothing on the document, a themed page
+       background + body font/color, and the 16px horizontal gutter for the
+       centered reader column (mirroring the kmd desktop app's .mdr-doc
+       scroll-container padding, which lives outside the 800px content cap). */
     html {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
