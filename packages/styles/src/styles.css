@@ -180,12 +180,17 @@
  * library-only consumer self-sufficient: content is centered and width-capped
  * without the host having to mirror the kmd desktop app's shell layout.
  *
- * Geometry matches the kmd desktop app's DocumentShell exactly: the app puts a
- * 16px horizontal gutter on the scroll container (.mdr-doc) OUTSIDE the
- * --kmd-width-content-max cap on .mdr-content, so the content column is the
- * full 800px. Reproduce that on a single centered element by capping the
- * padded box at (content-max + gutter*2) so the content area inside the
- * padding equals --kmd-width-content-max. Top/bottom padding mirrors .mdr-doc.
+ * Geometry matches the kmd desktop app's DocumentShell exactly:
+ *   .mdr-doc   (padding: 36px 16px 16px — the scroll container, gutter OUTSIDE)
+ *   .mdr-content (max-width: 800px, no padding)
+ *   .mdr-body   (no padding) → block children fill the full 800px column
+ *
+ * Reproduce that here: cap the element at --kmd-width-content-max with NO
+ * horizontal padding, so block children with their own background (alerts,
+ * blockquotes) span the full 800px column exactly as in the app — instead of
+ * being inset by horizontal padding, which reads as a "margin around" them.
+ * The 16px horizontal gutter lives OUTSIDE the cap (provided by the host
+ * page/body), matching .mdr-doc's gutter. Top/bottom padding mirrors .mdr-doc.
  *
  * Consumers that mount BrowserReader directly on a custom container (e.g. the
  * kmd desktop app uses .mdr-body.kmd-reader inside its own .mdr-content) do not
@@ -193,10 +198,32 @@
  * their existing shell layout and are unaffected.
  */
 .kmd-reader .kmd-reader-content {
-  max-width: calc(var(--kmd-width-content-max) + var(--kmd-space-md) * 2);
+  max-width: var(--kmd-width-content-max);
   margin-left: auto;
   margin-right: auto;
-  padding: var(--kmd-space-xl) var(--kmd-space-md) var(--kmd-space-md);
+  padding: var(--kmd-space-xl) 0 var(--kmd-space-md);
+}
+
+/*
+ * Margin-collapse parity with the kmd desktop app. In the app, the reader
+ * content sits in .mdr-body.kmd-reader (no padding/border) inside .mdr-content
+ * (no padding) inside the .mdr-doc scroll container (padding). The first/last
+ * child's top/bottom margin therefore collapses through the padding-less
+ * wrappers up to .mdr-doc's padding — so the container padding provides the
+ * end gap and the child margin does NOT stack on top of it.
+ *
+ * Here the content wrapper (.kmd-reader-content) carries the vertical padding
+ * itself, and padding prevents margin collapse — so the first child's top
+ * margin would stack on top of the container's top padding (and the last
+ * child's bottom margin on the bottom padding), producing a larger-than-app
+ * gap. Zero the first/last child's end margins so the container padding alone
+ * defines the end gap, matching the app's collapsed-margin geometry.
+ */
+.kmd-reader .kmd-reader-content > :first-child {
+  margin-top: 0;
+}
+.kmd-reader .kmd-reader-content > :last-child {
+  margin-bottom: 0;
 }
 
 /* ---- Focus visibility ---- */
