@@ -154,6 +154,7 @@ try {
 // Checks that dist files and package.json exist in node_modules.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 function checkPackage(name, expectedExports) {
   const pkgPath = join("node_modules", name, "package.json");
@@ -181,6 +182,28 @@ checkPackage("@axis-love/design", "extractDesignDoc");
 checkPackage("@axis-love/element", "KmdReader");
 checkPackage("@axis-love/styles", "CSS + tokens");
 checkPackage("@axis-love/react", "MarkdownReader");
+
+// Subpath exports must resolve through Node's real resolver. A bare-specifier
+// target throws ERR_INVALID_PACKAGE_TARGET here even though the file exists
+// somewhere in node_modules (KWEB-040).
+function checkSubpath(specifier) {
+  let resolved;
+  try {
+    resolved = import.meta.resolve(specifier);
+  } catch (e) {
+    throw new Error(specifier + ": resolution failed (" + (e.code ?? e.message) + ")");
+  }
+  const path = fileURLToPath(resolved);
+  if (!existsSync(path)) throw new Error(specifier + ": resolved to missing file " + path);
+  if (readFileSync(path, "utf-8").length === 0) throw new Error(specifier + ": resolved file is empty");
+  console.log(specifier + ": resolves OK");
+}
+
+checkSubpath("@axis-love/kmd-web/styles.css");
+checkSubpath("@axis-love/kmd-web/react");
+checkSubpath("@axis-love/kmd-web/element");
+checkSubpath("@axis-love/styles/styles.css");
+checkSubpath("@axis-love/styles/tokens.css");
 
 console.log("All packages resolved successfully");
 `,

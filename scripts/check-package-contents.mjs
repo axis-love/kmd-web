@@ -47,27 +47,33 @@ function checkPackage(pkgDir, pkg) {
   for (const [exportKey, exportValue] of Object.entries(exports)) {
     const paths = resolveExportPaths(exportValue);
     for (const { condition, path } of paths) {
+      const label = condition ? `${exportKey} (${condition})` : exportKey;
+
+      // Node's exports resolver requires every target to be a "./"-relative
+      // path. A bare specifier (e.g. "@axis-love/styles/styles.css") throws
+      // ERR_INVALID_PACKAGE_TARGET at resolution time, so reject it here
+      // rather than letting it reach a published tarball (KWEB-040).
+      if (!path.startsWith("./")) {
+        console.error(
+          `  FAIL  ${name}: export "${label}" → "${path}" is not a "./"-relative target ` +
+            `(bare specifiers throw ERR_INVALID_PACKAGE_TARGET)`,
+        );
+        failures++;
+        continue;
+      }
+
       // Wildcard exports (e.g. "./fixtures/*": "./fixtures/*") — verify directory exists
       if (path.includes("*")) {
         const dir = path.replace(/\/\*$/, "");
         if (!existsSync(join(pkgDir, dir))) {
-          const label = condition ? `${exportKey} (${condition})` : exportKey;
           console.error(`  FAIL  ${name}: export "${label}" → "${path}" directory does not exist`);
           failures++;
         }
         continue;
       }
 
-      // Bare specifiers (e.g. "@axis-love/styles/styles.css") — cross-package
-      // redirect, not a local file. Skip local file existence check; the
-      // dry-run-release consumer test verifies these resolve at install time.
-      if (!path.startsWith("./") && !path.startsWith("../")) {
-        continue;
-      }
-
       const fullPath = join(pkgDir, path);
       if (!existsSync(fullPath)) {
-        const label = condition ? `${exportKey} (${condition})` : exportKey;
         console.error(`  FAIL  ${name}: export "${label}" → "${path}" does not exist`);
         failures++;
       }

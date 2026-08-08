@@ -1,0 +1,16 @@
+/* @axis-love/kmd-web — scoped reader stylesheet
+ *
+ * This file exists so that the "./styles.css" subpath export resolves to a
+ * real ./-relative file inside this package. Node's `exports` resolver rejects
+ * bare-specifier targets with ERR_INVALID_PACKAGE_TARGET, so this package
+ * cannot point the subpath at "@axis-love/styles/styles.css" directly.
+ *
+ * The stylesheet itself lives in @axis-love/styles, a runtime dependency of
+ * this package; the @import below re-exports it unchanged. Same pattern as
+ * examples/website/src/styles-import.css.
+ *
+ * Consumers import this as:
+ *   import "@axis-love/kmd-web/styles.css";
+ */
+
+@import "@axis-love/styles/styles.css";
