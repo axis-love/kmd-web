@@ -102,7 +102,8 @@ the changelog. A GitHub release is created from the tag with a summary.
 
 5. **The release workflow runs automatically:**
    - `verify` job: lint + typecheck + test + build + package-contents + API-surface
-   - `dry-run` job: npm pack + tarball verification + fresh consumer projects
+   - `dry-run` job: npm pack + tarball verification + fresh consumer projects +
+     publish dry-run
    - `publish` job: publishes to npm with `--provenance` (OIDC trusted publishing)
 
 6. **Create a GitHub release** from the tag with a summary of changes.
@@ -131,6 +132,39 @@ via GitHub OIDC. This requires:
 No npm tokens are stored in the repository. The `NPM_TOKEN` is a GitHub
 environment secret that is only available to jobs targeting the `publish`
 environment. The token is never logged.
+
+## Publishing
+
+Both the real publish and its dry-run go through `scripts/publish-packages.mjs`,
+so CI exercises the same loop that ships the release:
+
+```bash
+node scripts/publish-packages.mjs --dry-run   # CI and the release dry-run job
+node scripts/publish-packages.mjs             # the release publish job
+```
+
+The script walks `packages/*`, skips any package marked `private: true` with a
+log line, and runs `npm publish` **with the working directory set to that
+package**. `npm publish` resolves the package from its cwd: running it from the
+repo root packs the private root manifest instead, once per iteration, and ships
+nothing (KWEB-041).
+
+Dist-tags follow the version. A prerelease publishes under its prerelease
+identifier (`0.1.0-rc.0` → tag `rc`) so a release candidate never becomes
+`latest`; stable versions publish under `latest`.
+
+Dry-run mode adds `--dry-run --json` (and drops `--provenance`, which needs the
+release job's OIDC token) and then verifies, per package, that npm reported the
+package it was pointed at: matching name, matching version, the expected tarball
+filename, a `package.json` in the tarball, and every `files` entry present. Any
+mismatch — including the root-cwd regression — fails the job. The run ends with a
+summary listing all 11 package names, versions, dist-tags, and file counts.
+
+Locally:
+```bash
+npm run build
+npm run check:publish
+```
 
 ## Dry-run verification
 

@@ -25,6 +25,7 @@
     "check:api": "node scripts/check-api-surface.mjs",
     "check:size": "node scripts/size-report.mjs",
     "check:release": "node scripts/dry-run-release.mjs",
+    "check:publish": "node scripts/publish-packages.mjs --dry-run",
     "test:visual": "playwright test --config=playwright.config.ts",
     "test:visual:update": "playwright test --config=playwright.config.ts --update-snapshots",
     "build:visual": "npx tsx tests/visual/prerender.ts"

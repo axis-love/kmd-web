@@ -78,6 +78,9 @@ jobs:
       - name: Dry-run release verification
         run: node scripts/dry-run-release.mjs
 
+      - name: Publish dry-run
+        run: node scripts/publish-packages.mjs --dry-run
+
       - name: Upload tarballs
         uses: actions/upload-artifact@v4
         with:
@@ -119,16 +122,6 @@ jobs:
         run: node scripts/check-api-surface.mjs
 
       - name: Publish packages
-        run: |
-          for pkg in packages/*/; do
-            name=$(node -p "require('./${pkg}package.json').name")
-            private=$(node -p "require('./${pkg}package.json').private")
-            if [ "$private" = "true" ]; then
-              echo "Skipping $name (private)"
-              continue
-            fi
-            echo "Publishing $name..."
-            npm publish --access public --provenance
-          done
+        run: node scripts/publish-packages.mjs
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -45,6 +45,9 @@ jobs:
       - name: API surface check
         run: node scripts/check-api-surface.mjs
 
+      - name: Publish dry-run
+        run: node scripts/publish-packages.mjs --dry-run
+
       - name: Conformance fixture guard
         run: node scripts/check-conformance-fixtures.mjs
 

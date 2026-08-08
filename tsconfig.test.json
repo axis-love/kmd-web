@@ -3,6 +3,8 @@
   "compilerOptions": {
     "lib": ["ES2022"],
     "types": ["node", "vitest/globals"],
+    // Tests exercise the JSDoc-typed release scripts (scripts/*.mjs) directly.
+    "allowJs": true,
     "noEmit": true,
     "rootDir": ".",
     "outDir": "dist"
