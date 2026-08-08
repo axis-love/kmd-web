@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { classifyLink } from "./links.js";
 import { sanitizeStyleValue } from "./rehype-sanitize-css.js";
 import { render } from "./render.js";
-import { isExternalUrl, isSafeUrl, sanitizeSchema } from "./sanitize.js";
+import { isExternalUrl, isProtocolRelative, isSafeUrl, sanitizeSchema } from "./sanitize.js";
 
 const DEFAULT_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
 
@@ -461,6 +461,10 @@ describe("sanitizeStyleValue — CSS injection defense", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// KWEB-036 — end-to-end: style injection neutralized, KaTeX styles survive
+// ---------------------------------------------------------------------------
+
 describe("render — CSS injection via raw HTML style attributes", () => {
   it("neutralizes position/background injection on span", async () => {
     const source =
@@ -486,5 +490,99 @@ describe("render — CSS injection via raw HTML style attributes", () => {
     const result = await render(source);
     expect(result.html).toContain("color:#cc0000");
     expect(result.html).toContain("vertical-align:super");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KWEB-037 — protocol-relative URL bypass (HIGH-2)
+// ---------------------------------------------------------------------------
+
+describe("isProtocolRelative", () => {
+  it("detects protocol-relative URLs", () => {
+    expect(isProtocolRelative("//evil.com/x.png")).toBe(true);
+    expect(isProtocolRelative("//evil.com")).toBe(true);
+    expect(isProtocolRelative("  //evil.com")).toBe(true);
+  });
+
+  it("does not match genuine relative paths", () => {
+    expect(isProtocolRelative("./x.png")).toBe(false);
+    expect(isProtocolRelative("../x.png")).toBe(false);
+    expect(isProtocolRelative("/abs/path.png")).toBe(false);
+    expect(isProtocolRelative("x.png")).toBe(false);
+    expect(isProtocolRelative("#frag")).toBe(false);
+  });
+});
+
+describe("protocol-relative — isSafeUrl", () => {
+  it("treats protocol-relative as remote (safe only if network scheme allowed)", () => {
+    expect(isSafeUrl("//evil.com/x.png", DEFAULT_SCHEMES)).toBe(true);
+    // Without http/https in the allow-list, it is blocked.
+    expect(isSafeUrl("//evil.com/x.png", new Set(["mailto"]))).toBe(false);
+  });
+
+  it("still allows genuine relative paths", () => {
+    expect(isSafeUrl("./doc.md", DEFAULT_SCHEMES)).toBe(true);
+    expect(isSafeUrl("doc.md", DEFAULT_SCHEMES)).toBe(true);
+    expect(isSafeUrl("path/to/file.md", DEFAULT_SCHEMES)).toBe(true);
+    expect(isSafeUrl("/abs/doc.md", DEFAULT_SCHEMES)).toBe(true);
+    expect(isSafeUrl("#frag", DEFAULT_SCHEMES)).toBe(true);
+  });
+
+  it("still blocks parent-relative traversal (existing policy)", () => {
+    expect(isSafeUrl("../doc.md", DEFAULT_SCHEMES)).toBe(false);
+  });
+});
+
+describe("protocol-relative — isExternalUrl / classifyLink", () => {
+  it("classifies protocol-relative as external", () => {
+    expect(isExternalUrl("//evil.com/page", DEFAULT_SCHEMES)).toBe(true);
+    const classified = classifyLink("//evil.com/page", DEFAULT_SCHEMES);
+    expect(classified.kind).toBe("external");
+  });
+
+  it("does not classify genuine relative as external", () => {
+    expect(isExternalUrl("./doc.md", DEFAULT_SCHEMES)).toBe(false);
+    expect(isExternalUrl("/abs/doc.md", DEFAULT_SCHEMES)).toBe(false);
+    expect(classifyLink("./doc.md", DEFAULT_SCHEMES).kind).toBe("document");
+  });
+});
+
+describe("protocol-relative — remote image blocking (filterAssets via render)", () => {
+  it("blocks protocol-relative image when allowRemoteImages is false", async () => {
+    const result = await render("![img](//evil.example.com/x.png)", {
+      security: { allowRemoteImages: false },
+    });
+    expect(result.assets.some((a) => a.url === "//evil.example.com/x.png")).toBe(false);
+  });
+
+  it("allows protocol-relative image when allowRemoteImages is true", async () => {
+    const result = await render("![img](//evil.example.com/x.png)", {
+      security: { allowRemoteImages: true },
+    });
+    expect(result.assets.some((a) => a.url === "//evil.example.com/x.png")).toBe(true);
+  });
+
+  it("still allows genuine relative image when remote disabled", async () => {
+    const result = await render("![img](./local.png)", {
+      security: { allowRemoteImages: false },
+    });
+    expect(result.assets.some((a) => a.url === "./local.png")).toBe(true);
+  });
+});
+
+describe("protocol-relative — link hardening in rendered HTML", () => {
+  it("adds rel=noopener and target=_blank to protocol-relative links", async () => {
+    const result = await render("[link](//evil.example.com/page)");
+    const anchor = result.html.match(/<a [^>]*>/)?.[0] ?? "";
+    expect(anchor).toContain("noopener");
+    expect(anchor).toContain("noreferrer");
+    expect(anchor).toContain('target="_blank"');
+  });
+
+  it("leaves genuine relative links un-hardened", async () => {
+    const result = await render("[link](./other.md)");
+    const anchor = result.html.match(/<a [^>]*>/)?.[0] ?? "";
+    expect(anchor).not.toContain("noopener");
+    expect(anchor).not.toContain('target="_blank"');
   });
 });

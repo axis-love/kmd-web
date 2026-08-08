@@ -168,6 +168,15 @@
       "security": true
     },
     {
+      "fixture": "security/protocol-relative.md",
+      "category": "security",
+      "description": "Protocol-relative URLs (//host/path) treated as remote/external: links hardened rel=noopener/target=_blank, images blocked from assets when remote disabled, genuine relative URLs unaffected",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "remote-image-policy"],
+      "security": true
+    },
+    {
       "fixture": "features/mermaid.md",
       "category": "features",
       "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
@@ -323,6 +332,12 @@
       "name": "security-style-injection",
       "description": "CSS injection via style attributes: position overlays, background:url exfiltration, expression/behavior/-moz-binding, comment-hidden declarations; safe layout properties preserved",
       "fixtures": ["security/style-injection.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-protocol-relative",
+      "description": "Protocol-relative URLs (//host/path) treated as remote/external: links hardened, images blocked when remote disabled, genuine relative URLs unaffected",
+      "fixtures": ["security/protocol-relative.md"],
       "applicability": "required"
     },
     {

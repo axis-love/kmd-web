@@ -41,7 +41,12 @@ import { rehypeStripRaw } from "./rehype-strip-raw.js";
 import { rehypeResponsiveTables } from "./rehype-tables.js";
 import { remarkAlerts } from "./remark-alerts.js";
 import { remarkWikilinks } from "./remark-wikilinks.js";
-import { createRehypeUrlPolicy, isSafeUrl, sanitizeSchema } from "./sanitize.js";
+import {
+  createRehypeUrlPolicy,
+  isProtocolRelative,
+  isSafeUrl,
+  sanitizeSchema,
+} from "./sanitize.js";
 
 export const CORE_VERSION = "0.1.0";
 
@@ -197,6 +202,13 @@ function filterAssets(
 
     if (allowRemoteImages) {
       return true;
+    }
+
+    // Protocol-relative URLs (//host/path) carry no scheme but resolve to a
+    // remote http/https fetch, so they must be treated as remote — not as
+    // local relative paths — and blocked when remote images are disabled.
+    if (isProtocolRelative(url)) {
+      return false;
     }
 
     // Block remote images when allowRemoteImages is false.

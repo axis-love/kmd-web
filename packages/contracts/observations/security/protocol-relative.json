@@ -1,0 +1,27 @@
+{
+  "fixture": "security/protocol-relative.md",
+  "category": "security",
+  "description": "Protocol-relative URLs (//host/path) resolve to remote http/https resources and must be treated as remote/external, not as local relative paths: links are classified external and hardened with rel=noopener/target=_blank, images are blocked from the asset list when remote images are disabled, and genuine relative URLs (./, ../, bare, #fragment) remain unaffected.",
+  "html": {
+    "mustContain": ["proto link", "noopener", "noreferrer", "target=\"_blank\"", "relative doc", "local"],
+    "mustNotContain": ["javascript:", "<script"],
+    "forbiddenElements": ["script", "iframe", "object", "embed", "form", "meta", "base", "link"],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
+  },
+  "assets": {
+    "mustNotIncludeUrls": ["//evil.example.com/x.png"],
+    "mustIncludeUrls": ["./local.png"]
+  },
+  "links": {
+    "classifications": [
+      { "url": "//evil.example.com/page", "kind": "external" },
+      { "url": "./other.md", "kind": "document" },
+      { "url": "doc.md", "kind": "document" },
+      { "url": "#section", "kind": "internal" }
+    ]
+  },
+  "diagnostics": {
+    "mustNotIncludeCodes": ["unsafe-url"]
+  }
+}

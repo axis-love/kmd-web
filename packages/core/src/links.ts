@@ -7,7 +7,7 @@
 // plugin API.
 
 import type { LinkTarget, LinkTargetKind } from "@axis-love/contracts";
-import { isExternalUrl, isSafeUrl } from "./sanitize.js";
+import { isExternalUrl, isProtocolRelative, isSafeUrl } from "./sanitize.js";
 
 /**
  * Classify a link URL into a safe target kind.
@@ -29,6 +29,16 @@ export function classifyLink(url: string, allowedSchemes: ReadonlySet<string>): 
   // Fragment-only refs are internal
   if (trimmed.startsWith("#")) {
     return { kind: "internal", rawUrl: url, resolvedUrl: trimmed };
+  }
+
+  // Protocol-relative (//host/path) resolves to a remote http/https resource,
+  // so it is external — not a local document. Classify before the no-colon
+  // document branch. Blocked if no network scheme is permitted.
+  if (isProtocolRelative(trimmed)) {
+    if (isExternalUrl(trimmed, allowedSchemes)) {
+      return { kind: "external", rawUrl: url, resolvedUrl: trimmed };
+    }
+    return { kind: "blocked", rawUrl: url, reason: "unsafe-url" };
   }
 
   // Relative paths (./, ../, or no scheme) — document or internal

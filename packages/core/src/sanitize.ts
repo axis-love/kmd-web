@@ -144,6 +144,21 @@ function isPathTraversal(url: string): boolean {
   return false;
 }
 
+/**
+ * Whether a URL is protocol-relative (`//host/path`).
+ *
+ * Protocol-relative URLs carry no scheme, so scheme checks treat them as
+ * relative — but browsers resolve them against the page protocol (http/https)
+ * and fetch a REMOTE resource. They must therefore be handled as remote, not
+ * local. Control characters are stripped first, mirroring browser URL parsing
+ * (e.g. `/\x2f` tricks and leading whitespace/control chars must not bypass).
+ */
+export function isProtocolRelative(url: string): boolean {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — control chars are stripped to mirror browser URL parsing before detection
+  const stripped = url.trim().replace(/[\x00-\x1F\x7F]/g, "");
+  return stripped.startsWith("//");
+}
+
 export function isSafeUrl(url: string, allowedSchemes?: ReadonlySet<string>): boolean {
   const schemes = allowedSchemes ?? DEFAULT_ALLOWED_SCHEMES;
   const trimmed = url.trim();
@@ -204,6 +219,15 @@ export function isSafeUrl(url: string, allowedSchemes?: ReadonlySet<string>): bo
     }
   }
 
+  // Protocol-relative (//host/path) carries no scheme but resolves to a
+  // remote http/https resource — it is NOT a local relative path. Treat its
+  // scheme as implicitly remote: safe only if a network scheme is allowed.
+  // Callers that gate remote access (e.g. remote-image blocking) must
+  // additionally consult their own remote policy.
+  if (stripped.startsWith("//")) {
+    return schemes.has("http") || schemes.has("https");
+  }
+
   // Relative path — safe
   if (/^[./]/.test(stripped) || !/:/.test(stripped)) return true;
 
@@ -218,6 +242,14 @@ export function isSafeUrl(url: string, allowedSchemes?: ReadonlySet<string>): bo
 export function isExternalUrl(url: string, allowedSchemes?: ReadonlySet<string>): boolean {
   const schemes = allowedSchemes ?? DEFAULT_ALLOWED_SCHEMES;
   const trimmed = url.trim();
+
+  // Protocol-relative (//host/path) resolves to a remote http/https resource,
+  // so it is external even though it starts with "/". Check before the local
+  // path checks. It is external when a network scheme is permitted.
+  if (isProtocolRelative(trimmed)) {
+    return schemes.has("http") || schemes.has("https");
+  }
+
   if (
     trimmed.startsWith("#") ||
     trimmed.startsWith("/") ||
