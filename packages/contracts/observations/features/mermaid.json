@@ -3,17 +3,50 @@
   "category": "features",
   "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
   "html": {
-    "mustContain": ["mermaid"],
-    "mustNotContain": ["<script", "onerror", "javascript:", "alert(", "<img", "onload"]
+    "mustContain": [
+      "mermaid"
+    ],
+    "forbiddenElements": [
+      "script",
+      "img"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript"
+    ]
   },
   "outline": {
     "entries": [
-      { "level": 1, "text": "Mermaid Diagrams", "slug": "mermaid-diagrams" },
-      { "level": 2, "text": "Flowchart", "slug": "flowchart" },
-      { "level": 2, "text": "Sequence Diagram", "slug": "sequence-diagram" },
-      { "level": 2, "text": "Git Graph", "slug": "git-graph" },
-      { "level": 2, "text": "Mermaid with code after", "slug": "mermaid-with-code-after" },
-      { "level": 2, "text": "Multiple mermaid blocks", "slug": "multiple-mermaid-blocks" },
+      {
+        "level": 1,
+        "text": "Mermaid Diagrams",
+        "slug": "mermaid-diagrams"
+      },
+      {
+        "level": 2,
+        "text": "Flowchart",
+        "slug": "flowchart"
+      },
+      {
+        "level": 2,
+        "text": "Sequence Diagram",
+        "slug": "sequence-diagram"
+      },
+      {
+        "level": 2,
+        "text": "Git Graph",
+        "slug": "git-graph"
+      },
+      {
+        "level": 2,
+        "text": "Mermaid with code after",
+        "slug": "mermaid-with-code-after"
+      },
+      {
+        "level": 2,
+        "text": "Multiple mermaid blocks",
+        "slug": "multiple-mermaid-blocks"
+      },
       {
         "level": 2,
         "text": "Malicious mermaid (external reference)",

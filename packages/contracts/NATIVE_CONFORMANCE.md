@@ -43,7 +43,7 @@ const result = await runConformance(nativeRenderer, sources, observations);
 console.log(formatRunSummary(result));
 ```
 
-Or implement the same assertion logic natively using the observation JSON files directly — the assertion semantics are simple string inclusion/exclusion checks, outline comparisons, and feature flag comparisons.
+Or implement the same assertion logic natively using the observation JSON files directly — the assertion semantics are string inclusion/exclusion checks, structural HTML checks (elements, attributes, URL schemes), outline comparisons, and feature flag comparisons.
 
 ## Assertion semantics
 
@@ -54,6 +54,10 @@ Each observation file may assert the following:
 | `html.mustContain` | Substrings that must appear in rendered HTML | String search on the native HTML output |
 | `html.mustNotContain` | Substrings that must NOT appear | Negated string search |
 | `html.shouldContain` | Recommended substrings (warning, not error) | String search, warn on absence |
+| `html.forbiddenElements` | Element tag names that must NOT appear | Parse/enumerate tags in the output; fail if any listed tag name (case-insensitive) is present |
+| `html.forbiddenAttributes` | Attribute names that must NOT appear on any element | Enumerate attributes on every element; fail if any listed name (case-insensitive) is present |
+| `html.forbidEventHandlerAttributes` | No `on*` attribute may appear | Enumerate attributes; fail if any name starts with `on` (case-insensitive) |
+| `html.forbiddenUrlSchemes` | URL-bearing attributes must not use listed schemes | For `href`/`src`/`data`/`poster`/`action`/`formaction`/`xlink:href` and each `srcset` candidate: decode entities + control chars + up to two rounds of percent-encoding, read the scheme before the first colon (case-insensitive), fail if it matches a listed scheme |
 | `outline.entries` | Expected heading outline (level, text, slug) | Compare native outline to expected entries |
 | `diagnostics.mustIncludeCodes` | Diagnostic codes that must appear | Check native diagnostic codes |
 | `diagnostics.mustNotIncludeCodes` | Diagnostic codes that must not appear | Negated check |
@@ -66,6 +70,19 @@ Each observation file may assert the following:
 | `metadata.lang` | Expected language tag | Compare native metadata lang |
 | `detectedFeatures.*` | Expected feature detection flags | Compare each flag to expected boolean |
 | `links.classifications` | Expected link URL → kind mapping | Check native link classification |
+
+### Structural vs. substring assertions (security fixtures)
+
+Security fixtures use the **structural** `html.forbidden*` checks rather than
+`mustNotContain` wherever a dangerous string can legitimately appear in prose,
+code blocks, or diagram sources. Structural checks assert on the parsed output
+— which elements exist, which attribute names exist, and which schemes appear
+in URL attributes — so a document that merely *mentions* `javascript:` in text
+still passes, while an actual `href="javascript:..."` fails. Native consumers
+must implement these against their parsed output (a real element/attribute
+model), not by string-searching the serialized HTML. Do not add passes that
+cosmetically mutate output to satisfy substring checks; that hides real gaps
+(see `@axis-love/core` SECURITY.md, "No cosmetic output mutation").
 
 ## Applicability
 

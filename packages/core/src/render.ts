@@ -36,7 +36,6 @@ import { extractMetadata } from "./metadata.js";
 import { extractOutline } from "./outline.js";
 import { rehypeCopyButton } from "./rehype-copy-button.js";
 import { rehypeMermaidPlaceholder } from "./rehype-mermaid.js";
-import { rehypeSanitizeText } from "./rehype-sanitize-text.js";
 import { rehypeStripRaw } from "./rehype-strip-raw.js";
 import { rehypeResponsiveTables } from "./rehype-tables.js";
 import { remarkAlerts } from "./remark-alerts.js";
@@ -339,7 +338,6 @@ export async function render(
     .use(createRehypeUrlPolicy(allowedSchemes, collector))
     .use(rehypeSanitize, sanitizeSchema)
     .use(rehypeStripRaw)
-    .use(rehypeSanitizeText)
     .use(captureOutline)
     .use(captureAssets)
     .use(rehypeCopyButton)

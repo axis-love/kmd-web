@@ -34,7 +34,7 @@ export function extractLinks(tree: HastRoot, allowedSchemes: ReadonlySet<string>
     const href = node.properties?.href;
     if (typeof href !== "string" || href === "") return;
 
-    const classified = classifyLinkSafe(href, allowedSchemes);
+    const classified = classifyLink(href, allowedSchemes);
     if (!seen.has(classified.rawUrl)) {
       seen.add(classified.rawUrl);
       links.push(classified);
@@ -114,17 +114,4 @@ export function mergeLinks(
   }
 
   return merged;
-}
-
-/**
- * Classify a link URL, wrapping classifyLink to handle edge cases
- * where the href has already been through the URL policy and may
- * have been neutralized by rehypeSanitizeText (zero-width spaces).
- * We strip zero-width spaces before classification so the original
- * URL intent is preserved for diagnostic/classification purposes.
- */
-function classifyLinkSafe(href: string, allowedSchemes: ReadonlySet<string>): LinkTarget {
-  // Remove zero-width spaces that rehypeSanitizeText may have inserted
-  const cleanHref = href.replace(/\u200B/g, "");
-  return classifyLink(cleanHref, allowedSchemes);
 }

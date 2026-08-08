@@ -1,25 +1,34 @@
 {
   "fixture": "security/svg-attacks.md",
   "category": "security",
-  "description": "SVG attack vectors: inline SVG with script, onload, external references, xlink, data URI, foreignObject, animate, set, style",
+  "description": "SVG attack surface: script/onload/foreignObject/animate/set, external references, xlink, CSS @import. SVG is not in the sanitize allowlist — no SVG/script element may survive as an element; dropped children may leave inert prose text (e.g. an @import line) or a legitimate https autolink, which are safe because no forbidden element or dangerous URL attribute carries them. Structural assertions only.",
   "html": {
-    "mustNotContain": [
-      "<svg",
-      "<script",
-      "onload",
-      "onerror",
-      "xlink:href",
-      "javascript:",
-      "alert(",
-      "foreignObject",
-      "<animate",
-      "<set",
-      "@import",
-      "evil.example.com"
+    "mustContain": [
+      "<h1"
+    ],
+    "forbiddenElements": [
+      "svg",
+      "script",
+      "animate",
+      "set",
+      "foreignobject",
+      "style",
+      "use",
+      "image"
+    ],
+    "forbiddenAttributes": [
+      "xlink:href"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript",
+      "data"
     ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["raw-html-blocked"],
+    "mustIncludeCodes": [
+      "raw-html-blocked"
+    ],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

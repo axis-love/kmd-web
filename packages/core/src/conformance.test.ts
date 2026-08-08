@@ -6,7 +6,7 @@
 // contract runner.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
   ContractRenderer,
@@ -33,10 +33,10 @@ const coreRenderer: ContractRenderer = {
 // Fixture loading
 // ---------------------------------------------------------------------------
 
-const contractsDir = dirname(fileURLToPath(import.meta.url)).replace(
-  "/packages/core/src",
-  "/packages/contracts",
-);
+// The test lives in packages/core/src; the contracts package is a sibling
+// under packages/. Resolve with path segments (not a string replace) so this
+// works across OS path separators.
+const contractsDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "contracts");
 const fixturesDir = join(contractsDir, "fixtures");
 const observationsDir = join(contractsDir, "observations");
 

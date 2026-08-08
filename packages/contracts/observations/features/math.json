@@ -3,17 +3,48 @@
   "category": "features",
   "description": "Math expressions: inline math, block/display math, mixed inline and block, special symbols, pathological input, math in code blocks (should NOT render)",
   "html": {
-    "mustContain": ["E = mc^2"],
-    "mustNotContain": ["<script", "javascript:"]
+    "mustContain": [
+      "E = mc^2"
+    ],
+    "forbiddenElements": [
+      "script"
+    ],
+    "forbiddenUrlSchemes": [
+      "javascript"
+    ]
   },
   "outline": {
     "entries": [
-      { "level": 1, "text": "Math Expressions", "slug": "math-expressions" },
-      { "level": 2, "text": "Inline math", "slug": "inline-math" },
-      { "level": 2, "text": "Block math (display)", "slug": "block-math-display" },
-      { "level": 2, "text": "Mixed inline and block", "slug": "mixed-inline-and-block" },
-      { "level": 2, "text": "Math with special symbols", "slug": "math-with-special-symbols" },
-      { "level": 2, "text": "Pathological math input", "slug": "pathological-math-input" },
+      {
+        "level": 1,
+        "text": "Math Expressions",
+        "slug": "math-expressions"
+      },
+      {
+        "level": 2,
+        "text": "Inline math",
+        "slug": "inline-math"
+      },
+      {
+        "level": 2,
+        "text": "Block math (display)",
+        "slug": "block-math-display"
+      },
+      {
+        "level": 2,
+        "text": "Mixed inline and block",
+        "slug": "mixed-inline-and-block"
+      },
+      {
+        "level": 2,
+        "text": "Math with special symbols",
+        "slug": "math-with-special-symbols"
+      },
+      {
+        "level": 2,
+        "text": "Pathological math input",
+        "slug": "pathological-math-input"
+      },
       {
         "level": 2,
         "text": "Math in code block (should NOT render as math)",

@@ -1,12 +1,38 @@
 {
   "fixture": "security/encoded-urls.md",
   "category": "security",
-  "description": "Encoded URL attacks: double encoding, unicode, HTML entities, mixed encoding, null bytes, UTF-8 overlong",
+  "description": "Double/Unicode/entity/percent encoding in link destinations. Unsafe links are removed entirely (no dangerous scheme may survive in any attribute); encoded traversal (%2e%2e%2f) is blocked and must not survive. Overlong %c0%af has no scheme and survives only as an inert relative path, so it is not asserted. Structural assertions only.",
   "html": {
-    "mustNotContain": ["javascript:", "alert(", "onerror", "<script"]
+    "mustContain": [
+      "<h1"
+    ],
+    "mustNotContain": [
+      "%2e%2e%2f"
+    ],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "svg",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript",
+      "vbscript",
+      "data",
+      "file"
+    ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["unsafe-url"],
+    "mustIncludeCodes": [
+      "unsafe-url"
+    ],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

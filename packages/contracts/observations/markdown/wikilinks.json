@@ -3,11 +3,24 @@
   "category": "markdown",
   "description": "Wikilink syntax: [[link]], [[link|label]], [[path/to/page]], [[page#section]]",
   "html": {
-    "mustContain": ["wikilink"],
-    "mustNotContain": ["<script", "javascript:"]
+    "mustContain": [
+      "wikilink"
+    ],
+    "forbiddenElements": [
+      "script"
+    ],
+    "forbiddenUrlSchemes": [
+      "javascript"
+    ]
   },
   "outline": {
-    "entries": [{ "level": 1, "text": "Wikilinks", "slug": "wikilinks" }]
+    "entries": [
+      {
+        "level": 1,
+        "text": "Wikilinks",
+        "slug": "wikilinks"
+      }
+    ]
   },
   "detectedFeatures": {
     "hasMath": false,

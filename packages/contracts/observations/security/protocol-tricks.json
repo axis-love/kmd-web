@@ -1,27 +1,38 @@
 {
   "fixture": "security/protocol-tricks.md",
   "category": "security",
-  "description": "Protocol tricks: mixed case, whitespace, newlines, tabs, HTML entities, URL encoding, custom schemes, data: variants, file: variants",
+  "description": "Scheme-policy bypass attempts (case, whitespace, control chars, entity/percent encoding, custom schemes). All payloads are unsafe URLs and must be removed entirely; structural assertions verify no dangerous element, attribute, or URL scheme survives. The h1 must survive to prove the document still renders.",
   "html": {
-    "mustNotContain": [
-      "javascript:",
-      "JaVaScRiPt:",
-      "JAVASCRIPT:",
-      "vbscript:",
-      "data:text/html",
-      "data:application/javascript",
-      "file://",
-      "File://",
-      "myapp://",
-      "intent://",
-      "chrome://",
-      "alert(",
-      "onerror",
-      "onload"
+    "mustContain": [
+      "<h1"
+    ],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "svg",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript",
+      "vbscript",
+      "data",
+      "file",
+      "myapp",
+      "intent",
+      "chrome"
     ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["unsafe-url"],
+    "mustIncludeCodes": [
+      "unsafe-url"
+    ],
     "minSeverity": "warning"
   },
   "detectedFeatures": {
@@ -36,11 +47,26 @@
   },
   "links": {
     "classifications": [
-      { "url": "JaVaScRiPt:alert(1)", "kind": "blocked" },
-      { "url": "myapp://deep-link", "kind": "blocked" },
-      { "url": "chrome://settings", "kind": "blocked" },
-      { "url": "file:///etc/passwd", "kind": "blocked" },
-      { "url": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", "kind": "blocked" }
+      {
+        "url": "JaVaScRiPt:alert(1)",
+        "kind": "blocked"
+      },
+      {
+        "url": "myapp://deep-link",
+        "kind": "blocked"
+      },
+      {
+        "url": "chrome://settings",
+        "kind": "blocked"
+      },
+      {
+        "url": "file:///etc/passwd",
+        "kind": "blocked"
+      },
+      {
+        "url": "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+        "kind": "blocked"
+      }
     ]
   },
   "applicability": "required"

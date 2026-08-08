@@ -120,22 +120,22 @@ as comma-separated candidates), `xlink:href`.
 External links get `rel="noopener noreferrer"` and `target="_blank"` added
 by the URL policy plugin.
 
-### Text/attribute neutralization
+### No cosmetic output mutation
 
-**Enforced by:** `rehypeSanitizeText` plugin
+The pipeline never mutates rendered text to make dangerous strings "look
+safe". A former pass (`rehypeSanitizeText`) inserted zero-width spaces into
+substrings like `javascript:` and `alert(` so conformance substring checks
+would pass; it was removed (KWEB-035) because it corrupted legitimate
+content and made the security gate untrustworthy — it asserted on rendering
+cosmetics, not on danger.
 
-Dangerous patterns in text nodes and attribute values are broken with
-zero-width spaces (U+200B) to prevent conformance `mustNotContain` substring
-matches while remaining visually identical:
-
-- `javascript:` → `javascript\u200B:`
-- `vbscript:` → `vbscript\u200B:`
-- `alert(` → `alert\u200B(`
-- `onload` → `on\u200Bload`
-- `onerror` → `on\u200Berror`
-- `foreignObject` → `foreign\u200BObject`
-- `@import` → `@\u200Bimport`
-- `evil.example.com` → `evil.\u200Bexample.com`
+Safety comes from structure instead: unsafe elements are removed entirely
+(URL policy), disallowed tags/attributes are stripped (sanitize schema), and
+the conformance suite asserts structure — which elements exist, which
+attribute names exist, and which schemes appear in URL attributes — rather
+than substring absence. Inert text that legitimately mentions a dangerous
+string (prose, code blocks, Mermaid sources) is allowed to render verbatim
+because no element or URL attribute carries it.
 
 ### Raw node stripping
 
@@ -229,7 +229,6 @@ remarkParse → remarkGfm → remarkMath → remarkWikilinks → remarkAlerts
 → createRehypeUrlPolicy                 ← remove unsafe elements entirely
 → rehypeSanitize (sanitizeSchema)       ← strip dangerous HTML/tags/attrs
 → rehypeStripRaw                        ← remove unparsed raw HTML nodes
-→ rehypeSanitizeText                    ← neutralize dangerous patterns in text
 → captureOutline → captureAssets
 → rehypeCopyButton
 → rehypeStringify (no allowDangerousHtml)
@@ -240,10 +239,10 @@ Key ordering decisions:
 - URL policy runs BEFORE sanitize so it can see original `href` attributes
   and remove entire elements
 - `rehypeStripRaw` runs AFTER sanitize to catch unparsed raw HTML
-- `rehypeSanitizeText` runs AFTER sanitize to neutralize patterns in
-  surviving text/attributes
 - `rehypeStringify` uses default (no `allowDangerousHtml`) — raw nodes
   already stripped
+- No cosmetic text-mutation pass runs after sanitize; safety is structural
+  (see "No cosmetic output mutation" above)
 
 ## Dependency review
 

@@ -40,15 +40,50 @@ export type AssertionApplicability = "required" | "optional" | "not-applicable";
  * This allows native renderers to produce different HTML structures
  * while still conforming to the contract.
  *
+ * Two kinds of absence checks exist, and security fixtures MUST use the
+ * structural ones:
+ *
+ * - Substring checks (`mustNotContain`) operate on the raw HTML string.
+ *   They are fine for markers that cannot appear in legitimate serialized
+ *   output (e.g. `<script`, which is always escaped to `&lt;script` in
+ *   text nodes), but they produce false failures when a fixture's OWN
+ *   legitimate text contains the marker (e.g. a heading that discusses
+ *   `javascript:` links). Never use substrings to assert that a payload
+ *   was neutralized — that couples the assertion to rendering cosmetics.
+ * - Structural checks (`forbiddenElements`, `forbiddenAttributes`,
+ *   `forbidEventHandlerAttributes`, `forbiddenUrlSchemes`) parse the HTML
+ *   into elements and attributes and assert on structure: which elements
+ *   exist, which attribute names exist, and which schemes appear in
+ *   URL-bearing attributes. A document that legitimately mentions
+ *   `javascript:` in prose still passes, while an actual
+ *   `href="javascript:..."` attribute fails.
+ *
  * @property mustContain — substrings that must appear in the rendered HTML.
- * @property mustNotContain — substrings that must NOT appear in the rendered HTML.
+ * @property mustNotContain — substrings that must NOT appear in the rendered
+ *   HTML. Use only for markers with no legitimate textual form.
  * @property shouldContain — substrings that should appear; a warning (not
  *   failure) is emitted if absent.
+ * @property forbiddenElements — element tag names (case-insensitive) that
+ *   must not appear anywhere in the rendered HTML.
+ * @property forbiddenAttributes — attribute names (case-insensitive) that
+ *   must not appear on any element.
+ * @property forbidEventHandlerAttributes — when true, no attribute whose
+ *   name starts with `on` (case-insensitive) may appear on any element.
+ * @property forbiddenUrlSchemes — schemes (case-insensitive, e.g.
+ *   `javascript`, `data`, `file`) that must not appear in URL-bearing
+ *   attributes (`href`, `src`, `data`, `poster`, `action`, `formaction`,
+ *   `xlink:href`, and each candidate in `srcset`). Values are compared
+ *   after stripping control characters and decoding HTML entities and
+ *   percent-encoding (two rounds), matching how browsers resolve schemes.
  */
 export interface HtmlObservation {
   readonly mustContain: readonly string[];
   readonly mustNotContain: readonly string[];
   readonly shouldContain?: readonly string[];
+  readonly forbiddenElements?: readonly string[];
+  readonly forbiddenAttributes?: readonly string[];
+  readonly forbidEventHandlerAttributes?: boolean;
+  readonly forbiddenUrlSchemes?: readonly string[];
 }
 
 /**

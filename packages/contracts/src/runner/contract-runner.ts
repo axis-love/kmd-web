@@ -38,6 +38,240 @@ const SEVERITY_ORDER: Readonly<Record<DiagnosticSeverity, number>> = {
 // Assertion helpers
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Structural HTML scanning
+// ---------------------------------------------------------------------------
+//
+// Security assertions must check STRUCTURE (which elements and attributes
+// exist), not raw substrings: a fixture's legitimate prose may mention
+// dangerous strings ("javascript: links are blocked"), and substring
+// assertions either false-fail on that prose or — worse — get "fixed" by
+// cosmetically mutating the output. The scanner below extracts start tags
+// and their attributes from serialized HTML so observations can assert on
+// element names, attribute names, and URL schemes.
+//
+// It is deliberately a scanner, not a full HTML parser: renderer output is
+// well-formed serialized HTML, and the scanner only needs to be accurate
+// enough to enumerate tags and attributes. Raw-text element bodies
+// (script/style) may confuse attribute scanning, but those elements are
+// forbidden in security fixtures anyway, so the forbiddenElements
+// assertion fails regardless.
+
+/** A start tag found in the HTML: lowercase name plus attribute map. */
+interface ScannedTag {
+  readonly name: string;
+  /** Attribute name (lowercase) → raw attribute value (entities intact). */
+  readonly attrs: ReadonlyMap<string, string>;
+}
+
+/** Attributes whose values are URLs and must obey the scheme policy. */
+const URL_ATTRIBUTES = new Set([
+  "href",
+  "src",
+  "data",
+  "poster",
+  "action",
+  "formaction",
+  "xlink:href",
+]);
+
+function stripComments(html: string): string {
+  return html.replace(/<!--[\s\S]*?(?:-->|$)/g, "");
+}
+
+/**
+ * Scan serialized HTML and enumerate every start tag with its attributes.
+ *
+ * Handles double-quoted, single-quoted, and unquoted attribute values.
+ * Tag matching is quote-aware, so a `>` inside a quoted attribute value
+ * does not terminate the tag early.
+ */
+export function scanHtml(html: string): readonly ScannedTag[] {
+  const tags: ScannedTag[] = [];
+  const withoutComments = stripComments(html);
+  // Start tag: `<name` followed by attributes (quoted values may contain
+  // `<`/`>`), optionally self-closing. End tags, doctypes, and processing
+  // instructions are skipped by requiring a leading letter.
+  const tagRe = /<([a-zA-Z][a-zA-Z0-9:-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)\s*\/?>/g;
+
+  let tagMatch = tagRe.exec(withoutComments);
+  while (tagMatch !== null) {
+    const name = (tagMatch[1] ?? "").toLowerCase();
+    const attrText = tagMatch[2] ?? "";
+    const attrs = new Map<string, string>();
+
+    const attrRe =
+      /([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|[^\s"'>]+))?/g;
+    let attrMatch = attrRe.exec(attrText);
+    while (attrMatch !== null) {
+      const attrName = (attrMatch[1] ?? "").toLowerCase();
+      // Group 3 = double-quoted, 4 = single-quoted, 5 = unquoted.
+      const value = attrMatch[3] ?? attrMatch[4] ?? attrMatch[5] ?? "";
+      if (attrName && !attrs.has(attrName)) {
+        attrs.set(attrName, value);
+      }
+      attrMatch = attrRe.exec(attrText);
+    }
+
+    tags.push({ name, attrs });
+    tagMatch = tagRe.exec(withoutComments);
+  }
+
+  return tags;
+}
+
+const NAMED_ENTITIES: Readonly<Record<string, string>> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: "\u00A0",
+  tab: "\t",
+  newline: "\n",
+};
+
+/** Decode HTML entities (numeric + common named) in an attribute value. */
+export function decodeHtmlEntities(value: string): string {
+  return value.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body: string) => {
+    if (body.startsWith("#x") || body.startsWith("#X")) {
+      const code = Number.parseInt(body.slice(2), 16);
+      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+    }
+    if (body.startsWith("#")) {
+      const code = Number.parseInt(body.slice(1), 10);
+      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_ENTITIES[body.toLowerCase()] ?? match;
+  });
+}
+
+function decodePercentOnce(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Extract the scheme of a URL attribute value the way a browser would:
+ * strip control characters, decode entities and up to two rounds of
+ * percent-encoding, then read the segment before the first colon.
+ *
+ * Returns the lowercase scheme, or null when the value has no scheme
+ * (relative paths, fragments, protocol-relative URLs).
+ */
+export function extractUrlScheme(value: string): string | null {
+  // Browsers ignore control characters when resolving schemes.
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — mirrors browser URL parsing for scheme detection
+  const stripped = decodeHtmlEntities(value).replace(/[\u0000-\u001F\u007F]/g, "");
+
+  const candidates = [stripped, decodePercentOnce(stripped)];
+  const twice = decodePercentOnce(candidates[1] ?? stripped);
+  if (twice !== (candidates[1] ?? stripped)) candidates.push(twice);
+
+  for (const candidate of candidates) {
+    const colonIdx = candidate.indexOf(":");
+    if (colonIdx === -1) continue;
+    const scheme = candidate.slice(0, colonIdx).toLowerCase();
+    // Browsers also strip whitespace inside the scheme portion.
+    const clean = scheme.replace(/\s/g, "");
+    if (clean.length > 0 && /^[a-z][a-z0-9+.-]*$/.test(clean)) {
+      return clean;
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Structural assertion checks
+// ---------------------------------------------------------------------------
+
+function checkHtmlStructure(
+  result: RenderResult,
+  observation: FixtureObservation,
+): AssertionResult[] {
+  const assertions: AssertionResult[] = [];
+  const html = observation.html;
+  if (
+    !html ||
+    (!html.forbiddenElements?.length &&
+      !html.forbiddenAttributes?.length &&
+      !html.forbidEventHandlerAttributes &&
+      !html.forbiddenUrlSchemes?.length)
+  ) {
+    return assertions;
+  }
+
+  const tags = scanHtml(result.html);
+
+  for (const forbidden of html.forbiddenElements ?? []) {
+    const target = forbidden.toLowerCase();
+    const found = tags.some((tag) => tag.name === target);
+    assertions.push({
+      name: `html.forbiddenElement:${forbidden}`,
+      passed: !found,
+      message: `Element <${forbidden}> must not appear in the rendered HTML but was found`,
+      severity: "error",
+    });
+  }
+
+  for (const forbidden of html.forbiddenAttributes ?? []) {
+    const target = forbidden.toLowerCase();
+    const found = tags.some((tag) => tag.attrs.has(target));
+    assertions.push({
+      name: `html.forbiddenAttribute:${forbidden}`,
+      passed: !found,
+      message: `Attribute "${forbidden}" must not appear on any element but was found`,
+      severity: "error",
+    });
+  }
+
+  if (html.forbidEventHandlerAttributes) {
+    const offenders = tags.flatMap((tag) =>
+      [...tag.attrs.keys()].filter((name) => name.startsWith("on")),
+    );
+    assertions.push({
+      name: "html.forbidEventHandlerAttributes",
+      passed: offenders.length === 0,
+      message: `Event-handler attributes must not appear but found: ${[...new Set(offenders)].join(", ")}`,
+      severity: "error",
+    });
+  }
+
+  for (const scheme of html.forbiddenUrlSchemes ?? []) {
+    const target = scheme.toLowerCase();
+    const offenders: string[] = [];
+    for (const tag of tags) {
+      for (const [attrName, rawValue] of tag.attrs) {
+        if (attrName === "srcset") {
+          // srcset is a comma-separated list of "url descriptor" pairs.
+          for (const candidate of rawValue.split(",")) {
+            const url = candidate.trim().split(/\s+/)[0] ?? "";
+            if (url && extractUrlScheme(url) === target) {
+              offenders.push(`<${tag.name}> srcset="${url}"`);
+            }
+          }
+          continue;
+        }
+        if (!URL_ATTRIBUTES.has(attrName)) continue;
+        if (extractUrlScheme(rawValue) === target) {
+          offenders.push(`<${tag.name}> ${attrName}="${rawValue}"`);
+        }
+      }
+    }
+    assertions.push({
+      name: `html.forbiddenUrlScheme:${scheme}`,
+      passed: offenders.length === 0,
+      message: `URLs with scheme "${scheme}:" must not appear but found: ${offenders.join("; ")}`,
+      severity: "error",
+    });
+  }
+
+  return assertions;
+}
+
 function checkHtml(result: RenderResult, observation: FixtureObservation): AssertionResult[] {
   const assertions: AssertionResult[] = [];
   const html = observation.html;
@@ -73,6 +307,8 @@ function checkHtml(result: RenderResult, observation: FixtureObservation): Asser
       });
     }
   }
+
+  assertions.push(...checkHtmlStructure(result, observation));
 
   return assertions;
 }

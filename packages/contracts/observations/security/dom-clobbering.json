@@ -1,21 +1,36 @@
 {
   "fixture": "security/dom-clobbering.md",
   "category": "security",
-  "description": "DOM clobbering: form/anchor/img with id/name attributes that shadow globals, nested forms",
+  "description": "DOM clobbering vectors. The sanitizer neutralizes clobbering by prefixing id/name values with user-content- and stripping disallowed elements. Structural: form/iframe/embed/object are gone, no javascript: URL survives. Raw clobbering values (name=\"location\", id=\"x\", ...) must not appear because prefixing inserts user-content-. Legitimate input/name/img elements survive with prefixed values.",
   "html": {
+    "mustContain": [
+      "click",
+      "first",
+      "second"
+    ],
     "mustNotContain": [
-      "<form",
-      "<iframe",
       "name=\"location\"",
       "name=\"domain\"",
       "name=\"cookie\"",
-      "name=\"attributes\"",
       "id=\"location\"",
-      "id=\"x\""
+      "id=\"x\"",
+      "name=\"attributes\"",
+      "name=\"y\""
+    ],
+    "forbiddenElements": [
+      "form",
+      "iframe",
+      "embed",
+      "object"
+    ],
+    "forbiddenUrlSchemes": [
+      "javascript"
     ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["raw-html-blocked"]
+    "mustIncludeCodes": [
+      "raw-html-blocked"
+    ]
   },
   "detectedFeatures": {
     "hasMath": false,

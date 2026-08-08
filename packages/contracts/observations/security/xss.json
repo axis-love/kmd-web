@@ -1,30 +1,35 @@
 {
   "fixture": "security/xss.md",
   "category": "security",
-  "description": "XSS attack vectors: javascript: links, vbscript:, data: URIs, file:, event handlers, SVG scripts, encoded URLs, object/embed, script/iframe/form/meta/style tags",
+  "description": "XSS vectors: dangerous schemes, event handlers, script/embedded-content elements. Structural assertions only — fixture headings legitimately mention 'javascript:' and 'vbscript:' in prose, so substring absence is not asserted.",
   "html": {
-    "mustContain": ["https://example.com"],
-    "mustNotContain": [
-      "javascript:",
-      "vbscript:",
-      "data:text/html",
-      "file://",
-      "<script",
-      "<iframe",
-      "<object",
-      "<embed",
-      "<form",
-      "<meta",
-      "<style",
-      "onerror",
-      "onclick",
-      "onload",
-      "alert(",
-      "<svg"
+    "mustContain": [
+      "https://example.com"
+    ],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "svg",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript",
+      "vbscript",
+      "data",
+      "file"
     ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["unsafe-url"],
+    "mustIncludeCodes": [
+      "unsafe-url"
+    ],
     "minSeverity": "warning"
   },
   "detectedFeatures": {
@@ -39,12 +44,30 @@
   },
   "links": {
     "classifications": [
-      { "url": "javascript:alert('xss')", "kind": "blocked" },
-      { "url": "javascript:void(0)", "kind": "blocked" },
-      { "url": "vbscript:MsgBox('xss')", "kind": "blocked" },
-      { "url": "data:text/html,%3Cscript%3Ealert(1)%3C/script%3E", "kind": "blocked" },
-      { "url": "file:///etc/passwd", "kind": "blocked" },
-      { "url": "https://example.com", "kind": "external" }
+      {
+        "url": "javascript:alert('xss')",
+        "kind": "blocked"
+      },
+      {
+        "url": "javascript:void(0)",
+        "kind": "blocked"
+      },
+      {
+        "url": "vbscript:MsgBox('xss')",
+        "kind": "blocked"
+      },
+      {
+        "url": "data:text/html,%3Cscript%3Ealert(1)%3C/script%3E",
+        "kind": "blocked"
+      },
+      {
+        "url": "file:///etc/passwd",
+        "kind": "blocked"
+      },
+      {
+        "url": "https://example.com",
+        "kind": "external"
+      }
     ]
   },
   "applicability": "required"

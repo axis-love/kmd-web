@@ -1,8 +1,11 @@
 {
   "fixture": "security/path-traversal.md",
   "category": "security",
-  "description": "Path traversal in links and images: relative, absolute, URL-encoded, double-encoded, null byte, UNC, mixed separators",
+  "description": "Path traversal in links and images: relative, absolute, URL-encoded, double-encoded, null-byte, UNC, and mixed-separator vectors. Unsafe links/images are removed entirely; traversal markers must not survive anywhere. mustNotContain entries are honest content checks (no legitimate prose in this fixture contains them).",
   "html": {
+    "mustContain": [
+      "<h1"
+    ],
     "mustNotContain": [
       "../../etc/passwd",
       "..%2f..%2f",
@@ -10,10 +13,27 @@
       "\\\\evil",
       "..\\..\\",
       "file://"
+    ],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "svg",
+      "base",
+      "link"
+    ],
+    "forbiddenUrlSchemes": [
+      "file"
     ]
   },
   "diagnostics": {
-    "mustIncludeCodes": ["unsafe-url"],
+    "mustIncludeCodes": [
+      "unsafe-url"
+    ],
     "minSeverity": "warning"
   },
   "assets": {

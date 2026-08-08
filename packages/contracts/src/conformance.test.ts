@@ -8,7 +8,7 @@
 // 5. The manifest covers all required feature categories and security policies.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ConformanceManifest, ContractRenderer, FixtureObservation } from "./conformance.js";
@@ -21,7 +21,10 @@ import { formatRunSummary, runFixture } from "./runner/contract-runner.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-const pkgDir = dirname(fileURLToPath(import.meta.url)).replace("/src", "");
+// The test lives in packages/contracts/src; the package root (with fixtures/,
+// observations/, manifest.json) is its parent. Resolve with path segments (not
+// a string replace) so this works across OS path separators.
+const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const fixturesDir = join(pkgDir, "fixtures");
 const observationsDir = join(pkgDir, "observations");
 const manifestPath = join(pkgDir, "manifest.json");
@@ -291,6 +294,129 @@ describe("contract runner", () => {
     const fail = result.assertions.find((a) => !a.passed);
     expect(fail?.name).toContain("mustNotContain");
   });
+
+  // -------------------------------------------------------------------------
+  // Structural HTML assertions (KWEB-035)
+  // -------------------------------------------------------------------------
+
+  it("forbiddenElements fails on real elements but ignores prose mentions", async () => {
+    // Prose mentions <script> as text (escaped), no actual script element.
+    const safe = createMockRenderer({
+      html: "<p>Docs about <code>&lt;script&gt;</code> tags and javascript: links</p>",
+    });
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbiddenElements: ["script"] },
+    };
+    expect((await runFixture(safe, "x", obs)).passed).toBe(true);
+
+    const unsafe = createMockRenderer({
+      html: "<p>text</p><script>evil()</script>",
+    });
+    const failed = await runFixture(unsafe, "x", obs);
+    expect(failed.passed).toBe(false);
+    expect(failed.assertions.find((a) => !a.passed)?.name).toBe(
+      "html.forbiddenElement:script",
+    );
+  });
+
+  it("forbidEventHandlerAttributes catches on* attributes only", async () => {
+    const clean = createMockRenderer({
+      html: "<p>the onload event is blocked</p><img src=\"x.png\">",
+    });
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbidEventHandlerAttributes: true },
+    };
+    expect((await runFixture(clean, "x", obs)).passed).toBe(true);
+
+    const dirty = createMockRenderer({
+      html: "<img src=\"x.png\" onerror=\"evil()\">",
+    });
+    const failed = await runFixture(dirty, "x", obs);
+    expect(failed.passed).toBe(false);
+    expect(failed.assertions.find((a) => !a.passed)?.name).toBe(
+      "html.forbidEventHandlerAttributes",
+    );
+  });
+
+  it("forbiddenUrlSchemes inspects URL attributes, not prose", async () => {
+    // Prose mentions javascript: but no attribute carries it.
+    const safe = createMockRenderer({
+      html: "<p>We block javascript: urls</p><a href=\"https://example.com\">ok</a>",
+    });
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbiddenUrlSchemes: ["javascript"] },
+    };
+    expect((await runFixture(safe, "x", obs)).passed).toBe(true);
+
+    const unsafe = createMockRenderer({
+      html: "<a href=\"javascript:evil()\">click</a>",
+    });
+    expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
+  });
+
+  it("forbiddenUrlSchemes decodes entities and percent-encoding", async () => {
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbiddenUrlSchemes: ["javascript"] },
+    };
+    const entity = createMockRenderer({
+      html: "<a href=\"&#106;avascript:evil()\">x</a>",
+    });
+    expect((await runFixture(entity, "x", obs)).passed).toBe(false);
+
+    const percent = createMockRenderer({
+      html: "<a href=\"javascript%3Aevil()\">x</a>",
+    });
+    expect((await runFixture(percent, "x", obs)).passed).toBe(false);
+
+    const mixedCase = createMockRenderer({
+      html: "<a href=\"JaVaScRiPt:evil()\">x</a>",
+    });
+    expect((await runFixture(mixedCase, "x", obs)).passed).toBe(false);
+  });
+
+  it("forbiddenUrlSchemes checks every srcset candidate", async () => {
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbiddenUrlSchemes: ["javascript"] },
+    };
+    const unsafe = createMockRenderer({
+      html: "<img src=\"a.png\" srcset=\"a.png 1x, javascript:evil() 2x\">",
+    });
+    expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
+
+    const safe = createMockRenderer({
+      html: "<img src=\"a.png\" srcset=\"a.png 1x, b.png 2x\">",
+    });
+    expect((await runFixture(safe, "x", obs)).passed).toBe(true);
+  });
+
+  it("forbiddenAttributes fails on named attributes", async () => {
+    const obs: FixtureObservation = {
+      fixture: "test.md",
+      category: "security",
+      description: "test",
+      html: { mustContain: [], forbiddenAttributes: ["xlink:href"] },
+    };
+    const unsafe = createMockRenderer({
+      html: "<a xlink:href=\"javascript:x()\">y</a>",
+    });
+    expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
+  });
+
 
   it("checks detected feature flags", async () => {
     const renderer = createMockRenderer({

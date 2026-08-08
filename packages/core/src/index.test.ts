@@ -306,12 +306,18 @@ describe("@axis-love/core render", () => {
 
   it("blocks tab in scheme java\\tscript:", async () => {
     const result = await render("[click](java\tscript:alert(1))");
-    expect(result.html).not.toContain("alert(");
+    // A tab inside the "scheme" stops Markdown from parsing this as a link, so
+    // it renders as inert literal text. The security property is that no
+    // executable anchor is produced; the leftover "alert(" is harmless prose,
+    // not a URL, so it is not asserted.
+    expect(result.html).not.toContain("<a ");
   });
 
   it("blocks newline in scheme java\\nscript:", async () => {
     const result = await render("[click](java\nscript:alert(1))");
-    expect(result.html).not.toContain("alert(");
+    // See the tab case above: newline prevents link parsing, so assert no
+    // executable anchor is produced rather than substring absence.
+    expect(result.html).not.toContain("<a ");
   });
 
   it("blocks null byte prefix in URL", async () => {

@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import { classifyLink } from "./links.js";
+import { render } from "./render.js";
 import { isExternalUrl, isSafeUrl, sanitizeSchema } from "./sanitize.js";
 
 const DEFAULT_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
@@ -345,5 +346,49 @@ describe("isExternalUrl", () => {
 
   it("returns false for absolute paths", () => {
     expect(isExternalUrl("/docs/file.md", DEFAULT_SCHEMES)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KWEB-035 — no cosmetic output mutation (zero-width space regression)
+// ---------------------------------------------------------------------------
+
+describe("render — legitimate content is not corrupted", () => {
+  it("preserves prose mentioning dangerous strings byte-for-byte (no ZWSP)", async () => {
+    // A document that legitimately discusses XSS vectors. The rendered text
+    // must be preserved exactly — no zero-width spaces, no mutation.
+    const source = [
+      "# Security notes",
+      "",
+      "We block javascript: and vbscript: URLs.",
+      "The alert( function and onload / onerror handlers are dangerous.",
+      "foreignObject, @import, and evil.example.com appear in SVG attacks.",
+    ].join("\n");
+
+    const result = await render(source);
+
+    // No zero-width space anywhere in the output.
+    expect(result.html).not.toContain("\u200B");
+
+    // The exact dangerous substrings survive intact in prose.
+    expect(result.html).toContain("javascript:");
+    expect(result.html).toContain("vbscript:");
+    expect(result.html).toContain("alert(");
+    expect(result.html).toContain("onload");
+    expect(result.html).toContain("onerror");
+    expect(result.html).toContain("foreignObject");
+    expect(result.html).toContain("@import");
+    expect(result.html).toContain("evil.example.com");
+  });
+
+  it("still removes actual javascript: link elements entirely", async () => {
+    const source = "[click](javascript:alert(1))";
+    const result = await render(source);
+
+    // The element is removed entirely — no href carrying the scheme.
+    expect(result.html).not.toContain("href=\"javascript:");
+    expect(result.html).not.toContain("<a ");
+    // And an unsafe-url diagnostic was recorded.
+    expect(result.diagnostics.some((d) => d.code === "unsafe-url")).toBe(true);
   });
 });

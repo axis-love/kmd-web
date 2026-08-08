@@ -3,28 +3,65 @@
   "category": "markdown",
   "description": "Raw HTML from the strict allowlist: kbd, details, summary, sub, sup, mark, abbr, br",
   "html": {
-    "mustContain": ["<kbd>", "<details>", "<summary>", "<sub>", "<sup>", "<mark>", "<abbr"],
-    "mustNotContain": [
-      "<script",
-      "<iframe",
-      "<object",
-      "<embed",
-      "<form",
-      "<style",
-      "javascript:",
-      "onclick",
-      "onerror"
+    "mustContain": [
+      "<kbd>",
+      "<details>",
+      "<summary>",
+      "<sub>",
+      "<sup>",
+      "<mark>",
+      "<abbr"
+    ],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "style"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": [
+      "javascript"
     ]
   },
   "outline": {
     "entries": [
-      { "level": 1, "text": "Allowed Raw HTML", "slug": "allowed-raw-html" },
-      { "level": 2, "text": "kbd", "slug": "kbd" },
-      { "level": 2, "text": "details/summary", "slug": "detailssummary" },
-      { "level": 2, "text": "sub/sup", "slug": "subsup" },
-      { "level": 2, "text": "mark", "slug": "mark" },
-      { "level": 2, "text": "abbr", "slug": "abbr" },
-      { "level": 2, "text": "br", "slug": "br" }
+      {
+        "level": 1,
+        "text": "Allowed Raw HTML",
+        "slug": "allowed-raw-html"
+      },
+      {
+        "level": 2,
+        "text": "kbd",
+        "slug": "kbd"
+      },
+      {
+        "level": 2,
+        "text": "details/summary",
+        "slug": "detailssummary"
+      },
+      {
+        "level": 2,
+        "text": "sub/sup",
+        "slug": "subsup"
+      },
+      {
+        "level": 2,
+        "text": "mark",
+        "slug": "mark"
+      },
+      {
+        "level": 2,
+        "text": "abbr",
+        "slug": "abbr"
+      },
+      {
+        "level": 2,
+        "text": "br",
+        "slug": "br"
+      }
     ]
   },
   "detectedFeatures": {
