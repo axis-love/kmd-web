@@ -3,17 +3,10 @@
   "category": "features",
   "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
   "html": {
-    "mustContain": [
-      "mermaid"
-    ],
-    "forbiddenElements": [
-      "script",
-      "img"
-    ],
+    "mustContain": ["mermaid"],
+    "forbiddenElements": ["script", "img"],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "outline": {
     "entries": [

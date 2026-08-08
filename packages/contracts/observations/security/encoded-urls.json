@@ -1,14 +1,9 @@
 {
   "fixture": "security/encoded-urls.md",
   "category": "security",
-  "description": "Double/Unicode/entity/percent encoding in link destinations. Unsafe links are removed entirely (no dangerous scheme may survive in any attribute); encoded traversal (%2e%2e%2f) is blocked and must not survive. Overlong %c0%af has no scheme and survives only as an inert relative path, so it is not asserted. Structural assertions only.",
+  "description": "Double/Unicode/entity/percent encoding in link destinations. Unsafe links are removed entirely (no dangerous scheme may survive in any attribute); encoded traversal (%2e%2e%2f) is blocked and must not survive in any URL-bearing attribute. Overlong %c0%af has no scheme and survives only as an inert relative path, so it is not asserted. Structural assertions only.",
   "html": {
-    "mustContain": [
-      "<h1"
-    ],
-    "mustNotContain": [
-      "%2e%2e%2f"
-    ],
+    "mustContain": ["<h1"],
     "forbiddenElements": [
       "script",
       "iframe",
@@ -22,17 +17,10 @@
       "link"
     ],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript",
-      "vbscript",
-      "data",
-      "file"
-    ]
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "unsafe-url"
-    ],
+    "mustIncludeCodes": ["unsafe-url"],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

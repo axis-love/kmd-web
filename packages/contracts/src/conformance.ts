@@ -63,10 +63,23 @@ export type AssertionApplicability = "required" | "optional" | "not-applicable";
  *   HTML. Use only for markers with no legitimate textual form.
  * @property shouldContain — substrings that should appear; a warning (not
  *   failure) is emitted if absent.
+ * @property requiredElements — element tag names (case-insensitive) that
+ *   must appear at least once in the rendered HTML. Structural presence
+ *   check: use instead of `mustContain` when asserting that an element
+ *   exists (e.g. `<h1>` survived rendering).
  * @property forbiddenElements — element tag names (case-insensitive) that
  *   must not appear anywhere in the rendered HTML.
  * @property forbiddenAttributes — attribute names (case-insensitive) that
  *   must not appear on any element.
+ * @property forbiddenAttributeValues — attribute name + substring pairs
+ *   that must not appear on any element. Structural: parses HTML into
+ *   elements/attributes, then checks attribute values. Use instead of
+ *   `mustNotContain` when asserting that a payload was neutralized in an
+ *   attribute (e.g. no `style` attribute contains `position:fixed`).
+ * @property forbiddenAttributeExactValues — attribute name + exact value
+ *   pairs (case-insensitive) that must not appear on any element. Use when
+ *   the sanitizer transforms values (e.g. clobber-prefixing) so a substring
+ *   check would false-fail on the prefixed form.
  * @property forbidEventHandlerAttributes — when true, no attribute whose
  *   name starts with `on` (case-insensitive) may appear on any element.
  * @property forbiddenUrlSchemes — schemes (case-insensitive, e.g.
@@ -80,10 +93,25 @@ export interface HtmlObservation {
   readonly mustContain: readonly string[];
   readonly mustNotContain: readonly string[];
   readonly shouldContain?: readonly string[];
+  readonly requiredElements?: readonly string[];
   readonly forbiddenElements?: readonly string[];
   readonly forbiddenAttributes?: readonly string[];
+  readonly forbiddenAttributeValues?: readonly AttributeValueCheck[];
+  readonly forbiddenAttributeExactValues?: readonly AttributeValueCheck[];
   readonly forbidEventHandlerAttributes?: boolean;
   readonly forbiddenUrlSchemes?: readonly string[];
+}
+
+/**
+ * A structural check on an attribute value: no element in the rendered HTML
+ * may have an attribute named `attr` (case-insensitive) whose value
+ * contains `contains` (case-sensitive). Unlike `mustNotContain`, this
+ * operates on parsed attributes — it will not match text content, comments,
+ * or tag names.
+ */
+export interface AttributeValueCheck {
+  readonly attr: string;
+  readonly contains: string;
 }
 
 /**
@@ -200,6 +228,10 @@ export interface LinkObservation {
  * @property fixture — the fixture file path relative to the fixtures/ dir.
  * @property category — the fixture category.
  * @property description — human-readable description of what this fixture tests.
+ * @property renderOptions — optional RenderOptions to pass to the renderer for
+ *   this fixture. When absent, the renderer uses its default options. This
+ *   allows security fixtures to test option-dependent behavior (e.g. remote
+ *   image allow/block modes, feature flags).
  * @property html — expected HTML semantics.
  * @property outline — expected document outline.
  * @property diagnostics — expected diagnostics.
@@ -216,6 +248,7 @@ export interface FixtureObservation {
   readonly fixture: string;
   readonly category: FixtureCategory;
   readonly description: string;
+  readonly renderOptions?: RenderOptions;
   readonly html?: HtmlObservation;
   readonly outline?: OutlineObservation;
   readonly diagnostics?: DiagnosticObservation;

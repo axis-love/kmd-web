@@ -3,27 +3,10 @@
   "category": "markdown",
   "description": "Raw HTML from the strict allowlist: kbd, details, summary, sub, sup, mark, abbr, br",
   "html": {
-    "mustContain": [
-      "<kbd>",
-      "<details>",
-      "<summary>",
-      "<sub>",
-      "<sup>",
-      "<mark>",
-      "<abbr"
-    ],
-    "forbiddenElements": [
-      "script",
-      "iframe",
-      "object",
-      "embed",
-      "form",
-      "style"
-    ],
+    "mustContain": ["<kbd>", "<details>", "<summary>", "<sub>", "<sup>", "<mark>", "<abbr"],
+    "forbiddenElements": ["script", "iframe", "object", "embed", "form", "style"],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "outline": {
     "entries": [

@@ -79,6 +79,7 @@ export type {
   AssertionGroup,
   AssertionResult,
   AssetObservation,
+  AttributeValueCheck,
   ConformanceManifest,
   ContractRenderer,
   ContractRunResult,

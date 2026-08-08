@@ -1,0 +1,38 @@
+{
+  "fixture": "security/remote-images.md",
+  "category": "security",
+  "description": "Remote image policy: when allowRemoteImages is true, https/http/protocol-relative images appear in the asset list (the host has opted in). file: and javascript: images are still blocked because they are unsafe URLs — allowRemoteImages only lifts the remote-image gate, not the scheme policy. Local relative images are unaffected.",
+  "renderOptions": {
+    "security": {
+      "allowRemoteImages": true
+    }
+  },
+  "html": {
+    "mustContain": ["local relative", "local bare", "local subfolder"],
+    "requiredElements": ["h1"],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "file"]
+  },
+  "assets": {
+    "mustIncludeUrls": [
+      "https://evil.example.com/pixel.png",
+      "https://example.com/assets/logo.png",
+      "http://evil.example.com/steal.png",
+      "//evil.example.com/track.png",
+      "./images/local.png"
+    ],
+    "mustNotIncludeUrls": ["file:///etc/passwd.png"]
+  },
+  "applicability": "optional"
+}

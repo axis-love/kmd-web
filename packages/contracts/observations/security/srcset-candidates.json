@@ -1,0 +1,31 @@
+{
+  "fixture": "security/srcset-candidates.md",
+  "category": "security",
+  "description": "Srcset URL candidate policy: each URL in a srcset is checked against the scheme policy. When any candidate has an unsafe URL (javascript:, data:, file:, protocol-relative, path traversal), the entire img element is removed by the URL policy. Safe srcsets with all-local relative URLs survive. Structural assertions verify no img element carries a srcset with a dangerous URL, and the heading survives to prove the document renders.",
+  "html": {
+    "mustContain": ["plain image", "Srcset Document"],
+    "requiredElements": ["h1"],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
+  },
+  "assets": {
+    "mustIncludeUrls": ["./plain.png"],
+    "mustNotIncludeUrls": [
+      "https://evil.example.com/track.png",
+      "//evil.example.com/a.png",
+      "file:///etc/passwd"
+    ]
+  },
+  "applicability": "required"
+}

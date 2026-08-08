@@ -1,36 +1,23 @@
 {
   "fixture": "security/dom-clobbering.md",
   "category": "security",
-  "description": "DOM clobbering vectors. The sanitizer neutralizes clobbering by prefixing id/name values with user-content- and stripping disallowed elements. Structural: form/iframe/embed/object are gone, no javascript: URL survives. Raw clobbering values (name=\"location\", id=\"x\", ...) must not appear because prefixing inserts user-content-. Legitimate input/name/img elements survive with prefixed values.",
+  "description": "DOM clobbering vectors. The sanitizer neutralizes clobbering by prefixing id/name values with user-content- and stripping disallowed elements. Structural: form/iframe/embed/object are gone, no javascript: URL survives. The clobber-prefix ensures no element has an id or name attribute whose value exactly equals a dangerous global-property name (location, domain, cookie, attributes). Legitimate input/name/img elements survive with prefixed values.",
   "html": {
-    "mustContain": [
-      "click",
-      "first",
-      "second"
+    "mustContain": ["click", "first", "second"],
+    "forbiddenElements": ["form", "iframe", "embed", "object"],
+    "forbiddenAttributeExactValues": [
+      { "attr": "name", "contains": "location" },
+      { "attr": "name", "contains": "domain" },
+      { "attr": "name", "contains": "cookie" },
+      { "attr": "id", "contains": "location" },
+      { "attr": "id", "contains": "x" },
+      { "attr": "name", "contains": "attributes" },
+      { "attr": "name", "contains": "y" }
     ],
-    "mustNotContain": [
-      "name=\"location\"",
-      "name=\"domain\"",
-      "name=\"cookie\"",
-      "id=\"location\"",
-      "id=\"x\"",
-      "name=\"attributes\"",
-      "name=\"y\""
-    ],
-    "forbiddenElements": [
-      "form",
-      "iframe",
-      "embed",
-      "object"
-    ],
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "raw-html-blocked"
-    ]
+    "mustIncludeCodes": ["raw-html-blocked"]
   },
   "detectedFeatures": {
     "hasMath": false,

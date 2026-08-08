@@ -3,15 +3,9 @@
   "category": "features",
   "description": "Math expressions: inline math, block/display math, mixed inline and block, special symbols, pathological input, math in code blocks (should NOT render)",
   "html": {
-    "mustContain": [
-      "E = mc^2"
-    ],
-    "forbiddenElements": [
-      "script"
-    ],
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "mustContain": ["E = mc^2"],
+    "forbiddenElements": ["script"],
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "outline": {
     "entries": [

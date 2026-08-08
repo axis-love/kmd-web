@@ -20,13 +20,9 @@
       "./other.md",
       "#section"
     ],
-    "forbiddenElements": [
-      "script"
-    ],
+    "forbiddenElements": ["script"],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "outline": {
     "entries": [
@@ -99,12 +95,8 @@
   },
   "assets": {
     "count": 1,
-    "mustIncludeUrls": [
-      "./image.png"
-    ],
-    "mustIncludeTypes": [
-      "image"
-    ]
+    "mustIncludeUrls": ["./image.png"],
+    "mustIncludeTypes": ["image"]
   },
   "detectedFeatures": {
     "hasMath": false,

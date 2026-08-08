@@ -209,8 +209,15 @@ describe("fixture and observation pairing", () => {
       const observations = readObservationFiles(category);
 
       for (const obs of observations) {
-        const fixtureName = obs.replace(/\.json$/, ".md");
-        expect(fixtures.includes(fixtureName), `No fixture for observation: ${obs}`).toBe(true);
+        // Multiple observations may target the same fixture (e.g. different
+        // render options), so pairing is declared via the "fixture" field, not
+        // by filename correspondence.
+        const data = readJson<FixtureObservation>(join(observationsDir, obs));
+        expect(data.fixture, `${obs} missing fixture field`).toBeDefined();
+        expect(
+          fixtures.includes(data.fixture as string),
+          `No fixture for observation: ${obs} (fixture: ${data.fixture})`,
+        ).toBe(true);
       }
     });
 
@@ -317,14 +324,12 @@ describe("contract runner", () => {
     });
     const failed = await runFixture(unsafe, "x", obs);
     expect(failed.passed).toBe(false);
-    expect(failed.assertions.find((a) => !a.passed)?.name).toBe(
-      "html.forbiddenElement:script",
-    );
+    expect(failed.assertions.find((a) => !a.passed)?.name).toBe("html.forbiddenElement:script");
   });
 
   it("forbidEventHandlerAttributes catches on* attributes only", async () => {
     const clean = createMockRenderer({
-      html: "<p>the onload event is blocked</p><img src=\"x.png\">",
+      html: '<p>the onload event is blocked</p><img src="x.png">',
     });
     const obs: FixtureObservation = {
       fixture: "test.md",
@@ -335,7 +340,7 @@ describe("contract runner", () => {
     expect((await runFixture(clean, "x", obs)).passed).toBe(true);
 
     const dirty = createMockRenderer({
-      html: "<img src=\"x.png\" onerror=\"evil()\">",
+      html: '<img src="x.png" onerror="evil()">',
     });
     const failed = await runFixture(dirty, "x", obs);
     expect(failed.passed).toBe(false);
@@ -347,7 +352,7 @@ describe("contract runner", () => {
   it("forbiddenUrlSchemes inspects URL attributes, not prose", async () => {
     // Prose mentions javascript: but no attribute carries it.
     const safe = createMockRenderer({
-      html: "<p>We block javascript: urls</p><a href=\"https://example.com\">ok</a>",
+      html: '<p>We block javascript: urls</p><a href="https://example.com">ok</a>',
     });
     const obs: FixtureObservation = {
       fixture: "test.md",
@@ -358,7 +363,7 @@ describe("contract runner", () => {
     expect((await runFixture(safe, "x", obs)).passed).toBe(true);
 
     const unsafe = createMockRenderer({
-      html: "<a href=\"javascript:evil()\">click</a>",
+      html: '<a href="javascript:evil()">click</a>',
     });
     expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
   });
@@ -371,17 +376,17 @@ describe("contract runner", () => {
       html: { mustContain: [], forbiddenUrlSchemes: ["javascript"] },
     };
     const entity = createMockRenderer({
-      html: "<a href=\"&#106;avascript:evil()\">x</a>",
+      html: '<a href="&#106;avascript:evil()">x</a>',
     });
     expect((await runFixture(entity, "x", obs)).passed).toBe(false);
 
     const percent = createMockRenderer({
-      html: "<a href=\"javascript%3Aevil()\">x</a>",
+      html: '<a href="javascript%3Aevil()">x</a>',
     });
     expect((await runFixture(percent, "x", obs)).passed).toBe(false);
 
     const mixedCase = createMockRenderer({
-      html: "<a href=\"JaVaScRiPt:evil()\">x</a>",
+      html: '<a href="JaVaScRiPt:evil()">x</a>',
     });
     expect((await runFixture(mixedCase, "x", obs)).passed).toBe(false);
   });
@@ -394,12 +399,12 @@ describe("contract runner", () => {
       html: { mustContain: [], forbiddenUrlSchemes: ["javascript"] },
     };
     const unsafe = createMockRenderer({
-      html: "<img src=\"a.png\" srcset=\"a.png 1x, javascript:evil() 2x\">",
+      html: '<img src="a.png" srcset="a.png 1x, javascript:evil() 2x">',
     });
     expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
 
     const safe = createMockRenderer({
-      html: "<img src=\"a.png\" srcset=\"a.png 1x, b.png 2x\">",
+      html: '<img src="a.png" srcset="a.png 1x, b.png 2x">',
     });
     expect((await runFixture(safe, "x", obs)).passed).toBe(true);
   });
@@ -412,11 +417,10 @@ describe("contract runner", () => {
       html: { mustContain: [], forbiddenAttributes: ["xlink:href"] },
     };
     const unsafe = createMockRenderer({
-      html: "<a xlink:href=\"javascript:x()\">y</a>",
+      html: '<a xlink:href="javascript:x()">y</a>',
     });
     expect((await runFixture(unsafe, "x", obs)).passed).toBe(false);
   });
-
 
   it("checks detected feature flags", async () => {
     const renderer = createMockRenderer({

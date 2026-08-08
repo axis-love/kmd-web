@@ -1,0 +1,47 @@
+{
+  "fixture": "security/external-links.md",
+  "category": "security",
+  "description": "External link hardening: every external link (http/https/protocol-relative) must carry rel=\"noopener noreferrer\" and target=\"_blank\". mailto/tel/fragment/relative links must NOT carry rel or target. The URL policy adds noopener+noreferrer to external links and sets target=_blank when not already present. Structural assertions verify attribute presence/absence on anchor elements.",
+  "html": {
+    "mustContain": [
+      "external https",
+      "external http",
+      "proto-relative",
+      "email",
+      "phone",
+      "fragment",
+      "doc",
+      "bare doc",
+      "first",
+      "second",
+      "third"
+    ],
+    "requiredElements": ["h1"],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
+  },
+  "links": {
+    "classifications": [
+      { "url": "https://example.com/page", "kind": "external" },
+      { "url": "http://example.com/other", "kind": "external" },
+      { "url": "mailto:user@example.com", "kind": "mailto" },
+      { "url": "tel:+15551234567", "kind": "tel" },
+      { "url": "#section", "kind": "internal" },
+      { "url": "./other.md", "kind": "document" },
+      { "url": "document.md", "kind": "document" },
+      { "url": "//example.com/page", "kind": "external" }
+    ]
+  },
+  "applicability": "required"
+}

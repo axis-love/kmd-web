@@ -3,9 +3,7 @@
   "category": "security",
   "description": "SVG attack surface: script/onload/foreignObject/animate/set, external references, xlink, CSS @import. SVG is not in the sanitize allowlist — no SVG/script element may survive as an element; dropped children may leave inert prose text (e.g. an @import line) or a legitimate https autolink, which are safe because no forbidden element or dangerous URL attribute carries them. Structural assertions only.",
   "html": {
-    "mustContain": [
-      "<h1"
-    ],
+    "mustContain": ["<h1"],
     "forbiddenElements": [
       "svg",
       "script",
@@ -16,19 +14,12 @@
       "use",
       "image"
     ],
-    "forbiddenAttributes": [
-      "xlink:href"
-    ],
+    "forbiddenAttributes": ["xlink:href"],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript",
-      "data"
-    ]
+    "forbiddenUrlSchemes": ["javascript", "data"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "raw-html-blocked"
-    ],
+    "mustIncludeCodes": ["raw-html-blocked"],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

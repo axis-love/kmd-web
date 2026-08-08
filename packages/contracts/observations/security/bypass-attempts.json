@@ -3,9 +3,7 @@
   "category": "security",
   "description": "Encoded/control-char scheme bypasses, style-attribute injection, xlink/srcset/source/track vectors, nested anchors, form/meta/base abuse. Structural assertions: dangerous elements and URL-bearing attributes must be gone; inert prose such as 'styled' or 'submit' may remain.",
   "html": {
-    "mustContain": [
-      "<h1"
-    ],
+    "mustContain": ["<h1"],
     "forbiddenElements": [
       "script",
       "iframe",
@@ -24,24 +22,12 @@
       "button",
       "input"
     ],
-    "forbiddenAttributes": [
-      "srcset",
-      "xlink:href"
-    ],
+    "forbiddenAttributes": ["srcset", "xlink:href"],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript",
-      "vbscript",
-      "data",
-      "file",
-      "myapp",
-      "chrome"
-    ]
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file", "myapp", "chrome"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "unsafe-url"
-    ],
+    "mustIncludeCodes": ["unsafe-url"],
     "minSeverity": "warning"
   },
   "links": {

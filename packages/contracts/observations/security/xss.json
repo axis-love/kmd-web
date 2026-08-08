@@ -3,9 +3,7 @@
   "category": "security",
   "description": "XSS vectors: dangerous schemes, event handlers, script/embedded-content elements. Structural assertions only — fixture headings legitimately mention 'javascript:' and 'vbscript:' in prose, so substring absence is not asserted.",
   "html": {
-    "mustContain": [
-      "https://example.com"
-    ],
+    "mustContain": ["https://example.com"],
     "forbiddenElements": [
       "script",
       "iframe",
@@ -19,17 +17,10 @@
       "link"
     ],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript",
-      "vbscript",
-      "data",
-      "file"
-    ]
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "unsafe-url"
-    ],
+    "mustIncludeCodes": ["unsafe-url"],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

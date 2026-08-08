@@ -3,19 +3,8 @@
   "category": "security",
   "description": "Pathological-but-benign input: deep nesting, long lines, excessive markers. Must render without error and must not conjure executable structure.",
   "html": {
-    "mustContain": [
-      "<ul>",
-      "<blockquote>",
-      "heading"
-    ],
-    "forbiddenElements": [
-      "script",
-      "iframe",
-      "style",
-      "object",
-      "embed",
-      "form"
-    ]
+    "mustContain": ["<ul>", "<blockquote>", "heading"],
+    "forbiddenElements": ["script", "iframe", "style", "object", "embed", "form"]
   },
   "outline": {
     "entries": [

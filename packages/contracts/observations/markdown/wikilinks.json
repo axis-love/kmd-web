@@ -3,15 +3,9 @@
   "category": "markdown",
   "description": "Wikilink syntax: [[link]], [[link|label]], [[path/to/page]], [[page#section]]",
   "html": {
-    "mustContain": [
-      "wikilink"
-    ],
-    "forbiddenElements": [
-      "script"
-    ],
-    "forbiddenUrlSchemes": [
-      "javascript"
-    ]
+    "mustContain": ["wikilink"],
+    "forbiddenElements": ["script"],
+    "forbiddenUrlSchemes": ["javascript"]
   },
   "outline": {
     "entries": [

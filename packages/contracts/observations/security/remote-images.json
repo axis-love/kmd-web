@@ -1,0 +1,39 @@
+{
+  "fixture": "security/remote-images.md",
+  "category": "security",
+  "description": "Remote image policy: https/http/protocol-relative images are blocked from the asset list when allowRemoteImages is false (default). Local relative and fragment images survive in assets. file: and javascript: schemes are blocked. The img elements with safe-but-remote URLs (https/http) survive in HTML because the sanitizer allows them — the filtering happens at the asset-list level, not the HTML level. unsafe-scheme img elements (javascript:/file:) are removed entirely by the URL policy.",
+  "renderOptions": {
+    "security": {
+      "allowRemoteImages": false
+    }
+  },
+  "html": {
+    "mustContain": ["local relative", "local bare", "local subfolder"],
+    "requiredElements": ["h1"],
+    "forbiddenElements": [
+      "script",
+      "iframe",
+      "object",
+      "embed",
+      "form",
+      "meta",
+      "style",
+      "base",
+      "link"
+    ],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "file"]
+  },
+  "assets": {
+    "mustIncludeUrls": ["./images/local.png", "images/local.png", "./assets/photos/pic.png"],
+    "mustNotIncludeUrls": [
+      "https://evil.example.com/pixel.png",
+      "https://example.com/assets/logo.png",
+      "http://evil.example.com/steal.png",
+      "//evil.example.com/track.png",
+      "file:///etc/passwd.png",
+      "https://cdn.example.com/img.png?v=2&token=x"
+    ]
+  },
+  "applicability": "required"
+}

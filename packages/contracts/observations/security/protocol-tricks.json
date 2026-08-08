@@ -3,9 +3,7 @@
   "category": "security",
   "description": "Scheme-policy bypass attempts (case, whitespace, control chars, entity/percent encoding, custom schemes). All payloads are unsafe URLs and must be removed entirely; structural assertions verify no dangerous element, attribute, or URL scheme survives. The h1 must survive to prove the document still renders.",
   "html": {
-    "mustContain": [
-      "<h1"
-    ],
+    "mustContain": ["<h1"],
     "forbiddenElements": [
       "script",
       "iframe",
@@ -19,20 +17,10 @@
       "link"
     ],
     "forbidEventHandlerAttributes": true,
-    "forbiddenUrlSchemes": [
-      "javascript",
-      "vbscript",
-      "data",
-      "file",
-      "myapp",
-      "intent",
-      "chrome"
-    ]
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file", "myapp", "intent", "chrome"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "unsafe-url"
-    ],
+    "mustIncludeCodes": ["unsafe-url"],
     "minSeverity": "warning"
   },
   "detectedFeatures": {

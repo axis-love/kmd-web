@@ -100,8 +100,7 @@ export function scanHtml(html: string): readonly ScannedTag[] {
     const attrText = tagMatch[2] ?? "";
     const attrs = new Map<string, string>();
 
-    const attrRe =
-      /([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|[^\s"'>]+))?/g;
+    const attrRe = /([a-zA-Z_:][a-zA-Z0-9_:.-]*)\s*(?:=\s*("([^"]*)"|'([^']*)'|[^\s"'>]+))?/g;
     let attrMatch = attrRe.exec(attrText);
     while (attrMatch !== null) {
       const attrName = (attrMatch[1] ?? "").toLowerCase();
@@ -196,8 +195,11 @@ function checkHtmlStructure(
   const html = observation.html;
   if (
     !html ||
-    (!html.forbiddenElements?.length &&
+    (!html.requiredElements?.length &&
+      !html.forbiddenElements?.length &&
       !html.forbiddenAttributes?.length &&
+      !html.forbiddenAttributeValues?.length &&
+      !html.forbiddenAttributeExactValues?.length &&
       !html.forbidEventHandlerAttributes &&
       !html.forbiddenUrlSchemes?.length)
   ) {
@@ -205,6 +207,17 @@ function checkHtmlStructure(
   }
 
   const tags = scanHtml(result.html);
+
+  for (const required of html.requiredElements ?? []) {
+    const target = required.toLowerCase();
+    const found = tags.some((tag) => tag.name === target);
+    assertions.push({
+      name: `html.requiredElement:${required}`,
+      passed: found,
+      message: `Element <${required}> must appear in the rendered HTML but was not found`,
+      severity: "error",
+    });
+  }
 
   for (const forbidden of html.forbiddenElements ?? []) {
     const target = forbidden.toLowerCase();
@@ -224,6 +237,42 @@ function checkHtmlStructure(
       name: `html.forbiddenAttribute:${forbidden}`,
       passed: !found,
       message: `Attribute "${forbidden}" must not appear on any element but was found`,
+      severity: "error",
+    });
+  }
+
+  for (const check of html.forbiddenAttributeValues ?? []) {
+    const targetAttr = check.attr.toLowerCase();
+    const offenders: string[] = [];
+    for (const tag of tags) {
+      const val = tag.attrs.get(targetAttr);
+      // biome-ignore lint/complexity/useOptionalChain: val may be empty string (valid); optional chain would change semantics
+      if (val !== undefined && val.includes(check.contains)) {
+        offenders.push(`<${tag.name}> ${check.attr}="${val}"`);
+      }
+    }
+    assertions.push({
+      name: `html.forbiddenAttributeValue:${check.attr}~${check.contains}`,
+      passed: offenders.length === 0,
+      message: `No "${check.attr}" attribute may contain "${check.contains}" but found: ${offenders.join("; ")}`,
+      severity: "error",
+    });
+  }
+
+  for (const check of html.forbiddenAttributeExactValues ?? []) {
+    const targetAttr = check.attr.toLowerCase();
+    const targetVal = check.contains.toLowerCase();
+    const offenders: string[] = [];
+    for (const tag of tags) {
+      const val = tag.attrs.get(targetAttr);
+      if (val !== undefined && val.toLowerCase() === targetVal) {
+        offenders.push(`<${tag.name}> ${check.attr}="${val}"`);
+      }
+    }
+    assertions.push({
+      name: `html.forbiddenAttributeExactValue:${check.attr}=${check.contains}`,
+      passed: offenders.length === 0,
+      message: `No "${check.attr}" attribute may equal "${check.contains}" but found: ${offenders.join("; ")}`,
       severity: "error",
     });
   }
@@ -613,7 +662,7 @@ export async function runFixture(
   observation: FixtureObservation,
 ): Promise<FixtureAssertionResult> {
   const start = performance.now();
-  const result = await renderer.render(source);
+  const result = await renderer.render(source, observation.renderOptions);
   const assertions: AssertionResult[] = [];
 
   assertions.push(...checkHtml(result, observation));

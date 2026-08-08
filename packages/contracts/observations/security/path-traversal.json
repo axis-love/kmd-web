@@ -1,19 +1,9 @@
 {
   "fixture": "security/path-traversal.md",
   "category": "security",
-  "description": "Path traversal in links and images: relative, absolute, URL-encoded, double-encoded, null-byte, UNC, and mixed-separator vectors. Unsafe links/images are removed entirely; traversal markers must not survive anywhere. mustNotContain entries are honest content checks (no legitimate prose in this fixture contains them).",
+  "description": "Path traversal in links and images: relative, absolute, URL-encoded, double-encoded, null-byte, UNC, and mixed-separator vectors. Unsafe links/images are removed entirely by the URL policy; no URL-bearing attribute may contain a traversal marker. The scheme policy blocks file: URLs. Structural assertions only.",
   "html": {
-    "mustContain": [
-      "<h1"
-    ],
-    "mustNotContain": [
-      "../../etc/passwd",
-      "..%2f..%2f",
-      "%252e%252e",
-      "\\\\evil",
-      "..\\..\\",
-      "file://"
-    ],
+    "mustContain": ["<h1"],
     "forbiddenElements": [
       "script",
       "iframe",
@@ -26,14 +16,11 @@
       "base",
       "link"
     ],
-    "forbiddenUrlSchemes": [
-      "file"
-    ]
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["file"]
   },
   "diagnostics": {
-    "mustIncludeCodes": [
-      "unsafe-url"
-    ],
+    "mustIncludeCodes": ["unsafe-url"],
     "minSeverity": "warning"
   },
   "assets": {

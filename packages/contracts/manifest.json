@@ -177,6 +177,33 @@
       "security": true
     },
     {
+      "fixture": "security/remote-images.md",
+      "category": "security",
+      "description": "Remote image policy: https/http/protocol-relative images blocked from asset list when allowRemoteImages=false; allowed when true; file:/javascript: always blocked",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["remote-image-policy", "asset-policy"],
+      "security": true
+    },
+    {
+      "fixture": "security/external-links.md",
+      "category": "security",
+      "description": "External link hardening: rel=noopener noreferrer + target=_blank on external links; mailto/tel/fragment/relative not hardened",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "link-hardening"],
+      "security": true
+    },
+    {
+      "fixture": "security/srcset-candidates.md",
+      "category": "security",
+      "description": "Srcset URL candidate policy: unsafe URLs in srcset (javascript/data/file/protocol-relative/path traversal) block the entire img element",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["url-policy", "srcset-policy"],
+      "security": true
+    },
+    {
       "fixture": "features/mermaid.md",
       "category": "features",
       "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
@@ -338,6 +365,24 @@
       "name": "security-protocol-relative",
       "description": "Protocol-relative URLs (//host/path) treated as remote/external: links hardened, images blocked when remote disabled, genuine relative URLs unaffected",
       "fixtures": ["security/protocol-relative.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-remote-images",
+      "description": "Remote image policy: block/allow modes for https/http/protocol-relative images",
+      "fixtures": ["security/remote-images.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-external-links",
+      "description": "External link hardening: rel=noopener noreferrer + target=_blank on external links",
+      "fixtures": ["security/external-links.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-srcset",
+      "description": "Srcset URL candidate policy: unsafe URLs block the entire img element",
+      "fixtures": ["security/srcset-candidates.md"],
       "applicability": "required"
     },
     {
