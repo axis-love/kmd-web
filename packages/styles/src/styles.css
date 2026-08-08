@@ -723,40 +723,23 @@
   font-size: inherit;
 }
 
-.kmd-reader .shiki-code-block code span[style] {
+/* Highlighted token spans (class-based; colors come from the injected
+   token-color stylesheet, never inline styles). */
+.kmd-reader .shiki-code-block code span.shiki-token {
   cursor: pointer;
   transition: background-color var(--kmd-duration-fast) var(--kmd-easing-ease);
   border-radius: 2px;
   padding: 0 1px;
 }
 
-.kmd-reader .shiki-code-block code span[style]:hover {
+.kmd-reader .shiki-code-block code span.shiki-token:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-kmd-theme="light"] .kmd-reader .shiki-code-block code span[style]:hover,
-.kmd-theme-light .kmd-reader .shiki-code-block code span[style]:hover,
-[data-theme="light"] .kmd-reader .shiki-code-block code span[style]:hover {
+[data-kmd-theme="light"] .kmd-reader .shiki-code-block code span.shiki-token:hover,
+.kmd-theme-light .kmd-reader .shiki-code-block code span.shiki-token:hover,
+[data-theme="light"] .kmd-reader .shiki-code-block code span.shiki-token:hover {
   background-color: rgba(0, 0, 0, 0.08);
-}
-
-/* Shiki dual-theme: show dark theme in dark mode, light in light mode */
-.kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
-  color: var(--shiki-dark, inherit);
-}
-
-[data-theme="dark"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
-[data-kmd-theme="dark"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
-.kmd-theme-dark .kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
-  color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg, transparent) !important;
-}
-
-[data-theme="light"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
-[data-kmd-theme="light"] .kmd-reader .shiki-code-block span[style*="--shiki-dark"],
-.kmd-theme-light .kmd-reader .shiki-code-block span[style*="--shiki-dark"] {
-  color: var(--shiki-light, inherit) !important;
-  background-color: var(--shiki-light-bg, transparent) !important;
 }
 
 /* ---- Copy button (enhanced by browser layer) ---- */

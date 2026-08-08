@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import { classifyLink } from "./links.js";
+import { sanitizeStyleValue } from "./rehype-sanitize-css.js";
 import { render } from "./render.js";
 import { isExternalUrl, isSafeUrl, sanitizeSchema } from "./sanitize.js";
 
@@ -390,5 +391,100 @@ describe("render — legitimate content is not corrupted", () => {
     expect(result.html).not.toContain("<a ");
     // And an unsafe-url diagnostic was recorded.
     expect(result.diagnostics.some((d) => d.code === "unsafe-url")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KWEB-036 — CSS style attribute sanitization (HIGH-1)
+// ---------------------------------------------------------------------------
+
+describe("sanitizeStyleValue — CSS injection defense", () => {
+  it("keeps safe layout properties KaTeX needs", () => {
+    expect(sanitizeStyleValue("height:0.6833em")).toBe("height:0.6833em");
+    expect(sanitizeStyleValue("margin-right:0.0576em")).toBe("margin-right:0.0576em");
+    expect(sanitizeStyleValue("vertical-align:-0.2587em")).toBe("vertical-align:-0.2587em");
+    expect(sanitizeStyleValue("top:-3.063em")).toBe("top:-3.063em");
+    expect(sanitizeStyleValue("color:#cc0000")).toBe("color:#cc0000");
+  });
+
+  it("strips positioning that enables clickjacking overlays", () => {
+    // position/left/z-index are stripped; `top` is allow-listed (KaTeX uses
+    // it) but is inert without `position`, so no overlay can result.
+    expect(sanitizeStyleValue("position:fixed;left:0;z-index:9999")).toBe("");
+    expect(sanitizeStyleValue("position:fixed;top:0;left:0;z-index:9999")).toBe("top:0");
+    expect(sanitizeStyleValue("position:absolute")).toBe("");
+    expect(sanitizeStyleValue("float:right")).toBe("");
+    expect(sanitizeStyleValue("display:block")).toBe("");
+  });
+
+  it("strips background properties that enable network exfiltration", () => {
+    expect(sanitizeStyleValue("background:url(https://evil.example.com/x)")).toBe("");
+    expect(sanitizeStyleValue("background-image:url('https://evil.example.com/p.png')")).toBe("");
+    expect(sanitizeStyleValue("background-color:red")).toBe("");
+  });
+
+  it("strips script-execution vectors", () => {
+    expect(sanitizeStyleValue("width:expression(alert(1))")).toBe("");
+    expect(sanitizeStyleValue("behavior:url(xss.htc)")).toBe("");
+    expect(sanitizeStyleValue("-moz-binding:url('xss.xml')")).toBe("");
+    expect(sanitizeStyleValue("background:url(javascript:alert(1))")).toBe("");
+  });
+
+  it("keeps safe declarations while dropping dangerous ones in a mixed list", () => {
+    const mixed = "color:#123456;position:fixed;height:1em;background:url(https://e.com)";
+    expect(sanitizeStyleValue(mixed)).toBe("color:#123456;height:1em");
+  });
+
+  it("strips CSS comments that can hide payloads", () => {
+    expect(sanitizeStyleValue("/*harmless*/position:fixed;top:0")).toBe("top:0");
+  });
+
+  it("rejects dangerous values even on allow-listed properties", () => {
+    expect(sanitizeStyleValue("height:url(https://evil.example.com)")).toBe("");
+    expect(sanitizeStyleValue("color:expression(alert(1))")).toBe("");
+  });
+
+  it("drops custom properties and vendor prefixes", () => {
+    expect(sanitizeStyleValue("--shiki-dark:#fff")).toBe("");
+    expect(sanitizeStyleValue("-webkit-transform:rotate(0)")).toBe("");
+  });
+
+  it("normalizes property names case-insensitively", () => {
+    expect(sanitizeStyleValue("HEIGHT:1em")).toBe("height:1em");
+    expect(sanitizeStyleValue("Position:fixed")).toBe("");
+  });
+
+  it("returns empty string for empty or garbage input", () => {
+    expect(sanitizeStyleValue("")).toBe("");
+    expect(sanitizeStyleValue(";;;")).toBe("");
+    expect(sanitizeStyleValue("not-a-declaration")).toBe("");
+  });
+});
+
+describe("render — CSS injection via raw HTML style attributes", () => {
+  it("neutralizes position/background injection on span", async () => {
+    const source =
+      '<span style="position:fixed;top:0;width:100vw;height:100vh;background:url(https://evil.example.com);z-index:9">x</span>';
+    const result = await render(source);
+    expect(result.html).not.toContain("position:");
+    expect(result.html).not.toContain("background");
+    expect(result.html).not.toContain("z-index");
+    expect(result.html).not.toContain("evil.example.com");
+    // The text content still renders.
+    expect(result.html).toContain("x");
+  });
+
+  it("strips dangerous style from pre entirely", async () => {
+    const source = '<pre style="position:absolute;background:url(https://evil.example.com)">c</pre>';
+    const result = await render(source);
+    expect(result.html).not.toContain("style=");
+    expect(result.html).toContain("c");
+  });
+
+  it("preserves safe inline styles", async () => {
+    const source = '<span style="color:#cc0000;vertical-align:super">s</span>';
+    const result = await render(source);
+    expect(result.html).toContain("color:#cc0000");
+    expect(result.html).toContain("vertical-align:super");
   });
 });

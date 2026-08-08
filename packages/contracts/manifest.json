@@ -159,6 +159,15 @@
       "security": true
     },
     {
+      "fixture": "security/style-injection.md",
+      "category": "security",
+      "description": "CSS injection via style attributes on span/pre: position overlays, background:url exfiltration, expression/behavior/-moz-binding script vectors, comment-hidden declarations; safe layout properties preserved",
+      "applicability": "required",
+      "platforms": ["kmd-web", "kmd-unity"],
+      "features": ["sanitization", "css-policy"],
+      "security": true
+    },
+    {
       "fixture": "features/mermaid.md",
       "category": "features",
       "description": "Mermaid diagrams: flowchart, sequence, git graph, pie, and malicious mermaid with XSS payloads",
@@ -308,6 +317,12 @@
       "name": "security-bypass-attempts",
       "description": "Bypass attempts: encoded colons, encoded scheme names, control chars, style injection, xlink, srcset, nested anchors, base href",
       "fixtures": ["security/bypass-attempts.md"],
+      "applicability": "required"
+    },
+    {
+      "name": "security-style-injection",
+      "description": "CSS injection via style attributes: position overlays, background:url exfiltration, expression/behavior/-moz-binding, comment-hidden declarations; safe layout properties preserved",
+      "fixtures": ["security/style-injection.md"],
       "applicability": "required"
     },
     {

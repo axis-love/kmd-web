@@ -29,13 +29,29 @@ type LanguageRegistration = {
 };
 
 type HighlighterCore = {
-  codeToHtml(
+  codeToTokens(
     code: string,
     options: { lang: string; themes: { dark: string; light: string } },
-  ): string;
+  ): CodeTokensResult;
   loadLanguage(lang: LanguageRegistration | LanguageRegistration[]): Promise<void>;
   getLoadedLanguages(): string[];
   dispose(): void;
+};
+
+/**
+ * Shape of Shiki's `codeToTokens` result (subset we consume).
+ *
+ * With dual themes each token carries an `htmlStyle` record holding the
+ * light-theme `color` plus a `--shiki-dark` variable for the dark theme.
+ */
+type CodeToken = {
+  content: string;
+  color?: string;
+  htmlStyle?: Record<string, string>;
+};
+
+type CodeTokensResult = {
+  tokens: CodeToken[][];
 };
 
 // ---------------------------------------------------------------------------
@@ -171,13 +187,140 @@ function extractText(node: Element): string {
   return "";
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+// ---------------------------------------------------------------------------
+// Class-based token colors
+// ---------------------------------------------------------------------------
+//
+// Shiki's dual-theme output normally carries inline styles
+// (`color:#light;--shiki-dark:#dark`). Core's sanitizer strips inline styles
+// (and must — untrusted raw HTML could otherwise inject arbitrary CSS), so
+// highlighting must not depend on them. Instead each token gets a class
+// derived from its (light, dark) color pair, and the matching color rules are
+// generated as CSS and delivered to the host via RenderResult.codeHighlightCss
+// (the host injects it into a <style> element). Class names are derived only
+// from trusted theme colors — never from document content.
+
+/** Class prefix for token color classes. */
+export const TOKEN_CLASS_PREFIX = "shiki-c";
+
+/** Class applied to every highlighted token span (stable selector for hosts). */
+export const TOKEN_CLASS = "shiki-token";
+
+interface TokenColor {
+  readonly light: string;
+  readonly dark: string;
+}
+
+/**
+ * Module-level registry of token color classes seen so far. Bounded by the
+ * size of the theme palette (themes define a small, fixed set of colors), so
+ * it does not grow with document content.
+ */
+const colorRegistry = new Map<string, TokenColor>();
+
+function shortHash(input: string): string {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/**
+ * Map a (light, dark) color pair to a deterministic class name, registering
+ * the pair so the generated stylesheet can resolve it.
+ */
+function registerTokenColor(light: string, dark: string): string {
+  const lightNorm = light.toLowerCase();
+  const darkNorm = dark.toLowerCase();
+  const className = `${TOKEN_CLASS_PREFIX}${shortHash(`${lightNorm}|${darkNorm}`)}`;
+  if (!colorRegistry.has(className)) {
+    colorRegistry.set(className, { light: lightNorm, dark: darkNorm });
+  }
+  return className;
+}
+
+/**
+ * Build the stylesheet for all registered token color classes.
+ *
+ * Base rules use the light color; dark-theme selectors override with the dark
+ * color. Selectors mirror the theme attribute conventions used by
+ * `@axis-love/styles` tokens.
+ */
+export function buildHighlightCss(): string {
+  const rules: string[] = [];
+  for (const [className, { light, dark }] of colorRegistry) {
+    rules.push(`.${className}{color:${light}}`);
+    rules.push(
+      `[data-theme="dark"] .${className},` +
+        `[data-kmd-theme="dark"] .${className},` +
+        `.kmd-theme-dark .${className}{color:${dark}}`,
+    );
+  }
+  return rules.join("\n");
+}
+
+/**
+ * Reset the token color registry (used when the highlighter is disposed).
+ */
+function clearColorRegistry(): void {
+  colorRegistry.clear();
+}
+
+// ---------------------------------------------------------------------------
+// HAST construction from tokens
+// ---------------------------------------------------------------------------
+
+/** Extract the light color from a Shiki token. */
+function tokenLightColor(token: CodeToken): string {
+  return token.htmlStyle?.color ?? token.color ?? "inherit";
+}
+
+/** Extract the dark color from a Shiki token's htmlStyle variables. */
+function tokenDarkColor(token: CodeToken): string {
+  return token.htmlStyle?.["--shiki-dark"] ?? tokenLightColor(token);
+}
+
+function tokenToElement(token: CodeToken): Element {
+  const light = tokenLightColor(token);
+  const dark = tokenDarkColor(token);
+  const colorClass = registerTokenColor(light, dark);
+  return {
+    type: "element",
+    tagName: "span",
+    properties: { className: [TOKEN_CLASS, colorClass] },
+    children: [{ type: "text", value: token.content }],
+  };
+}
+
+/**
+ * Build a `<code>` HAST element from Shiki tokens (class-based, no inline
+ * styles). Lines are wrapped in `<span class="line">` to mirror Shiki's own
+ * structure.
+ */
+function tokensToCodeElement(tokens: readonly CodeToken[][], langClass: string): Element {
+  const lineElements: ElementContent[] = [];
+  for (let lineIdx = 0; lineIdx < tokens.length; lineIdx++) {
+    const line = tokens[lineIdx] ?? [];
+    const lineChildren: ElementContent[] = line.map((token) => tokenToElement(token));
+    lineElements.push({
+      type: "element",
+      tagName: "span",
+      properties: { className: ["line"] },
+      children: lineChildren,
+    });
+    // Newline between lines (not after the last) so copied text keeps breaks.
+    if (lineIdx < tokens.length - 1) {
+      lineElements.push({ type: "text", value: "\n" });
+    }
+  }
+
+  return {
+    type: "element",
+    tagName: "code",
+    properties: { className: [langClass] },
+    children: lineElements,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -247,6 +390,7 @@ export function disposeHighlighter(): void {
   }
   loadedLangs.clear();
   loadedLangs.add("plaintext");
+  clearColorRegistry();
 }
 
 /**
@@ -260,11 +404,29 @@ export function getLoadedLanguages(): ReadonlySet<string> {
 // Rehype plugin
 // ---------------------------------------------------------------------------
 
+/**
+ * Mutable sink for the generated token-color stylesheet.
+ *
+ * The plugin writes the CSS for all registered token color classes here after
+ * transforming the tree. Hosts read it and inject it into a `<style>` element
+ * (the rendered HTML itself carries only classes — never inline styles — so
+ * the sanitizer's style handling is not involved).
+ */
+export interface HighlightCssSink {
+  current: string;
+}
+
 export interface HighlightOptions {
   /** Dark theme name (default: "github-dark-default"). */
   readonly darkTheme?: string;
   /** Light theme name (default: "github-light-default"). */
   readonly lightTheme?: string;
+  /**
+   * Optional sink receiving the generated token-color CSS after the tree is
+   * transformed. Hosts should inject this CSS so token classes resolve to
+   * colors. When omitted, the CSS is still registered but not surfaced.
+   */
+  readonly cssSink?: HighlightCssSink;
 }
 
 const DEFAULT_DARK_THEME = "github-dark-default";
@@ -283,9 +445,10 @@ const DEFAULT_LIGHT_THEME = "github-light-default";
 export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (options) => {
   const darkTheme = options?.darkTheme ?? DEFAULT_DARK_THEME;
   const lightTheme = options?.lightTheme ?? DEFAULT_LIGHT_THEME;
+  const cssSink = options?.cssSink;
 
   return async (tree: HastRoot): Promise<HastRoot> => {
-    const codeBlocks: { pre: Element; lang: string; code: string }[] = [];
+    const codeBlocks: { pre: Element; lang: string; langClass: string; code: string }[] = [];
 
     visit(tree, "element", (node: Element, _index, parent) => {
       if (
@@ -307,7 +470,7 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
       const code = extractText(node);
       if (!code) return;
 
-      codeBlocks.push({ pre: parent as Element, lang, code });
+      codeBlocks.push({ pre: parent as Element, lang, langClass, code });
     });
 
     if (codeBlocks.length === 0) return tree;
@@ -319,7 +482,7 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
       const uniqueLangs = [...new Set(codeBlocks.map((b) => normalizeLanguage(b.lang)))];
       await Promise.all(uniqueLangs.map((lang) => ensureLanguage(lang)));
 
-      for (const { pre, lang, code } of codeBlocks) {
+      for (const { pre, lang, langClass, code } of codeBlocks) {
         try {
           const loaded = highlighter.getLoadedLanguages();
           const normalizedLang = normalizeLanguage(lang);
@@ -329,16 +492,12 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
               ? normalizedLang
               : "plaintext";
 
-          const html = highlighter.codeToHtml(code, {
+          // Tokenize and build class-based HAST (no inline styles).
+          const { tokens } = highlighter.codeToTokens(code, {
             lang: resolvedLang,
             themes: { dark: darkTheme, light: lightTheme },
           });
-
-          // Extract the <code> element from Shiki's output
-          const codeElementMatch = html.match(/<code[^>]*>[\s\S]*?<\/code>/i);
-          const codeElement = codeElementMatch
-            ? codeElementMatch[0]
-            : `<code>${escapeHtml(code)}</code>`;
+          const codeElement = tokensToCodeElement(tokens, langClass);
 
           pre.tagName = "pre";
           pre.properties = {
@@ -346,10 +505,16 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
             className: ["shiki-code-block"],
             dataLanguage: resolvedLang,
           };
-          pre.children = [{ type: "raw", value: codeElement } as unknown as ElementContent];
+          pre.children = [codeElement];
         } catch {
           // Leave unhighlighted — plain code fallback
         }
+      }
+
+      // Surface the generated token-color stylesheet (full registry so the
+      // host can replace its highlight <style> content on each render).
+      if (cssSink) {
+        cssSink.current = buildHighlightCss();
       }
     } catch {
       // Shiki failed to load entirely — leave all code blocks unhighlighted

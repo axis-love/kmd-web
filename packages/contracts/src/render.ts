@@ -193,4 +193,15 @@ export interface RenderResult {
   readonly metadata: DocumentMetadata;
   readonly detectedFeatures: DetectedFeatures;
   readonly rendererVersion: string;
+  /**
+   * Renderer-generated CSS for class-based code highlighting (Shiki token
+   * color classes), present when a highlighting plugin ran for this render.
+   *
+   * Highlighting tokens are emitted as classes (never inline styles, so the
+   * sanitizer's style policy is not involved); hosts should inject this CSS —
+   * e.g. into a managed `<style>` element — so the token classes resolve to
+   * colors. The CSS is produced entirely from trusted theme colors, never
+   * from document content. Absent when highlighting is not active.
+   */
+  readonly codeHighlightCss?: string;
 }

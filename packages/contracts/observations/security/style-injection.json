@@ -1,0 +1,28 @@
+{
+  "fixture": "security/style-injection.md",
+  "category": "security",
+  "description": "CSS injection via the style attribute on span/pre (HIGH-1): position overlays, background:url() exfiltration, expression()/behavior/-moz-binding script vectors, comment-hidden declarations. The sanitizer allow-lists the style attribute (KaTeX needs layout properties) but filters every declaration to a strict safe-property allow-list, so dangerous capabilities are stripped while safe layout properties survive. Structural safety is asserted by the absence of the dangerous CSS capabilities from the output; the only surviving style declarations are trusted layout values.",
+  "html": {
+    "mustContain": ["invisible overlay", "tracked", "code here", "safe color", "color:#cc0000", "vertical-align:super"],
+    "mustNotContain": [
+      "position:fixed",
+      "position:absolute",
+      "background:url",
+      "background-image",
+      "url(https://evil.example.com",
+      "url(javascript",
+      "expression(",
+      "behavior:",
+      "-moz-binding",
+      "z-index",
+      "evil.example.com"
+    ],
+    "forbiddenElements": ["script", "iframe", "object", "embed", "form", "meta", "style", "base", "link"],
+    "forbidEventHandlerAttributes": true,
+    "forbiddenUrlSchemes": ["javascript", "vbscript", "data", "file"]
+  },
+  "diagnostics": {
+    "mustIncludeCodes": ["raw-html-blocked"],
+    "minSeverity": "warning"
+  }
+}

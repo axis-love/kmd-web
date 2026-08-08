@@ -107,6 +107,8 @@ export class BrowserReader {
 
     const renderFn: RenderFn = async (source, opts) => {
       const plugins: RehypePluginEntry[] = [];
+      // Mutable sink for generated token-color CSS (populated by rehypeShiki).
+      const highlightCssSink = { current: "" };
 
       // Inject KaTeX if math is enabled (default: true)
       if (opts?.features?.math !== false) {
@@ -122,13 +124,19 @@ export class BrowserReader {
       if (opts?.features?.codeHighlighting !== false) {
         try {
           const highlighting = await import("@axis-love/highlighting");
-          plugins.push([highlighting.rehypeShiki]);
+          plugins.push([highlighting.rehypeShiki, { cssSink: highlightCssSink }]);
         } catch {
           // Highlighting package not available — skip
         }
       }
 
-      return render(source, opts, plugins.length > 0 ? plugins : undefined);
+      const result = await render(source, opts, plugins.length > 0 ? plugins : undefined);
+      // Surface generated highlight CSS (class-based tokens) on the result so
+      // the reader can inject it into the document.
+      if (highlightCssSink.current) {
+        return { ...result, codeHighlightCss: highlightCssSink.current };
+      }
+      return result;
     };
 
     this.bridge = new WorkerBridge({
@@ -179,6 +187,9 @@ export class BrowserReader {
       } else {
         this.container.innerHTML = result.html;
       }
+
+      // Inject generated token-color CSS for class-based highlighting.
+      this.applyHighlightCss(result.codeHighlightCss);
 
       // Notify outline
       this.onOutlineChange?.(result.outline);
@@ -270,5 +281,30 @@ export class BrowserReader {
       this.onActiveHeadingChange?.(slug),
     );
     this.scrollTrackerCleanup = this.scrollTracker.start();
+  }
+
+  /**
+   * Inject (or update) the generated token-color stylesheet for class-based
+   * code highlighting. The stylesheet is shared across reader instances via a
+   * single `<style data-kmd-code-highlight>` element in `document.head`; its
+   * content is the full rule set for every registered token color class, so it
+   * is replaced wholesale on each render. The CSS is renderer-generated from
+   * trusted theme colors only.
+   */
+  private applyHighlightCss(css: string | undefined): void {
+    if (!css) return;
+    if (typeof document === "undefined") return;
+
+    let styleEl = document.head.querySelector<HTMLStyleElement>(
+      "style[data-kmd-code-highlight]",
+    );
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.setAttribute("data-kmd-code-highlight", "");
+      document.head.appendChild(styleEl);
+    }
+    if (styleEl.textContent !== css) {
+      styleEl.textContent = css;
+    }
   }
 }

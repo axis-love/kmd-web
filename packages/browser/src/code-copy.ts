@@ -97,7 +97,7 @@ export class CodeCopyEnhancer {
         return;
       }
 
-      const span = target.closest("pre code span[style]");
+      const span = target.closest("pre code span.shiki-token");
       if (span) {
         e.stopPropagation();
         e.preventDefault();
