@@ -60,6 +60,63 @@ describe("FeatureCoordinator", () => {
     expect(highlightResult).toBeDefined();
     // No code blocks → not applied
     expect(highlightResult?.applied).toBe(false);
+    expect(highlightResult?.error).toBe("no unhighlighted code blocks");
+  });
+
+  // KWEB-039: the highlighting pass used to import the package, do nothing
+  // with it, and still report applied:true. It must either change the DOM or
+  // report applied:false with a diagnostic.
+
+  it("highlighting pass actually highlights blocks that fell through", async () => {
+    const coordinator = new FeatureCoordinator();
+    const container = document.createElement("div");
+    container.innerHTML = '<pre><code class="language-ts">const answer = 42;</code></pre>';
+
+    const results = await coordinator.enhance(container, {
+      ...NO_FEATURES,
+      hasCodeHighlighting: true,
+    });
+
+    const highlightResult = results.find((r) => r.feature === "highlighting");
+    expect(highlightResult?.applied).toBe(true);
+    // applied:true means the DOM really changed...
+    expect(container.querySelector("pre")?.classList.contains("shiki-code-block")).toBe(true);
+    expect(container.querySelectorAll("span.shiki-token").length).toBeGreaterThan(1);
+    // ...and the host is handed the CSS those token classes need.
+    expect(highlightResult?.css ?? "").toMatch(/\.shiki-c[a-z0-9]+\{color:/);
+  });
+
+  it("highlighting pass reports applied:false for already-highlighted blocks", async () => {
+    const coordinator = new FeatureCoordinator();
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<pre class="shiki-code-block"><code class="language-ts">const answer = 42;</code></pre>';
+
+    const results = await coordinator.enhance(container, {
+      ...NO_FEATURES,
+      hasCodeHighlighting: true,
+    });
+
+    const highlightResult = results.find((r) => r.feature === "highlighting");
+    expect(highlightResult?.applied).toBe(false);
+    expect(highlightResult?.error).toBe("no unhighlighted code blocks");
+    expect(highlightResult?.css).toBeUndefined();
+  });
+
+  it("highlighting pass reports applied:false for blocks it never highlights", async () => {
+    const coordinator = new FeatureCoordinator();
+    const container = document.createElement("div");
+    container.innerHTML = '<pre><code class="language-mermaid">graph TD;</code></pre>';
+
+    const results = await coordinator.enhance(container, {
+      ...NO_FEATURES,
+      hasCodeHighlighting: true,
+    });
+
+    const highlightResult = results.find((r) => r.feature === "highlighting");
+    expect(highlightResult?.applied).toBe(false);
+    expect(highlightResult?.error).toBe("no unhighlighted code blocks");
+    expect(container.querySelector("pre")?.classList.contains("shiki-code-block")).toBe(false);
   });
 
   it("each feature pass is independent — one failing does not break others", async () => {

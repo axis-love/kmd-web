@@ -14,12 +14,12 @@
 // - Graceful degradation for missing capabilities.
 
 import type { OutlineEntry, RenderOptions, RenderResult } from "@axis-love/contracts";
-import { type RehypePluginEntry, render } from "@axis-love/core";
 import { findAnchorTarget, ScrollTracker } from "./anchor-navigation.js";
 import { AssetLifecycle } from "./asset-lifecycle.js";
 import { CodeCopyEnhancer } from "./code-copy.js";
 import { morphMarkdownBody } from "./dom-morph.js";
 import { FeatureCoordinator } from "./feature-coordination.js";
+import { renderWithFeaturePlugins } from "./feature-plugins.js";
 import type { HostCapabilities } from "./index.js";
 import { LinkPolicy } from "./link-policy.js";
 import { ParseCache } from "./parse-cache.js";
@@ -105,39 +105,9 @@ export class BrowserReader {
     const caps = options.capabilities ?? {};
     this.cache = options.cache ?? new ParseCache({ maxSize: 8 });
 
-    const renderFn: RenderFn = async (source, opts) => {
-      const plugins: RehypePluginEntry[] = [];
-      // Mutable sink for generated token-color CSS (populated by rehypeShiki).
-      const highlightCssSink = { current: "" };
-
-      // Inject KaTeX if math is enabled (default: true)
-      if (opts?.features?.math !== false) {
-        try {
-          const math = await import("@axis-love/math");
-          plugins.push([math.rehypeKatex]);
-        } catch {
-          // Math package not available — skip
-        }
-      }
-
-      // Inject Shiki if code highlighting is enabled (default: true)
-      if (opts?.features?.codeHighlighting !== false) {
-        try {
-          const highlighting = await import("@axis-love/highlighting");
-          plugins.push([highlighting.rehypeShiki, { cssSink: highlightCssSink }]);
-        } catch {
-          // Highlighting package not available — skip
-        }
-      }
-
-      const result = await render(source, opts, plugins.length > 0 ? plugins : undefined);
-      // Surface generated highlight CSS (class-based tokens) on the result so
-      // the reader can inject it into the document.
-      if (highlightCssSink.current) {
-        return { ...result, codeHighlightCss: highlightCssSink.current };
-      }
-      return result;
-    };
+    // The same seam the host's render worker uses (see feature-plugins.ts), so
+    // worker-rendered and main-thread-rendered documents come out identical.
+    const renderFn: RenderFn = renderWithFeaturePlugins;
 
     this.bridge = new WorkerBridge({
       workerFactory: caps.workerFactory,
@@ -207,8 +177,13 @@ export class BrowserReader {
       // Resolve assets
       await this.assets.resolveAssets(this.container, result.assets);
 
-      // Run feature enhancement passes
-      await this.features.enhance(this.container, result.detectedFeatures);
+      // Run feature enhancement passes. A DOM-side highlighting fallback
+      // produces its own token-color CSS (a superset of what the pipeline
+      // emitted), so apply it once the passes have run.
+      const passes = await this.features.enhance(this.container, result.detectedFeatures);
+      for (const pass of passes) {
+        if (pass.applied && pass.css) this.applyHighlightCss(pass.css);
+      }
 
       this.onRendered?.(result);
     } catch (err) {

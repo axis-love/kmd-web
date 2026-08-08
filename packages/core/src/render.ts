@@ -249,9 +249,10 @@ function filterAssets(
  *   pipeline after `raw` (so raw HTML is parsed) and before `rehypeSanitize`
  *   (so plugin output is sanitized). Core does not statically import the
  *   optional feature packages — the host injects them here. Plugin functions
- *   are NOT serializable, so this parameter only works for direct (non-worker)
- *   calls. When rendering through a worker, the worker's internal `render()`
- *   will not have these plugins.
+ *   are NOT serializable, so they cannot be posted to a worker: a worker entry
+ *   must build its own list rather than receive one. `@axis-love/browser`
+ *   exports `renderWithFeaturePlugins` for exactly that, so both the main
+ *   thread and the worker inject the same plugins.
  * @returns A serializable RenderResult with HTML, outline, diagnostics, assets, metadata, and detected features.
  * @throws RenderError if the source exceeds maxSourceSize or the render times out.
  */

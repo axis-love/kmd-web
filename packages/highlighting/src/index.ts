@@ -206,6 +206,12 @@ export const TOKEN_CLASS_PREFIX = "shiki-c";
 /** Class applied to every highlighted token span (stable selector for hosts). */
 export const TOKEN_CLASS = "shiki-token";
 
+/**
+ * Class applied to the `<pre>` of a highlighted code block. Hosts use it to
+ * tell highlighted blocks from blocks that fell through the pipeline.
+ */
+export const CODE_BLOCK_CLASS = "shiki-code-block";
+
 interface TokenColor {
   readonly light: string;
   readonly dark: string;
@@ -357,6 +363,19 @@ async function getHighlighter(): Promise<HighlighterCore> {
   return highlighterCache;
 }
 
+/**
+ * Resolve the grammar name to tokenize with: the block's own language if the
+ * highlighter loaded it, its canonical alias if that loaded instead, and
+ * `plaintext` when neither is available (unknown language → plain fallback).
+ */
+function resolveLoadedLanguage(highlighter: HighlighterCore, lang: string): string {
+  const loaded = highlighter.getLoadedLanguages();
+  if (loaded.includes(lang)) return lang;
+  const normalized = normalizeLanguage(lang);
+  if (loaded.includes(normalized)) return normalized;
+  return "plaintext";
+}
+
 async function ensureLanguage(lang: string): Promise<boolean> {
   const resolvedLang = normalizeLanguage(lang);
   if (loadedLangs.has(resolvedLang)) return true;
@@ -484,13 +503,7 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
 
       for (const { pre, lang, langClass, code } of codeBlocks) {
         try {
-          const loaded = highlighter.getLoadedLanguages();
-          const normalizedLang = normalizeLanguage(lang);
-          const resolvedLang = loaded.includes(lang)
-            ? lang
-            : loaded.includes(normalizedLang)
-              ? normalizedLang
-              : "plaintext";
+          const resolvedLang = resolveLoadedLanguage(highlighter, lang);
 
           // Tokenize and build class-based HAST (no inline styles).
           const { tokens } = highlighter.codeToTokens(code, {
@@ -502,7 +515,7 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
           pre.tagName = "pre";
           pre.properties = {
             ...pre.properties,
-            className: ["shiki-code-block"],
+            className: [CODE_BLOCK_CLASS],
             dataLanguage: resolvedLang,
           };
           pre.children = [codeElement];
@@ -523,3 +536,158 @@ export const rehypeShiki: Plugin<[HighlightOptions?], HastRoot, HastRoot> = (opt
     return tree;
   };
 };
+
+// ---------------------------------------------------------------------------
+// DOM-side highlighting
+// ---------------------------------------------------------------------------
+//
+// The rehype plugin handles the common case, but a host cannot always inject
+// it — a render worker that calls core's bare `render()`, or a cached result
+// produced before highlighting was available, yields plain code blocks in the
+// DOM. This pass re-highlights those blocks in place, producing the same
+// structure the plugin produces so both paths look identical.
+
+/** Selects `<code>` elements whose `<pre>` has not been highlighted yet. */
+const UNHIGHLIGHTED_SELECTOR = `pre:not(.${CODE_BLOCK_CLASS}) > code[class*="language-"]`;
+
+/**
+ * Languages the DOM pass never touches: the rehype exclusions plus `math`,
+ * whose blocks belong to KaTeX (`@axis-love/math`) and must be left alone when
+ * math rendering has not run yet.
+ */
+const DOM_EXCLUDED_LANGS = new Set([...EXCLUDED_LANGS, "math"]);
+
+/**
+ * Find code blocks in the DOM that the highlighting pipeline did not process.
+ *
+ * Cheap and synchronous — hosts can call it to decide whether loading Shiki is
+ * worth it before calling {@link highlightCodeBlocks}.
+ */
+export function findUnhighlightedCodeBlocks(container: ParentNode): HTMLElement[] {
+  return [...container.querySelectorAll<HTMLElement>(UNHIGHLIGHTED_SELECTOR)].filter((code) =>
+    isHighlightableCodeElement(code),
+  );
+}
+
+function isHighlightableCodeElement(code: HTMLElement): boolean {
+  const lang = codeElementLanguage(code);
+  return lang !== undefined && !DOM_EXCLUDED_LANGS.has(lang);
+}
+
+/** Read the `language-X` class off a `<code>` element, lowercased. */
+function codeElementLanguage(code: HTMLElement): string | undefined {
+  for (const cls of code.classList) {
+    if (cls.startsWith("language-")) return cls.slice("language-".length).toLowerCase();
+  }
+  return undefined;
+}
+
+/**
+ * Outcome of a DOM-side highlighting pass.
+ *
+ * `highlighted` and `skipped` are honest counts — a caller can distinguish
+ * "did real work" from "found blocks but could not highlight any" (unknown
+ * language, or Shiki failed to load).
+ */
+export interface DomHighlightResult {
+  /** Code blocks that were re-highlighted in place. */
+  readonly highlighted: number;
+  /** Candidate blocks left untouched (unsupported language or a failure). */
+  readonly skipped: number;
+  /** Token-color stylesheet for every registered class; empty if nothing ran. */
+  readonly css: string;
+}
+
+/**
+ * Re-highlight unhighlighted code blocks inside `container`, in place.
+ *
+ * The result mirrors the rehype plugin's output: the `<pre>` gains the
+ * `shiki-code-block` class and a `data-language` attribute, and the `<code>`
+ * content is replaced with `<span class="line">` / token spans. Token text is
+ * set through `textContent` only — no HTML is parsed from document content.
+ *
+ * Blocks are highlighted independently: an unsupported language or a
+ * tokenizer failure leaves that block as plain code and is counted in
+ * `skipped`. If Shiki itself fails to load, every block is skipped and `css`
+ * is empty — the caller can report the failure rather than claiming success.
+ */
+export async function highlightCodeBlocks(
+  container: ParentNode,
+  options?: HighlightOptions,
+): Promise<DomHighlightResult> {
+  const darkTheme = options?.darkTheme ?? DEFAULT_DARK_THEME;
+  const lightTheme = options?.lightTheme ?? DEFAULT_LIGHT_THEME;
+
+  const blocks = findUnhighlightedCodeBlocks(container);
+  if (blocks.length === 0) return { highlighted: 0, skipped: 0, css: "" };
+
+  let highlighter: HighlighterCore;
+  try {
+    highlighter = await getHighlighter();
+  } catch {
+    // Shiki unavailable — leave every block as plain code.
+    return { highlighted: 0, skipped: blocks.length, css: "" };
+  }
+
+  // Pre-load all unique languages in parallel (same as the rehype path).
+  const targets = blocks.map((code) => ({
+    code,
+    lang: codeElementLanguage(code) ?? "plaintext",
+  }));
+  const uniqueLangs = [...new Set(targets.map((t) => normalizeLanguage(t.lang)))];
+  await Promise.all(uniqueLangs.map((lang) => ensureLanguage(lang)));
+
+  let highlighted = 0;
+  let skipped = 0;
+
+  for (const { code, lang } of targets) {
+    const pre = code.parentElement;
+    const doc = code.ownerDocument;
+    if (!pre) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      const resolvedLang = resolveLoadedLanguage(highlighter, lang);
+      const { tokens } = highlighter.codeToTokens(code.textContent ?? "", {
+        lang: resolvedLang,
+        themes: { dark: darkTheme, light: lightTheme },
+      });
+
+      code.replaceChildren(...tokensToLineNodes(tokens, doc));
+      pre.classList.add(CODE_BLOCK_CLASS);
+      pre.setAttribute("data-language", resolvedLang);
+      highlighted++;
+    } catch {
+      // Leave this block unhighlighted — plain code fallback.
+      skipped++;
+    }
+  }
+
+  return { highlighted, skipped, css: highlighted > 0 ? buildHighlightCss() : "" };
+}
+
+/**
+ * Build the DOM equivalent of {@link tokensToCodeElement}'s children:
+ * `<span class="line">` per line, token spans inside, newline text nodes
+ * between lines so copied text keeps its breaks.
+ */
+function tokensToLineNodes(tokens: readonly CodeToken[][], doc: Document): Node[] {
+  const nodes: Node[] = [];
+  for (let lineIdx = 0; lineIdx < tokens.length; lineIdx++) {
+    const lineEl = doc.createElement("span");
+    lineEl.className = "line";
+    for (const token of tokens[lineIdx] ?? []) {
+      const tokenEl = doc.createElement("span");
+      tokenEl.className = `${TOKEN_CLASS} ${registerTokenColor(tokenLightColor(token), tokenDarkColor(token))}`;
+      tokenEl.textContent = token.content;
+      lineEl.appendChild(tokenEl);
+    }
+    nodes.push(lineEl);
+    if (lineIdx < tokens.length - 1) {
+      nodes.push(doc.createTextNode("\n"));
+    }
+  }
+  return nodes;
+}

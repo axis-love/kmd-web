@@ -168,6 +168,12 @@ export {
   FeatureCoordinator,
   type FeaturePassResult,
 } from "./feature-coordination.js";
+export {
+  type FeatureRehypePlugins,
+  type HighlightCssSink,
+  loadFeatureRehypePlugins,
+  renderWithFeaturePlugins,
+} from "./feature-plugins.js";
 export { LinkPolicy, type LinkPolicyOptions } from "./link-policy.js";
 export { ParseCache, type ParseCacheOptions } from "./parse-cache.js";
 export { BrowserReader, type BrowserReaderOptions } from "./reader-runtime.js";

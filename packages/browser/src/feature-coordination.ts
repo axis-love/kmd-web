@@ -21,6 +21,12 @@ export interface FeaturePassResult {
   readonly feature: string;
   readonly applied: boolean;
   readonly error?: string;
+  /**
+   * Stylesheet the pass produced and the host must inject for the DOM changes
+   * to display correctly. Currently only the highlighting pass sets it, with
+   * the token-color rules for the blocks it re-highlighted.
+   */
+  readonly css?: string;
 }
 
 /**
@@ -45,10 +51,12 @@ export interface FeatureCoordinationOptions {
  * - Math: dynamically imports `@axis-love/math` and calls
  *   `ensureKatexCss` to load the KaTeX stylesheet (rendering itself
  *   is done in the rehype pipeline via injected `rehypeKatex`)
- * - Highlighting: dynamically imports `@axis-love/highlighting`
- *   and checks for unhighlighted code blocks (Shiki runs in the
- *   rehype pipeline via injected `rehypeShiki`; this pass detects
- *   blocks that fell through, e.g. on the worker path)
+ * - Highlighting: Shiki normally runs in the rehype pipeline via
+ *   injected `rehypeShiki`. This pass re-highlights any code block
+ *   that fell through, by dynamically importing
+ *   `@axis-love/highlighting` and calling `highlightCodeBlocks`. It
+ *   reports `applied: true` only when blocks were actually changed,
+ *   and returns the token-color CSS the host must inject.
  * - Design: no DOM-side action (design is a parse-time feature)
  *
  * Each pass is independent — if one fails, others still run. If a
@@ -135,13 +143,18 @@ export class FeatureCoordinator {
 
   private async runHighlightingPass(container: HTMLElement): Promise<FeaturePassResult> {
     try {
-      // Shiki highlighting runs in the rehype pipeline (injected by
-      // reader-runtime's renderFn). By the time this DOM-side pass runs,
-      // code blocks already have the "shiki-code-block" class. If any
-      // blocks are missing it (e.g. worker path without plugin injection),
-      // they are reported here for potential DOM-side fallback.
+      // Shiki highlighting normally runs in the rehype pipeline, injected on
+      // both the main-thread and worker paths (see feature-plugins.ts). Those
+      // blocks carry "shiki-code-block" on the <pre>. Anything still plain got
+      // here another way — a host worker calling core's bare render(), or a
+      // cached result from before highlighting was available — so this pass
+      // re-highlights it in the DOM.
+      //
+      // Cheap synchronous pre-check first: it mirrors the highlighting
+      // package's own selector so the package is only imported when there is
+      // real work to do.
       const unhighlighted = container.querySelectorAll(
-        "pre > code[class*='language-']:not(.shiki-code-block)",
+        'pre:not(.shiki-code-block) > code[class*="language-"]',
       );
       if (unhighlighted.length === 0) {
         return {
@@ -151,11 +164,36 @@ export class FeatureCoordinator {
         };
       }
 
-      // Dynamically import the highlighting package for potential DOM-side
-      // re-highlighting. The pipeline already handled the common case;
-      // this pass detects blocks that fell through (worker path limitation).
-      await import("@axis-love/highlighting");
-      return { feature: "highlighting", applied: true };
+      const highlightingMod = await import("@axis-love/highlighting");
+
+      // The package's own check also drops languages it never highlights
+      // (mermaid, plaintext, math), which the selector above cannot express.
+      if (highlightingMod.findUnhighlightedCodeBlocks(container).length === 0) {
+        return {
+          feature: "highlighting",
+          applied: false,
+          error: "no unhighlighted code blocks",
+        };
+      }
+
+      const outcome = await highlightingMod.highlightCodeBlocks(container);
+
+      // Report honestly: finding candidate blocks is not the same as
+      // highlighting them. Every block can still be skipped — an unsupported
+      // language, or Shiki failing to load.
+      if (outcome.highlighted === 0) {
+        return {
+          feature: "highlighting",
+          applied: false,
+          error: `highlighting unavailable — ${outcome.skipped} code block(s) left unhighlighted`,
+        };
+      }
+
+      return {
+        feature: "highlighting",
+        applied: true,
+        css: outcome.css,
+      };
     } catch (err) {
       return {
         feature: "highlighting",
