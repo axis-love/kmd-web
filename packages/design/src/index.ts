@@ -1,5 +1,5 @@
 // @axis-love/design
-// Optional DESIGN.md extraction and presentation feature.
+// Optional DESIGN.md extraction pipeline and HTML-export contract.
 //
 // Ordinary Markdown consumers must not load this pipeline.
 // Core detects design docs via feature-detection.ts (regex-based, cheap).
@@ -10,6 +10,11 @@
 //   core (feature detection) → design package (pipeline + IR + validation)
 //   design imports contracts + core, never browser/react
 //   HTML export is an explicit host integration, not automatic
+//
+// Presentation stays host-side (KWEB-047). This package ships the design data
+// and the export contract; catalog UI, catalog CSS, showcase themes, and the
+// HTML writer belong to each product shell. See §6.3.1 of
+// docs/planning/20-kmd-web-extraction-inventory.md in the kmd repo.
 
 // Package version
 export const DESIGN_VERSION = "0.1.0-rc.0";

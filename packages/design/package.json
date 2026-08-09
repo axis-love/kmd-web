@@ -1,7 +1,7 @@
 {
   "name": "@axis-love/design",
   "version": "0.1.0-rc.0",
-  "description": "Optional DESIGN.md extraction and presentation feature.",
+  "description": "Optional DESIGN.md extraction pipeline and HTML-export contract. Hosts provide the presentation.",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -57,7 +57,7 @@ Advanced consumers can import only the engine or browser surface they need via i
 | `@axis-love/styles` | Scoped reader CSS and generated design tokens |
 | `@axis-love/react` | `<MarkdownReader>`, `<DocumentShell>`, React hooks |
 | `@axis-love/element` | Optional `<kmd-reader>` custom element |
-| `@axis-love/design` | Optional DESIGN.md extraction and presentation |
+| `@axis-love/design` | Optional DESIGN.md extraction pipeline and HTML-export contract (hosts render) |
 | `@axis-love/highlighting` | Optional Shiki integration |
 | `@axis-love/mermaid` | Optional Mermaid integration |
 | `@axis-love/math` | Optional KaTeX integration |
