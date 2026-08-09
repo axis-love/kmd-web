@@ -197,13 +197,15 @@ const result = await render(source, {
 ### Mermaid (`@axis-love/mermaid`)
 
 - **Engine**: Mermaid 11.x, loaded via `import("mermaid")`.
-- **Security**: `securityLevel: "strict"`, `startOnLoad: false`, `theme: "default"`. No external resource fetching.
+- **Security**: `securityLevel: "strict"`, `startOnLoad: false`. No external resource fetching.
+- **Theming**: Mermaid bakes colors into the SVG it generates, so CSS custom properties cannot recolor a diagram after the fact. `resolveMermaidTheme(scope)` reads the computed `--kmd-*` tokens off the scope (default `document.documentElement`) and maps them onto mermaid's customizable `base` theme, so diagrams match the surrounding document in every kmd theme including sepia and host overrides. When the tokens are absent (styles.css not loaded, SSR), it falls back to mermaid's built-in `dark`/`default` themes, choosing between them the way styles.css does — explicit theme selector, then `prefers-color-scheme`, then dark.
 - **Placeholder pattern**: Core produces `<div class="mermaid-placeholder" data-mermaid-source="base64...">`. The source is base64-encoded to prevent XSS payloads from appearing as literal substrings in the rendered HTML. The browser layer decodes with `atob()` before rendering.
-- **DOM-side rendering**: `renderMermaidPlaceholders(container, options)` finds placeholders, decodes source, and renders SVG. Each placeholder is rendered once (tracked via `data-mermaid-rendered`).
+- **DOM-side rendering**: `renderMermaidPlaceholders(container, options)` finds placeholders, decodes source, and renders SVG. Each placeholder is rendered once *per theme* — `data-mermaid-rendered` marks it drawn and `data-mermaid-theme` records the palette id it was drawn under.
+- **Live theme switching**: rendering also installs a watcher on the container (opt out with `watchTheme: false`, automatically off when `theme` pins a palette). It observes the theme attributes and classes on the container and its ancestors plus the `prefers-color-scheme` media query, and re-renders when the resolved palette changes, so a toggle never leaves stale-colored SVGs. `watchMermaidTheme(container)` / `stopMermaidThemeWatch(container)` control it directly; the watcher disposes itself once the container leaves the document.
 - **Timeout**: Per-diagram timeout (default 10 s). On timeout, `createMermaidFallback()` produces a `<pre class="mermaid-error">` with the original source.
 - **Max source length**: 50,000 characters (`MAX_DIAGRAM_SOURCE_LENGTH`).
 - **Detection helper**: `hasMermaidPlaceholders(result)` checks if a `RenderResult`'s HTML contains Mermaid placeholders.
-- **API**: `renderMermaid(source, options)`, `renderMermaidPlaceholders(container, options)`, `createMermaidFallback(source, error?)`, `hasMermaidPlaceholders(result)`, `resetMermaidState()`, `MERMAID_VERSION`.
+- **API**: `renderMermaid(source, options)`, `renderMermaidPlaceholders(container, options)`, `createMermaidFallback(source, error?)`, `hasMermaidPlaceholders(result)`, `resolveMermaidTheme(scope?)`, `watchMermaidTheme(container, options?)`, `stopMermaidThemeWatch(container)`, `detectDarkMode(scope?)`, `resetMermaidState()`, `MERMAID_VERSION`.
 
 ### Math (`@axis-love/math`)
 

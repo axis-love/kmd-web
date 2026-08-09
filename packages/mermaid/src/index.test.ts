@@ -16,6 +16,7 @@ import {
   renderMermaid,
   renderMermaidPlaceholders,
   resetMermaidState,
+  resolveMermaidTheme,
 } from "./index";
 
 // ---------------------------------------------------------------------------
@@ -39,12 +40,24 @@ function makeMockPlaceholder(encodedSource: string): HTMLElement {
 
   return {
     className: "mermaid-placeholder",
-    dataset: { mermaidSource: encodedSource, mermaidRendered: undefined },
+    dataset: {
+      mermaidSource: encodedSource,
+      mermaidRendered: undefined,
+      mermaidTheme: undefined,
+    },
     querySelector: vi.fn((selector: string) => {
       if (selector === ".mermaid-render-target") return target;
       return null;
     }) as never,
   } as unknown as HTMLElement;
+}
+
+/**
+ * The palette a mock container resolves to. With no DOM behind it, that is
+ * the built-in fallback — enough to exercise the per-theme skip contract.
+ */
+function currentThemeId(container: HTMLElement): string {
+  return resolveMermaidTheme(container).id;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,21 +211,40 @@ describe("@axis-love/mermaid", () => {
       const container = makeMockContainer([placeholder]);
       await renderMermaidPlaceholders(container);
 
-      // The placeholder should be marked as rendered
+      // The placeholder should be marked as rendered, under a known palette
       expect(placeholder.dataset.mermaidRendered).toBe("true");
+      expect(placeholder.dataset.mermaidTheme).toBe(currentThemeId(container));
     });
 
-    it("should skip already-rendered placeholders", async () => {
+    it("should skip placeholders already rendered under the current theme", async () => {
       const source = "flowchart TD\n  A --> B";
       const encoded = Buffer.from(source, "utf-8").toString("base64");
       const placeholder = makeMockPlaceholder(encoded);
-      placeholder.dataset.mermaidRendered = "true";
-
       const container = makeMockContainer([placeholder]);
+      placeholder.dataset.mermaidRendered = "true";
+      placeholder.dataset.mermaidTheme = currentThemeId(container);
+
       await renderMermaidPlaceholders(container);
 
       // querySelector should NOT have been called (skipped before reaching it)
       expect(placeholder.querySelector).not.toHaveBeenCalled();
+    });
+
+    it("should re-render placeholders rendered under a different theme", async () => {
+      const source = "flowchart TD\n  A --> B";
+      const encoded = Buffer.from(source, "utf-8").toString("base64");
+      const placeholder = makeMockPlaceholder(encoded);
+      placeholder.dataset.mermaidRendered = "true";
+      placeholder.dataset.mermaidTheme = "fallback-light-deadbeef";
+
+      const container = makeMockContainer([placeholder]);
+      await renderMermaidPlaceholders(container);
+
+      // The stale SVG is replaced and re-stamped with the current palette
+      expect(placeholder.querySelector).toHaveBeenCalled();
+      expect(placeholder.dataset.mermaidTheme).toBe(currentThemeId(container));
+      const target = (placeholder.querySelector as ReturnType<typeof vi.fn>).mock.results[0]?.value;
+      expect(target?.innerHTML).toContain("<svg");
     });
 
     it("should provide fallback for invalid base64", async () => {

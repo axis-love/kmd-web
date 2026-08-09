@@ -221,6 +221,20 @@ if (mermaidPass?.error) {
 
 The mermaid timeout is 10,000 ms (10 s) per diagram. Failed renders show a `<pre class="mermaid-error">` fallback with the original source.
 
+### Mermaid diagram colors don't match the reader — tokens not visible to the diagram
+
+**Symptom:** Diagram edges and labels are hard to read against the page, or a diagram keeps the previous theme's colors after a theme switch.
+
+**Cause:** Mermaid bakes colors into the SVG, so the palette has to be resolved before rendering. `@axis-love/mermaid` reads the computed `--kmd-*` tokens from the render container. If those tokens are not visible there — the stylesheet is not loaded, or the theme selector sits on an element that is not an ancestor of the container — it falls back to mermaid's built-in `dark`/`default` themes, which do not follow the kmd palette.
+
+**Solution:** Import `@axis-love/kmd-web/styles.css` and put the theme selector (`data-kmd-theme`, `data-theme`, or `.kmd-theme-*`) on the container or one of its ancestors. To theme a subtree explicitly, pass the element that carries the tokens:
+
+```typescript
+await renderMermaidPlaceholders(container, { themeScope: themedAncestor });
+```
+
+Stale colors after a switch mean the theme watcher is off. It is installed automatically unless `watchTheme: false` is passed or `theme` pins a palette; a host that drives its own re-render can call `renderMermaidPlaceholders(container)` again after the switch instead — placeholders drawn under a different palette are redrawn, the rest are skipped.
+
 ### Code not highlighted — feature disabled or language unsupported
 
 **Symptom:** Code blocks appear as plain `<pre><code>` without syntax coloring.
