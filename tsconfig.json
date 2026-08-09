@@ -1,11 +1,5 @@
 {
   "files": [],
-  // No package declares "composite"/"references", so `tsc --build` compiles the
-  // projects below in LIST ORDER. Every entry must appear after everything it
-  // imports (even type-only imports of lazily-loaded packages), or the first
-  // build of a clean checkout fails with TS2307 — a dirty tree hides the
-  // breakage because stale dist/ output resolves. browser type-checks against
-  // highlighting/mermaid/math, so those come first.
   "references": [
     { "path": "./packages/contracts" },
     { "path": "./packages/core" },
