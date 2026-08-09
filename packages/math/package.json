@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/math",
-  "version": "0.1.0-rc.0",
+  "version": "0.1.0-rc.1",
   "description": "Optional KaTeX math rendering integration.",
   "license": "MIT",
   "repository": {
@@ -28,8 +28,8 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "0.1.0-rc.0",
-    "@axis-love/core": "0.1.0-rc.0",
+    "@axis-love/contracts": "0.1.0-rc.1",
+    "@axis-love/core": "0.1.0-rc.1",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

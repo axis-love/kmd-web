@@ -12,7 +12,7 @@ import {
 
 const ROOT = process.cwd();
 
-const STYLES_TGZ = "axis-love-styles-0.1.0-rc.0.tgz";
+const STYLES_TGZ = "axis-love-styles-0.1.0-rc.1.tgz";
 
 function lockfileWith(entries: Record<string, { resolved?: string; integrity?: string }>) {
   return { lockfileVersion: 3, packages: entries };
@@ -20,7 +20,7 @@ function lockfileWith(entries: Record<string, { resolved?: string; integrity?: s
 
 describe("tarballNameFor", () => {
   it("derives npm's tarball filename from a scoped name", () => {
-    expect(tarballNameFor("@axis-love/styles", "0.1.0-rc.0")).toBe(STYLES_TGZ);
+    expect(tarballNameFor("@axis-love/styles", "0.1.0-rc.1")).toBe(STYLES_TGZ);
   });
 });
 

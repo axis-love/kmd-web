@@ -108,7 +108,7 @@ void [
 describe("@axis-love/core public API", () => {
   it("exports CORE_VERSION", () => {
     expect(typeof CORE_VERSION).toBe("string");
-    expect(CORE_VERSION).toBe("0.1.0-rc.0");
+    expect(CORE_VERSION).toBe("0.1.0-rc.1");
   });
 
   it("re-exports defaultRenderOptions from contracts", () => {
@@ -153,7 +153,7 @@ describe("@axis-love/core render", () => {
     expect(result.outline[0]?.level).toBe(1);
     expect(result.outline[0]?.text).toBe("Hello");
     expect(result.outline[0]?.slug).toBe("hello");
-    expect(result.rendererVersion).toBe("0.1.0-rc.0");
+    expect(result.rendererVersion).toBe("0.1.0-rc.1");
   });
 
   it("renders in a non-DOM Node environment (no window/document)", async () => {

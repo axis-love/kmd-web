@@ -28,7 +28,7 @@ const ciWorkflow = readWorkflow("ci.yml");
 const CORE = {
   dir: join(ROOT, "packages/core"),
   name: "@axis-love/core",
-  version: "0.1.0-rc.0",
+  version: "0.1.0-rc.1",
   private: false,
   files: ["dist"],
   repository: { type: "git", url: REPOSITORY_URL, directory: "packages/core" },
@@ -55,7 +55,7 @@ describe("publish package discovery", () => {
 
 describe("dist-tag selection", () => {
   it("publishes prereleases under their prerelease identifier", () => {
-    expect(distTagFor("0.1.0-rc.0")).toBe("rc");
+    expect(distTagFor("0.1.0-rc.1")).toBe("rc");
     expect(distTagFor("1.0.0-beta.12")).toBe("beta");
   });
 
@@ -86,14 +86,14 @@ describe("npm publish arguments", () => {
 describe("dry-run report parsing", () => {
   it("accepts the name-keyed shape (npm 10/11)", () => {
     const report = parseDryRunReport(
-      JSON.stringify({ "@axis-love/core": { name: "@axis-love/core", version: "0.1.0-rc.0" } }),
+      JSON.stringify({ "@axis-love/core": { name: "@axis-love/core", version: "0.1.0-rc.1" } }),
     );
     expect(report?.name).toBe("@axis-love/core");
   });
 
   it("accepts a flat report object", () => {
     const report = parseDryRunReport(
-      JSON.stringify({ name: "@axis-love/core", version: "0.1.0-rc.0" }),
+      JSON.stringify({ name: "@axis-love/core", version: "0.1.0-rc.1" }),
     );
     expect(report?.name).toBe("@axis-love/core");
   });
@@ -101,7 +101,7 @@ describe("dry-run report parsing", () => {
   it("ignores npm notice lines printed around the JSON", () => {
     const report = parseDryRunReport(
       `npm notice Publishing to https://registry.npmjs.org/\n${JSON.stringify({
-        "@axis-love/core": { name: "@axis-love/core", version: "0.1.0-rc.0" },
+        "@axis-love/core": { name: "@axis-love/core", version: "0.1.0-rc.1" },
       })}\n`,
     );
     expect(report?.name).toBe("@axis-love/core");
@@ -116,8 +116,8 @@ describe("dry-run verification", () => {
   it("passes a report that matches the package it was run for", () => {
     const problems = verifyDryRunReport(CORE, {
       name: "@axis-love/core",
-      version: "0.1.0-rc.0",
-      filename: expectedTarballName("@axis-love/core", "0.1.0-rc.0"),
+      version: "0.1.0-rc.1",
+      filename: expectedTarballName("@axis-love/core", "0.1.0-rc.1"),
       files: [{ path: "package.json" }, { path: "dist/index.js" }],
     });
     expect(problems).toEqual([]);
@@ -128,8 +128,8 @@ describe("dry-run verification", () => {
     // package directory: the private root manifest, not the package.
     const problems = verifyDryRunReport(CORE, {
       name: "kmd-web-monorepo",
-      version: "0.1.0-rc.0",
-      filename: "kmd-web-monorepo-0.1.0-rc.0.tgz",
+      version: "0.1.0-rc.1",
+      filename: "kmd-web-monorepo-0.1.0-rc.1.tgz",
       files: [{ path: "package.json" }, { path: "packages/core/dist/index.js" }],
     });
     expect(problems.length).toBeGreaterThan(0);
@@ -140,8 +140,8 @@ describe("dry-run verification", () => {
   it("fails when the tarball omits a declared files entry", () => {
     const problems = verifyDryRunReport(CORE, {
       name: "@axis-love/core",
-      version: "0.1.0-rc.0",
-      filename: expectedTarballName("@axis-love/core", "0.1.0-rc.0"),
+      version: "0.1.0-rc.1",
+      filename: expectedTarballName("@axis-love/core", "0.1.0-rc.1"),
       files: [{ path: "package.json" }],
     });
     expect(problems.join("\n")).toContain('missing "files" entry "dist"');

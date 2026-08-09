@@ -127,7 +127,7 @@ void [
 describe("@axis-love/browser public API", () => {
   it("exports BROWSER_VERSION", () => {
     expect(typeof BROWSER_VERSION).toBe("string");
-    expect(BROWSER_VERSION).toBe("0.1.0-rc.0");
+    expect(BROWSER_VERSION).toBe("0.1.0-rc.1");
   });
 
   it("exports RAW_IMAGE_SRC_ATTR", () => {

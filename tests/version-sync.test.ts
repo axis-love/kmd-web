@@ -46,10 +46,10 @@ describe("workspace version coherence (KWEB-043)", () => {
 describe("version constant parsing", () => {
   it("finds an exported version constant", () => {
     const found = parseVersionConstants(
-      'export const CORE_VERSION = "0.1.0-rc.0";',
+      'export const CORE_VERSION = "0.1.0-rc.1";',
       "src/render.ts",
     );
-    expect(found).toEqual([{ name: "CORE_VERSION", value: "0.1.0-rc.0", file: "src/render.ts" }]);
+    expect(found).toEqual([{ name: "CORE_VERSION", value: "0.1.0-rc.1", file: "src/render.ts" }]);
   });
 
   it("finds a bare VERSION export and an annotated one", () => {
@@ -73,21 +73,21 @@ describe("lockstep detection", () => {
   it("passes when every manifest agrees", () => {
     expect(
       lockstepProblems([
-        { label: "@axis-love/core", version: "0.1.0-rc.0" },
-        { label: "@axis-love/browser", version: "0.1.0-rc.0" },
+        { label: "@axis-love/core", version: "0.1.0-rc.1" },
+        { label: "@axis-love/browser", version: "0.1.0-rc.1" },
       ]),
     ).toEqual([]);
   });
 
   it("names the outlier, not the majority", () => {
     const problems = lockstepProblems([
-      { label: "@axis-love/core", version: "0.1.0-rc.0" },
-      { label: "@axis-love/browser", version: "0.1.0-rc.0" },
+      { label: "@axis-love/core", version: "0.1.0-rc.1" },
+      { label: "@axis-love/browser", version: "0.1.0-rc.1" },
       { label: "@axis-love/react", version: "0.2.0" },
     ]);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("@axis-love/react");
-    expect(problems[0]).toContain('expected "0.1.0-rc.0"');
+    expect(problems[0]).toContain('expected "0.1.0-rc.1"');
   });
 
   it("fails an empty workspace", () => {
@@ -99,8 +99,8 @@ describe("constant/manifest drift detection", () => {
   const core = {
     dirName: "core",
     name: "@axis-love/core",
-    version: "0.1.0-rc.0",
-    constants: [{ name: "CORE_VERSION", value: "0.1.0-rc.0", file: "packages/core/src/render.ts" }],
+    version: "0.1.0-rc.1",
+    constants: [{ name: "CORE_VERSION", value: "0.1.0-rc.1", file: "packages/core/src/render.ts" }],
   };
 
   it("passes a package whose constant matches its manifest", () => {
@@ -113,7 +113,7 @@ describe("constant/manifest drift detection", () => {
       constants: [{ name: "CORE_VERSION", value: "0.1.0", file: "packages/core/src/render.ts" }],
     });
     expect(problems.join("\n")).toContain('CORE_VERSION is "0.1.0"');
-    expect(problems.join("\n")).toContain('package.json says "0.1.0-rc.0"');
+    expect(problems.join("\n")).toContain('package.json says "0.1.0-rc.1"');
   });
 
   it("fails when the package exports no version constant at all", () => {
@@ -134,9 +134,9 @@ describe("constant/manifest drift detection", () => {
     const problems = constantProblems({
       dirName: "styles",
       name: "@axis-love/styles",
-      version: "0.1.0-rc.0",
+      version: "0.1.0-rc.1",
       constants: [
-        { name: "STYLES_VERSION", value: "0.1.0-rc.0", file: "packages/styles/src/index.ts" },
+        { name: "STYLES_VERSION", value: "0.1.0-rc.1", file: "packages/styles/src/index.ts" },
         { name: "TOKENS_VERSION", value: "1.0.0", file: "packages/styles/src/index.ts" },
       ],
     });
@@ -147,7 +147,7 @@ describe("constant/manifest drift detection", () => {
     const problems = constantProblems({
       dirName: "brand-new",
       name: "@axis-love/brand-new",
-      version: "0.1.0-rc.0",
+      version: "0.1.0-rc.1",
       constants: [],
     });
     expect(problems.join("\n")).toContain("no version constant registered");
@@ -171,11 +171,11 @@ describe("workspace dependency range lockstep (KWEB-045)", () => {
       {
         name: "@axis-love/browser",
         manifest: {
-          dependencies: { "@axis-love/core": "0.1.0-rc.0" },
-          peerDependencies: { "@axis-love/highlighting": "0.1.0-rc.0" },
+          dependencies: { "@axis-love/core": "0.1.0-rc.1" },
+          peerDependencies: { "@axis-love/highlighting": "0.1.0-rc.1" },
         },
       },
-      "0.1.0-rc.0",
+      "0.1.0-rc.1",
       WORKSPACE,
     );
     expect(problems).toEqual([]);
@@ -187,17 +187,17 @@ describe("workspace dependency range lockstep (KWEB-045)", () => {
         name: "@axis-love/browser",
         manifest: { peerDependencies: { "@axis-love/highlighting": "0.1.0" } },
       },
-      "0.1.0-rc.0",
+      "0.1.0-rc.1",
       WORKSPACE,
     );
     expect(problems.join("\n")).toContain('peerDependencies["@axis-love/highlighting"] is "0.1.0"');
-    expect(problems.join("\n")).toContain('workspace is at "0.1.0-rc.0"');
+    expect(problems.join("\n")).toContain('workspace is at "0.1.0-rc.1"');
   });
 
   it("fails a wildcard range, which a workspace link would silently satisfy", () => {
     const problems = dependencyRangeProblems(
       { name: "@axis-love/browser", manifest: { devDependencies: { "@axis-love/core": "*" } } },
-      "0.1.0-rc.0",
+      "0.1.0-rc.1",
       WORKSPACE,
     );
     expect(problems.join("\n")).toContain('devDependencies["@axis-love/core"] is "*"');
@@ -207,9 +207,9 @@ describe("workspace dependency range lockstep (KWEB-045)", () => {
     const problems = dependencyRangeProblems(
       {
         name: "@axis-love/browser",
-        manifest: { peerDependencies: { "@axis-love/highlightning": "0.1.0-rc.0" } },
+        manifest: { peerDependencies: { "@axis-love/highlightning": "0.1.0-rc.1" } },
       },
-      "0.1.0-rc.0",
+      "0.1.0-rc.1",
       WORKSPACE,
     );
     expect(problems.join("\n")).toContain("names no package in this workspace");
@@ -218,7 +218,7 @@ describe("workspace dependency range lockstep (KWEB-045)", () => {
   it("ignores third-party ranges", () => {
     const problems = dependencyRangeProblems(
       { name: "@axis-love/browser", manifest: { dependencies: { shiki: "^4.0.2", react: "^19" } } },
-      "0.1.0-rc.0",
+      "0.1.0-rc.1",
       WORKSPACE,
     );
     expect(problems).toEqual([]);
