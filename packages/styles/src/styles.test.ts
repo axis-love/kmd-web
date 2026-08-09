@@ -475,3 +475,92 @@ describe("document shell layout", () => {
     expect(css).toContain("var(--kmd-width-toggle-width)");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Document shell mobile surface — safe-area insets + small-screen overlay
+// (KWEB-052)
+// ---------------------------------------------------------------------------
+
+describe("document shell mobile surface", () => {
+  const css = readStyles();
+
+  /** Body of the small-screen block, or null if the block is missing. */
+  function smallScreenBlock(): string | null {
+    const start = css.indexOf("@media (max-width: 768px)");
+    if (start === -1) return null;
+    const open = css.indexOf("{", start);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}") {
+        depth--;
+        if (depth === 0) return css.slice(open + 1, i);
+      }
+    }
+    return null;
+  }
+
+  it("resolves --kmd-inset-top from an env() safe-area default", () => {
+    expect(css).toContain("--kmd-inset-top-applied: var(--kmd-inset-top, env(safe-area-inset-top,");
+  });
+
+  it("resolves --kmd-inset-bottom from an env() safe-area default", () => {
+    expect(css).toContain(
+      "--kmd-inset-bottom-applied: var(--kmd-inset-bottom, env(safe-area-inset-bottom,",
+    );
+  });
+
+  it("defaults both insets to 0px so they are inert outside notched webviews", () => {
+    expect(css).toContain("env(safe-area-inset-top, 0px)");
+    expect(css).toContain("env(safe-area-inset-bottom, 0px)");
+  });
+
+  it("leaves --kmd-inset-top/--kmd-inset-bottom undeclared so hosts can set them anywhere", () => {
+    // A declaration on .kmd-document-shell would beat an inherited host value,
+    // which is exactly what the var() fallback above exists to avoid.
+    const noComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(noComments).not.toMatch(/--kmd-inset-top\s*:/);
+    expect(noComments).not.toMatch(/--kmd-inset-bottom\s*:/);
+  });
+
+  it("applies the resolved insets as padding on the scroll containers", () => {
+    expect(css).toContain("calc(var(--kmd-space-xl) + var(--kmd-inset-top-applied))");
+    expect(css).toContain("calc(var(--kmd-space-md) + var(--kmd-inset-bottom-applied))");
+    // The outline sidebar scrolls too and gets the same treatment.
+    expect(css).toContain("calc(var(--kmd-space-md) + var(--kmd-inset-top-applied))");
+  });
+
+  it("has a small-screen block at the 768px breakpoint", () => {
+    expect(smallScreenBlock()).not.toBeNull();
+  });
+
+  it("turns the outline sidebar into an overlay below the breakpoint", () => {
+    const block = smallScreenBlock() ?? "";
+    expect(block).toContain(".kmd-document-shell .kmd-outline-sidebar");
+    expect(block).toMatch(/position:\s*absolute/);
+    expect(block).toMatch(/z-index:/);
+    // The shell must establish the containing block for the overlay.
+    expect(block).toMatch(/\.kmd-document-shell\s*\{[^}]*position:\s*relative/);
+    // The overlay is inset by the toggle so the toggle stays reachable.
+    expect(block).toContain("left: var(--kmd-width-toggle-width)");
+  });
+
+  it("scopes every small-screen rule under .kmd-document-shell", () => {
+    const block = smallScreenBlock() ?? "";
+    const selectors = [...block.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim());
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(selector.startsWith(".kmd-document-shell"), `unscoped: ${selector}`).toBe(true);
+    }
+  });
+
+  it("keeps the overlay out of the desktop layout", () => {
+    // The base (non-media) sidebar rule must not position itself — desktop
+    // stays a plain flex column above the breakpoint.
+    const baseRule = css.match(
+      /\n\.kmd-document-shell \.kmd-outline-sidebar \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(baseRule).toBeTruthy();
+    expect(baseRule).not.toMatch(/position:\s*absolute/);
+  });
+});

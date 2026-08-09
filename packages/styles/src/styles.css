@@ -4,6 +4,17 @@
  *   .kmd-reader           — root scope for all reader body styles
  *   .kmd-document-shell   — root scope for document layout (outline + content)
  *
+ * Host-overridable layout custom properties (KWEB-052):
+ *   --kmd-inset-top       — safe-area padding at the top of the shell's scroll
+ *   --kmd-inset-bottom      containers. Unset by default, so each falls back to
+ *                           env(safe-area-inset-top|bottom, 0px) — inert outside
+ *                           notched webviews. Set either on .kmd-document-shell
+ *                           or any ancestor to feed host-measured insets in.
+ *
+ * At or below 768px the outline sidebar renders as an overlay above the
+ * document rather than as a side column. Above the breakpoint the layout is
+ * unchanged.
+ *
  * All CSS values reference --kmd-* custom properties from generated/tokens.css.
  * Consumers override themes and values through documented CSS custom properties.
  *
@@ -876,6 +887,16 @@
  * --------------------------------------------------------------------------- */
 
 .kmd-document-shell {
+  /* Safe-area insets (KWEB-052).
+   *
+   * --kmd-inset-top / --kmd-inset-bottom are the public knobs. They are
+   * deliberately left undeclared so a host can set them on the shell or on
+   * any ancestor and win; when unset they fall back to the webview's own
+   * env() values, which resolve to 0px outside notched contexts — inert on
+   * desktop, correct in an iOS WKWebView. The -applied properties below are
+   * the resolved values the layout consumes; do not override those. */
+  --kmd-inset-top-applied: var(--kmd-inset-top, env(safe-area-inset-top, 0px));
+  --kmd-inset-bottom-applied: var(--kmd-inset-bottom, env(safe-area-inset-bottom, 0px));
   display: flex;
   width: 100%;
   height: 100%;
@@ -890,7 +911,8 @@
   min-height: 0;
   display: flex;
   justify-content: center;
-  padding: var(--kmd-space-xl) var(--kmd-space-md) var(--kmd-space-md);
+  padding: calc(var(--kmd-space-xl) + var(--kmd-inset-top-applied)) var(--kmd-space-md)
+    calc(var(--kmd-space-md) + var(--kmd-inset-bottom-applied));
   overflow-y: auto;
   overscroll-behavior: contain;
   transition: margin-left var(--kmd-duration-normal) var(--kmd-easing-ease);
@@ -911,7 +933,8 @@
   border-right: 1px solid var(--kmd-color-border);
   background-color: var(--kmd-color-surface);
   overflow-y: auto;
-  padding: var(--kmd-space-md);
+  padding: calc(var(--kmd-space-md) + var(--kmd-inset-top-applied)) var(--kmd-space-md)
+    calc(var(--kmd-space-md) + var(--kmd-inset-bottom-applied));
   transition:
     width var(--kmd-duration-normal) var(--kmd-easing-ease),
     padding var(--kmd-duration-normal) var(--kmd-easing-ease),
@@ -1039,6 +1062,35 @@
 .kmd-document-shell .kmd-outline-toggle:hover {
   color: var(--kmd-color-on-surface);
   background-color: var(--kmd-color-surface-muted);
+}
+
+/* ---- Small screens: outline becomes an overlay (KWEB-052) ----
+ *
+ * Below the breakpoint the sidebar leaves the flex row and floats above the
+ * document instead of taking a column from it, so showing or hiding the
+ * outline never reflows the text. It is inset by the toggle width so the
+ * toggle stays reachable while the overlay is open. Everything here is
+ * inside the media query — the desktop layout above the breakpoint is
+ * unchanged.
+ */
+
+@media (max-width: 768px) {
+  .kmd-document-shell {
+    position: relative;
+  }
+
+  .kmd-document-shell .kmd-outline-sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--kmd-width-toggle-width);
+    z-index: 2;
+    max-width: 80%;
+  }
+
+  .kmd-document-shell .kmd-outline-sidebar.collapsed {
+    pointer-events: none;
+  }
 }
 
 /* ---- Scrollbar styling (scoped) ---- */

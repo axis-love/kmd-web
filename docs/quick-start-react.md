@@ -140,6 +140,53 @@ interface DocumentShellProps {
   onAnchorClick?: (slug: string) => void;
   /** Additional CSS class name(s) applied to the root element. */
   className?: string;
+  /** Initial outline visibility in uncontrolled mode. Defaults to `true`. */
+  defaultOutlineVisible?: boolean;
+  /** Host-owned outline visibility (controlled mode). */
+  outlineVisible?: boolean;
+  /** Called with the requested visibility whenever the toggle is pressed. */
+  onOutlineVisibleChange?: (visible: boolean) => void;
+}
+```
+
+### Outline visibility
+
+The `◀`/`▶` toggle works in both modes. Pass nothing and the shell owns the
+state, starting from `defaultOutlineVisible` (default `true`) — the existing
+behaviour. Pass `outlineVisible` and the host owns it: the toggle no longer
+changes anything by itself, it just reports the requested value through
+`onOutlineVisibleChange`.
+
+```tsx
+const [outlineVisible, setOutlineVisible] = useState(window.innerWidth > 768);
+
+<DocumentShell
+  outline={outline}
+  outlineVisible={outlineVisible}
+  onOutlineVisibleChange={setOutlineVisible}
+>
+  {/* … */}
+</DocumentShell>;
+```
+
+### Small screens and safe areas
+
+At or below 768px the stylesheet renders the outline sidebar as an overlay
+above the document instead of a side column, so toggling it never reflows the
+text. Hosts embedding the shell on a phone usually start it hidden
+(`defaultOutlineVisible={false}` or a controlled value).
+
+Padding for notched devices comes from two CSS custom properties on the
+shell's scroll containers, `--kmd-inset-top` and `--kmd-inset-bottom`. Both are
+unset by default and fall back to `env(safe-area-inset-top, 0px)` /
+`env(safe-area-inset-bottom, 0px)`, so they are inert outside notched
+webviews. A host with its own measured insets can set them on the shell or any
+ancestor:
+
+```css
+.my-app-shell {
+  --kmd-inset-top: 44px;
+  --kmd-inset-bottom: 34px;
 }
 ```
 

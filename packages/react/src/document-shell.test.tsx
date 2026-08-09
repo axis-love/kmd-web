@@ -253,6 +253,158 @@ describe("DocumentShell", () => {
     expect(items).toHaveLength(0);
   });
 
+  // -------------------------------------------------------------------------
+  // Outline visibility — controlled / uncontrolled (KWEB-052)
+  // -------------------------------------------------------------------------
+
+  it("starts visible when neither visibility prop is given", () => {
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const sidebar = container.querySelector(".kmd-outline-sidebar");
+    expect(sidebar?.classList.contains("collapsed")).toBe(false);
+  });
+
+  it("honours defaultOutlineVisible={false} as the uncontrolled initial value", () => {
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} defaultOutlineVisible={false}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const sidebar = container.querySelector(".kmd-outline-sidebar");
+    expect(sidebar?.classList.contains("collapsed")).toBe(true);
+
+    const button = container.querySelector(".kmd-outline-toggle") as HTMLButtonElement;
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.title).toBe("Show outline");
+  });
+
+  it("toggles from a false default back to visible in uncontrolled mode", () => {
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} defaultOutlineVisible={false}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const button = container.querySelector(".kmd-outline-toggle") as HTMLButtonElement;
+    act(() => {
+      button.click();
+    });
+
+    const sidebar = container.querySelector(".kmd-outline-sidebar");
+    expect(sidebar?.classList.contains("collapsed")).toBe(false);
+  });
+
+  it("reports toggles through onOutlineVisibleChange in uncontrolled mode", () => {
+    const onOutlineVisibleChange = vi.fn();
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} onOutlineVisibleChange={onOutlineVisibleChange}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const button = container.querySelector(".kmd-outline-toggle") as HTMLButtonElement;
+    act(() => {
+      button.click();
+    });
+
+    expect(onOutlineVisibleChange).toHaveBeenCalledTimes(1);
+    expect(onOutlineVisibleChange).toHaveBeenLastCalledWith(false);
+    // The internal state still moved — uncontrolled mode keeps working.
+    expect(container.querySelector(".kmd-outline-sidebar")?.classList.contains("collapsed")).toBe(
+      true,
+    );
+
+    act(() => {
+      (container.querySelector(".kmd-outline-toggle") as HTMLButtonElement).click();
+    });
+    expect(onOutlineVisibleChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it("renders the outlineVisible prop in controlled mode", () => {
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} outlineVisible={false}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const sidebar = container.querySelector(".kmd-outline-sidebar");
+    expect(sidebar?.classList.contains("collapsed")).toBe(true);
+
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} outlineVisible={true}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    expect(container.querySelector(".kmd-outline-sidebar")?.classList.contains("collapsed")).toBe(
+      false,
+    );
+  });
+
+  it("does not change visibility on its own in controlled mode", () => {
+    const onOutlineVisibleChange = vi.fn();
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell
+          outline={SAMPLE_OUTLINE}
+          outlineVisible={true}
+          onOutlineVisibleChange={onOutlineVisibleChange}
+        >
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    const button = container.querySelector(".kmd-outline-toggle") as HTMLButtonElement;
+    act(() => {
+      button.click();
+    });
+
+    expect(onOutlineVisibleChange).toHaveBeenCalledWith(false);
+    // Still visible — the host owns the value and has not changed it.
+    expect(container.querySelector(".kmd-outline-sidebar")?.classList.contains("collapsed")).toBe(
+      false,
+    );
+  });
+
+  it("controlled mode overrides defaultOutlineVisible", () => {
+    root = createRoot(container);
+    act(() => {
+      root.render(
+        <DocumentShell outline={SAMPLE_OUTLINE} defaultOutlineVisible={true} outlineVisible={false}>
+          <p>Content</p>
+        </DocumentShell>,
+      );
+    });
+
+    expect(container.querySelector(".kmd-outline-sidebar")?.classList.contains("collapsed")).toBe(
+      true,
+    );
+  });
+
   it("outline item links are keyboard-focusable", () => {
     root = createRoot(container);
     act(() => {

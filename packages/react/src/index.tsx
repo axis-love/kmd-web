@@ -263,6 +263,24 @@ export interface DocumentShellProps {
   readonly onAnchorClick?: (slug: string) => void;
   /** Additional CSS class name(s) applied to the root element. */
   readonly className?: string;
+  /**
+   * Initial outline visibility when the component owns the state
+   * (uncontrolled mode). Defaults to `true`. Ignored when
+   * `outlineVisible` is provided.
+   */
+  readonly defaultOutlineVisible?: boolean;
+  /**
+   * Outline visibility owned by the host (controlled mode). When this is
+   * defined the component never changes visibility on its own — the toggle
+   * reports the requested value through `onOutlineVisibleChange` and the
+   * host decides.
+   */
+  readonly outlineVisible?: boolean;
+  /**
+   * Called with the requested visibility whenever the toggle is pressed, in
+   * both controlled and uncontrolled mode.
+   */
+  readonly onOutlineVisibleChange?: (visible: boolean) => void;
 }
 
 /**
@@ -283,6 +301,13 @@ function outlineDepth(level: number): 0 | 1 | 2 | 3 {
  * show depth indentation via the `data-depth` attribute. The active
  * heading is highlighted.
  *
+ * Outline visibility follows the standard controlled/uncontrolled pattern:
+ * pass nothing and the component owns the state (starting from
+ * `defaultOutlineVisible`, default `true`); pass `outlineVisible` and the
+ * host owns it, with the toggle reporting through `onOutlineVisibleChange`.
+ * Hosts that render the shell on a small screen — where the CSS turns the
+ * sidebar into an overlay — typically start it hidden.
+ *
  * Accessibility:
  * - The outline navigation has `aria-label="Document outline"`.
  * - The toggle button has a descriptive `title`.
@@ -294,9 +319,24 @@ export const DocumentShell: FC<DocumentShellProps> = ({
   children,
   onAnchorClick,
   className,
+  defaultOutlineVisible = true,
+  outlineVisible,
+  onOutlineVisibleChange,
 }) => {
-  const [showOutline, setShowOutline] = useState(true);
+  const [uncontrolledOutlineVisible, setUncontrolledOutlineVisible] =
+    useState(defaultOutlineVisible);
   const docRef = useRef<HTMLElement>(null);
+
+  const isControlled = outlineVisible !== undefined;
+  const showOutline = isControlled ? outlineVisible : uncontrolledOutlineVisible;
+
+  const handleToggleOutline = useCallback(() => {
+    const next = !showOutline;
+    if (!isControlled) {
+      setUncontrolledOutlineVisible(next);
+    }
+    onOutlineVisibleChange?.(next);
+  }, [isControlled, onOutlineVisibleChange, showOutline]);
 
   const handleOutlineClick = useCallback(
     (slug: string) => {
@@ -343,7 +383,7 @@ export const DocumentShell: FC<DocumentShellProps> = ({
       </nav>
       <button
         className="kmd-outline-toggle"
-        onClick={() => setShowOutline((v) => !v)}
+        onClick={handleToggleOutline}
         title={showOutline ? "Hide outline" : "Show outline"}
         type="button"
         aria-expanded={showOutline}
