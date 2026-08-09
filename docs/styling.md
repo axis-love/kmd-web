@@ -391,6 +391,18 @@ Increases border widths and adjusts colors for users who need higher contrast:
 }
 ```
 
+### Touch devices (`@media (hover: none), (pointer: coarse)`)
+
+Code copy buttons are revealed on `pre:hover`, which never fires on a touch
+screen. On touch devices the button is shown unconditionally; pointer devices
+keep the hover-reveal behavior:
+
+```css
+@media (hover: none), (pointer: coarse) {
+  .kmd-reader .code-copy-button { opacity: 1; }
+}
+```
+
 ### Reduced motion (`@media prefers-reduced-motion: reduce`)
 
 Disables all transitions and animations. Defined in both `styles.css` (scoped) and `generated/tokens.css` (global reset):

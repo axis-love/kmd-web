@@ -794,6 +794,16 @@
   opacity: 1;
 }
 
+/* Touch devices have no hover, so the reveal-on-hover rule above never fires
+ * and the button would be permanently invisible. Show it unconditionally when
+ * the primary input cannot hover or is coarse; pointer devices keep the
+ * hover-reveal behavior. */
+@media (hover: none), (pointer: coarse) {
+  .kmd-reader .code-copy-button {
+    opacity: 1;
+  }
+}
+
 .kmd-reader .code-copy-button:hover {
   background-color: var(--kmd-color-surface);
   color: var(--kmd-color-on-surface);

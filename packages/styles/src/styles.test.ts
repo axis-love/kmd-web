@@ -28,11 +28,15 @@ describe("scope isolation", () => {
     const noComments = cssText.replace(/\/\*[\s\S]*?\*\//g, "");
     // Remove @import lines
     const noImports = noComments.replace(/@import[^;]+;/g, "");
+    // Drop at-rule preludes (@media/@supports) — their conditions are not
+    // selectors, and a condition list like `(hover: none), (pointer: coarse)`
+    // would otherwise split into fragments that look like unscoped selectors.
+    const noAtRules = noImports.replace(/@[a-zA-Z-]+[^{;]*\{/g, "{");
     // Split into rule blocks
     const selectors: string[] = [];
     // Match selector groups (text before { that doesn't start with @)
     const ruleRegex = /([^{}@]+)\{/g;
-    let match: RegExpExecArray | null = ruleRegex.exec(noImports);
+    let match: RegExpExecArray | null = ruleRegex.exec(noAtRules);
     while (match !== null) {
       const selectorGroup = match[1].trim();
       if (selectorGroup) {
@@ -41,7 +45,7 @@ describe("scope isolation", () => {
           if (trimmed) selectors.push(trimmed);
         }
       }
-      match = ruleRegex.exec(noImports);
+      match = ruleRegex.exec(noAtRules);
     }
     return selectors;
   }
@@ -263,6 +267,63 @@ describe("accessibility", () => {
   it("should have high-contrast media query", () => {
     expect(css).toContain("prefers-contrast");
     expect(css).toContain("prefers-contrast: high");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Touch devices — copy button reachable without hover (KWEB-053)
+// ---------------------------------------------------------------------------
+
+describe("touch devices", () => {
+  const css = readStyles();
+
+  /** Body of the touch block, or null if the block is missing. */
+  function touchBlock(): string | null {
+    const start = css.search(/@media \(hover: none\), \(pointer: coarse\)/);
+    if (start === -1) return null;
+    const open = css.indexOf("{", start);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}") {
+        depth--;
+        if (depth === 0) return css.slice(open + 1, i);
+      }
+    }
+    return null;
+  }
+
+  it("has a (hover: none)/(pointer: coarse) block", () => {
+    expect(touchBlock()).not.toBeNull();
+  });
+
+  it("makes the copy button opaque there — hover never fires on touch", () => {
+    const block = touchBlock() ?? "";
+    expect(block).toMatch(/\.kmd-reader \.code-copy-button\s*\{[^}]*opacity:\s*1/);
+  });
+
+  it("scopes every touch rule under .kmd-reader", () => {
+    const block = touchBlock() ?? "";
+    const selectors = [...block.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim());
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(selector.startsWith(".kmd-reader"), `unscoped: ${selector}`).toBe(true);
+    }
+  });
+
+  it("leaves the pointer-device hover reveal in place", () => {
+    // The base rule still hides the button, and hover still reveals it — the
+    // touch block is additive, not a replacement.
+    expect(css).toMatch(/\.kmd-reader \.code-copy-button \{[\s\S]*?opacity:\s*0;[\s\S]*?\n\}/);
+    expect(css).toContain(".kmd-reader pre:hover .code-copy-button");
+  });
+
+  it("declares the touch override after the base rule so it wins the cascade", () => {
+    // Both selectors are (0,2,0); with equal specificity source order decides.
+    const base = css.search(/\n\.kmd-reader \.code-copy-button \{/);
+    const touch = css.search(/@media \(hover: none\), \(pointer: coarse\)/);
+    expect(base).toBeGreaterThan(-1);
+    expect(touch).toBeGreaterThan(base);
   });
 });
 
