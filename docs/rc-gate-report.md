@@ -297,3 +297,51 @@ axis-love-styles-0.1.0-rc.0.tgz
 | `b513302` | kmd-web | `fix: move runtime deps to dependencies, heavy features to peerDependencies` |
 | `393eda9` | kmd-web | `chore: biome format benchmark report after re-run` |
 | `409884b` | kmd-web | `feat: add website demo consuming kmd-web from packed tarballs` |
+
+---
+
+# Addendum v2 — Gate re-run after full remediation (2026-08-09)
+
+**Head:** kmd-web `d02127f` (first fully green CI run in repo history), kmd `12ec363`
+**Author:** Nyx Prime
+**Context:** The 2026-08-08 pre-release review (KWEB-034 epic) found 3 security ship-blockers, a worker-path rendering regression, and 4 publish blockers in the RC frozen above. All remediation (KWEB-035..049) has landed; this addendum re-freezes the artifacts and re-runs the gate against them.
+
+## A1. Artifact re-freeze
+
+The `0.1.0-rc.0` tarballs in `.tarballs/` were re-packed from `d02127f` dist output (`npm run refresh:examples`). `npm run check:examples` verifies the website demo's installed integrity matches these exact tarballs; `tests/example-freshness.test.ts` enforces it in the suite. Sizes changed vs §1 (e.g. browser 32.0→35.4 KB) because the remediation changed package contents under the same version string — the §1 table is historical.
+
+## A2. Gate results (all evidence from this run)
+
+| Gate | Result | Evidence |
+|---|---|---|
+| Fresh-clone install/build/test | PASS | clean clone of axis-love/kmd-web: `npm ci`, `tsc --build` (clean first build, after `f2e3764`), 857/857 tests on CI Linux; local Windows shows only the known `npx ENOENT` baseline failure |
+| CI (Lint/Build/Test/checks/visual) | PASS | run for `d02127f` — first fully green run; previously CI had been red on every commit since scaffold (see A3) |
+| Versions / contents / API surface | PASS | `check-versions` (11 pkgs + VERSION consts at 0.1.0-rc.0), `check-package-contents`, `check-api-surface` all exit 0 |
+| Publish dry-run | PASS | `publish-packages.mjs --dry-run`: 11 packages publish their own contents under dist-tag `rc`; provenance metadata gate passes |
+| Consumer installs | PASS | `dry-run-release.mjs` end-to-end: tarball file lists, fresh vanilla + React consumers, no-peers consumer degrades gracefully |
+| Desktop (kmd, Windows) | PASS | kmd @ `12ec363`: `tsc --noEmit` clean, 337/337 tests, `npm run build` production build OK. kmd consumes the same built dist the tarballs were packed from |
+| Security | PASS | HIGH-1/2/3 fixed and reviewed (KWEB-035..037); conformance suite asserts structure, coverage backfilled (KWEB-038); 28/28 conformance on CI |
+| Tarball audit | PASS | all 11 contain LICENSE + repository metadata; scanned for credentials/personal identifiers/private paths — clean; hits for words like "token"/"secret" are code identifiers and security fixtures only |
+| Visual parity | PASS | app-reference look verified in the website demo (quotes/alerts compact after KWEB-049 refresh); visual baselines current at `d02127f` |
+
+## A3. Defects found and fixed during this re-run
+
+| Commit | Defect |
+|---|---|
+| `f2e3764` | first build of a clean checkout failed (root tsconfig reference order; TS2307) |
+| `55e94d9` | Biome format drift in 5 files kept CI Lint red |
+| `b0ac845` | CI Typecheck step (`tsc --build --noEmit`) could never pass on a clean checkout and gated Test/Build — CI had been red on every commit since 2026-08-01, so the suite had never run on CI |
+| `0b8721d` | ordering invariant moved from a JSONC comment (broke strict-JSON test) into an executable test |
+| `d02127f` | stale `mixed-light-chromium-narrow` visual baseline predating the KWEB-030..032 alert rendering changes |
+| `4df9f86` | (KWEB-049) stale-tarball guard: `refresh:examples` / `check:examples` |
+
+## A4. Exceptions and non-blocking limitations
+
+1. **kmd-ios** — not verifiable from this Windows machine (needs macOS/Xcode). Same exception as §8.1. RC publish proceeds; verify before stable 0.1.0.
+2. **kmd-unity** — consumes contracts/tokens snapshots only (no npm dependency); contracts manifest is version-locked by `check-versions`. No runnable gate on this machine; exception recorded.
+3. **Desktop-vs-tarball indirection** — kmd tests run against `file:` links to the workspace dist, not the tarballs themselves; `check:examples` integrity ties that dist to the frozen tarballs, and `dry-run-release` covers tarball-install resolution independently.
+4. §8 items 2–5 (memory proxy on synthetic 1 MB doc, chunk-size warnings, benign Biome warnings, React `act()` warnings) remain as recorded.
+
+## A5. Go/no-go
+
+**GO** for publishing `0.1.0-rc.0` under dist-tag `rc` via the release workflow (`publish-packages.mjs`, npm provenance). Stable `0.1.0` additionally wants: iOS verification on macOS, per-package READMEs (KWEB-050), and the flow_001065 export-contract drift fix.
