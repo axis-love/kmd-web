@@ -96,8 +96,9 @@ the changelog. A GitHub release is created from the tag with a summary.
 1. `npm run verify` passes on `main` (its first step is the version check)
 2. All package versions are lockstep and agree with the exported version
    constants — `npm run check:versions` prints `Version check: OK`
-3. The `publish` GitHub environment is configured with an `NPM_TOKEN` secret
-4. npm trusted publishing (OIDC) is configured for the `@axis-love` scope
+3. Every `@axis-love/*` package on npmjs.com has a Trusted Publisher
+   configured: GitHub Actions, org `axis-love`, repo `kmd-web`, workflow
+   `release.yml`, environment `publish` (no npm token anywhere)
 
 ### Steps
 
@@ -168,8 +169,10 @@ The publish job uses [npm provenance attestation](https://docs.npmjs.com/generat
 via GitHub OIDC. This requires:
 
 1. `permissions: id-token: write` on the publish job (already configured)
-2. `NPM_TOKEN` secret in the `publish` GitHub environment
-3. The npm publishing account has provenance enabled
+2. A Trusted Publisher entry on each npm package page pointing at
+   `axis-love/kmd-web`, workflow `release.yml`, environment `publish`
+3. npm >= 11.5.1 on Node >= 22.14 in the publish job (the workflow updates
+   npm to latest before publishing)
 4. Every publishable manifest declares the metadata the attestation is tied to:
    an object-form `repository` (`git+https://github.com/axis-love/kmd-web.git`
    plus the package's own `directory`), `bugs.url`, and `homepage` (KWEB-042).
@@ -177,9 +180,11 @@ via GitHub OIDC. This requires:
    `scripts/publish-packages.mjs` checks all 11 manifests up front and fails the
    whole run rather than shipping half a release.
 
-No npm tokens are stored in the repository. The `NPM_TOKEN` is a GitHub
-environment secret that is only available to jobs targeting the `publish`
-environment. The token is never logged.
+No npm tokens exist anywhere in the pipeline. Publishing authenticates through
+short-lived OIDC tokens minted per workflow run; the historical bootstrap
+`NPM_TOKEN` (used for the first `0.1.0-rc.x` publishes, before the packages
+existed and could be given Trusted Publishers) has been revoked and its GitHub
+secret deleted (KWEB-051).
 
 ## Publishing
 
@@ -310,7 +315,7 @@ git push origin v0.2.1
 
 - Never publish from a pull request — the release workflow's `publish` job
   only triggers on tag pushes to the main repository
-- Never log secrets — `NPM_TOKEN` is in a GitHub environment secret, never
-  echoed
+- No standing credentials — publishing uses OIDC trusted publishing; there is
+  no npm token to leak
 - The `publish` environment requires approval (GitHub protected environment)
 - Provenance attestation links the published package to the GitHub Actions run
