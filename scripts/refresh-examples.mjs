@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Keep the tarball-consuming examples in sync with the workspace.
  *
