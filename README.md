@@ -47,6 +47,19 @@ npm install @axis-love/highlighting @axis-love/math @axis-love/mermaid
 
 Advanced consumers can import only the engine or browser surface they need via individual `@axis-love/*` packages.
 
+## Host-provided UI surfaces
+
+kmd-web renders the document, not the chrome around it. Error screens,
+loading skeletons, and copy/toast feedback are the host's to render — kmd-web
+signals them through callbacks (`onError`, `onOutlineChange`, `onCopy`) and
+`<kmd-reader>` events (`kmd:error`, `kmd:rendered`, `kmd:copy`). A fresh
+integration therefore looks barer than the kmd desktop app until those are
+wired up.
+
+See [Host-provided UI surfaces](./docs/quick-start-host-adapter.md#host-provided-ui-surfaces)
+for the full surface-to-callback table and minimal wiring examples for React,
+raw `BrowserReader`, and the Web Component.
+
 ## Packages
 
 | Package | Description |

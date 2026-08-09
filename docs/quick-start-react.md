@@ -84,6 +84,12 @@ interface MarkdownReaderProps {
 }
 ```
 
+`onError`, `onOutlineChange`, and `onCopy` are the seams for host-provided UI
+— your error screen, loading skeleton, and toast stack. The built-in
+`.mdr-error` / `.mdr-loading` / `.mdr-empty` blocks are minimal fallbacks, and
+copy feedback has no fallback at all. See
+[Host-provided UI surfaces](./quick-start-host-adapter.md#host-provided-ui-surfaces).
+
 ### Minimal usage
 
 ```tsx

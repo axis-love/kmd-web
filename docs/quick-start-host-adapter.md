@@ -148,8 +148,9 @@ interface DocumentTarget {
 **Default behavior when absent:**
 
 - `openExternal` — external links are rendered with
-  `rel="noopener noreferrer"` and `target="_blank"`; the browser runtime does
-  not intercept clicks (the host page's default navigation applies).
+  `rel="noopener noreferrer"` and `target="_blank"`, and the browser
+  runtime's `LinkPolicy` opens them with
+  `window.open(url, "_blank", "noopener,noreferrer")`.
 - `openDocument` — document links fall back to in-page navigation (treated as
   `internal`).
 
@@ -396,6 +397,168 @@ const webCapabilities: HostCapabilities = {
   },
   // assetResolver, clipboardProvider, workerFactory all use defaults.
 };
+```
+
+## Host-provided UI surfaces
+
+kmd-web renders the document. It does not ship the chrome around the
+document — no toast stack, no error screen, no loading skeleton. Those
+surfaces belong to the host, and kmd-web reaches them through callbacks
+(React props / `BrowserReaderOptions`) and DOM events (`<kmd-reader>`).
+
+This is deliberate: a toast component that matched kmd's desktop app would
+not match yours, and a reader package that owned the app's error screen
+would fight your design system. In the kmd desktop app these surfaces live
+in `src/components/` (`Toast.tsx`, `ErrorBoundary.tsx`, `LoadingSkeleton.tsx`)
+and are wired to the same callbacks documented below — that app is a
+consumer of kmd-web, not a special case.
+
+An out-of-the-box integration therefore looks barer than kmd until you wire
+these up. Nothing is broken; the surfaces are simply unclaimed.
+
+### What kmd-web signals, and what you render
+
+| Host surface | Raw `BrowserReader` | React `<MarkdownReader>` | `<kmd-reader>` | Built-in fallback |
+|---|---|---|---|---|
+| Error display | `onError(error: Error)` | `onError(error: Error)` | `kmd:error` → `detail.error` | React/element render a minimal `.mdr-error` block; raw `BrowserReader` renders nothing |
+| Loading state | none — `await reader.update(source)` | `isLoading` is internal; use `useMarkdownReader(...).isLoading` | starts on `source` change, ends on `kmd:rendered` / `kmd:error` | React/element render a minimal `.mdr-loading` block; raw `BrowserReader` renders nothing |
+| Render complete | `onRendered(result: RenderResult)` | not exposed as a prop — use `useMarkdownReader` | `kmd:rendered` → `detail.result` | — |
+| Copy feedback (toast) | `onCopy(message: string)` | `onCopy(message: string)` | `kmd:copy` → `detail.message` | **none anywhere** — copies are silent until you wire this |
+| Empty document | none — container is left empty | `.mdr-empty` block | `.mdr-empty` block | React/element only |
+| Outline / active heading chrome | `onOutlineChange`, `onActiveHeadingChange` | same props | `kmd:outline-change`, `kmd:active-heading-change` | React ships `<DocumentShell>`; elsewhere host-provided |
+
+The three capabilities that gate a surface rather than emit one:
+
+| Capability | Effect on host UI when absent |
+|---|---|
+| `clipboardProvider` | Copy controls are removed from the DOM entirely when no clipboard is reachable (no provider, no `navigator.clipboard`, or a non-secure context). Supply one if your host has a native clipboard. |
+| `linkHandler` | External links open via `window.open(url, "_blank", "noopener,noreferrer")`. Supply one to route through the OS handler or to show a confirmation UI. |
+| `assetResolver` | Unresolved local assets are left without a `src`. Supply one to render local images, or to show your own broken-asset affordance. |
+
+### Notes that save a debugging session
+
+- **`onCopy` carries both outcomes.** The message is `"Copied to clipboard"`,
+  `"Copy failed"`, or `"Copy failed: clipboard unavailable"`. Branch on the
+  string if your toast distinguishes success from failure.
+- **A React `ErrorBoundary` will not catch render errors.**
+  `<MarkdownReader>` catches renderer failures and moves them into state
+  rather than throwing during React's render phase, so `onError` is the only
+  hook that fires. Keep an `ErrorBoundary` for genuine component crashes;
+  use `onError` for document errors.
+- **The built-in states are additive, not replaceable.** When a host renders
+  its own error or loading UI, hide kmd-web's with CSS:
+  `.kmd-reader .mdr-error, .kmd-reader .mdr-loading { display: none; }`.
+- **Callbacks may change identity; `capabilities` may not.**
+  `<MarkdownReader>` reads these callbacks from a ref on every invocation, so
+  inline closures are safe. `capabilities` is read once at construction —
+  changing it requires a remount.
+
+### Minimal example — React, all three surfaces wired
+
+```tsx
+import { MarkdownReader } from "@axis-love/kmd-web/react";
+import "@axis-love/kmd-web/styles.css";
+import { useCallback, useEffect, useState } from "react";
+
+export function Reader({ source }: { source: string }) {
+  const [error, setError] = useState<Error | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Loading: in flight from the moment `source` changes until MarkdownReader
+  // reports either an error or a rendered outline.
+  const [pending, setPending] = useState(source !== "");
+
+  useEffect(() => {
+    setError(null);
+    setPending(source !== "");
+  }, [source]);
+
+  const onError = useCallback((e: Error) => {
+    setError(e);
+    setPending(false);
+  }, []);
+
+  const onOutlineChange = useCallback(() => {
+    // The outline is emitted once the document is in the DOM — a reliable
+    // completion edge, and it fires even for documents with no headings.
+    setPending(false);
+  }, []);
+
+  const onCopy = useCallback((message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  return (
+    <div className="my-reader">
+      {/* 1. Loading surface — your skeleton, not ours. */}
+      {pending && <MySkeleton />}
+
+      {/* 2. Error surface — your error screen, not ours. */}
+      {error && <MyErrorPanel error={error} onRetry={() => setError(null)} />}
+
+      {/* 3. Copy-feedback surface — your toast stack. */}
+      {toast && <MyToast message={toast} />}
+
+      {/* Hide kmd-web's own fallbacks with CSS once you render your own:
+          .kmd-reader .mdr-error, .kmd-reader .mdr-loading { display: none; } */}
+      <MarkdownReader
+        source={source}
+        onError={onError}
+        onOutlineChange={onOutlineChange}
+        onCopy={onCopy}
+      />
+    </div>
+  );
+}
+```
+
+`useMarkdownReader` hands you `isLoading` and `error` directly instead of
+making you infer them — but it owns an internal, detached container, so it is
+a state source, not a replacement for `<MarkdownReader>`'s rendering:
+
+```tsx
+import { useMarkdownReader } from "@axis-love/kmd-web/react";
+
+const { error, isLoading } = useMarkdownReader(source, {
+  onCopy: (message) => showToast(message),
+});
+```
+
+### Minimal example — raw `BrowserReader`
+
+Nothing is rendered for you at this layer, so all three surfaces are yours:
+
+```ts
+import { BrowserReader } from "@axis-love/kmd-web";
+import "@axis-love/kmd-web/styles.css";
+
+const reader = new BrowserReader({
+  container: document.querySelector("#content")!,
+  onError: (error) => showErrorPanel(error),   // error surface
+  onRendered: () => hideSkeleton(),            // loading surface (end)
+  onCopy: (message) => showToast(message),     // copy-feedback surface
+});
+
+showSkeleton();                                 // loading surface (start)
+await reader.update(source);
+```
+
+### Minimal example — `<kmd-reader>`
+
+```js
+import { registerKmdReader } from "@axis-love/kmd-web/element";
+import "@axis-love/kmd-web/styles.css";
+
+registerKmdReader();
+
+const reader = document.querySelector("kmd-reader");
+reader.addEventListener("kmd:error", (e) => showErrorPanel(e.detail.error));
+reader.addEventListener("kmd:rendered", () => hideSkeleton());
+reader.addEventListener("kmd:copy", (e) => showToast(e.detail.message));
+
+showSkeleton();
+reader.source = source;
 ```
 
 ## Security

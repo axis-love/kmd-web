@@ -84,6 +84,10 @@ stable).
 | `kmd:link-document` | `KmdLinkDocumentDetail` | A document link was clicked. `detail.target: DocumentTarget`. |
 | `kmd:copy` | `KmdCopyDetail` | A copy action succeeded. `detail.message: string`. |
 
+`kmd:error`, `kmd:rendered`, and `kmd:copy` are the seams for host-provided UI
+— your error screen, loading skeleton, and toast stack. See
+[Host-provided UI surfaces](./quick-start-host-adapter.md#host-provided-ui-surfaces).
+
 Event detail types are exported from `@axis-love/kmd-web/element`:
 
 ```ts
