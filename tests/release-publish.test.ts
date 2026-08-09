@@ -128,8 +128,8 @@ describe("dry-run verification", () => {
     // package directory: the private root manifest, not the package.
     const problems = verifyDryRunReport(CORE, {
       name: "kmd-web-monorepo",
-      version: "0.1.0",
-      filename: "kmd-web-monorepo-0.1.0.tgz",
+      version: "0.1.0-rc.0",
+      filename: "kmd-web-monorepo-0.1.0-rc.0.tgz",
       files: [{ path: "package.json" }, { path: "packages/core/dist/index.js" }],
     });
     expect(problems.length).toBeGreaterThan(0);

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "contractsVersion": "0.1.0",
+  "contractsVersion": "0.1.0-rc.0",
   "platforms": ["kmd-web", "kmd-unity"],
   "fixtures": [
     {

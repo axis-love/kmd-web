@@ -78,7 +78,7 @@ console.log(result.html);            // sanitized, safe-to-render HTML string
 console.log(result.outline);         // readonly OutlineEntry[] — heading tree
 console.log(result.diagnostics);    // readonly Diagnostic[] — non-fatal notes
 console.log(result.detectedFeatures); // DetectedFeatures — what the doc contains
-console.log(result.rendererVersion); // CORE_VERSION, e.g. "0.1.0"
+console.log(result.rendererVersion); // CORE_VERSION, e.g. "0.1.0-rc.0"
 ```
 
 ### `RenderResult` fields
@@ -191,7 +191,7 @@ import { defaultRenderOptions } from "@axis-love/core";
 
 ```ts
 import { CORE_VERSION } from "@axis-love/core";
-console.log(CORE_VERSION); // "0.1.0"
+console.log(CORE_VERSION); // "0.1.0-rc.0"
 ```
 
 ## Handling errors

@@ -32,7 +32,7 @@ describe("@axis-love/react package exports", () => {
   });
 
   it("should export REACT_PACKAGE_VERSION", () => {
-    expect(pkg.REACT_PACKAGE_VERSION).toBe("0.1.0");
+    expect(pkg.REACT_PACKAGE_VERSION).toBe("0.1.0-rc.0");
   });
 });
 

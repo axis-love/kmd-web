@@ -1,7 +1,7 @@
 # Troubleshooting
 
 > Common issues and solutions for `@axis-love/*` packages.
-> All information verified against source code. Feature detection, diagnostics, and capability defaults are accurate as of `0.1.0`.
+> All information verified against source code. Feature detection, diagnostics, and capability defaults are accurate as of `0.1.0-rc.0`.
 
 ---
 

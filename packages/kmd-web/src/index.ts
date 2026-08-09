@@ -60,4 +60,4 @@ export { BROWSER_VERSION } from "@axis-love/browser";
 // Convenience version
 // ---------------------------------------------------------------------------
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.0-rc.0";

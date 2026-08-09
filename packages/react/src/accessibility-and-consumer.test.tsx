@@ -172,7 +172,7 @@ describe("Package consumer — importing from built dist", () => {
     expect(mod.useMarkdownReader).toBeDefined();
     expect(mod.useScrollTracking).toBeDefined();
     expect(mod.useOutline).toBeDefined();
-    expect(mod.REACT_PACKAGE_VERSION).toBe("0.1.0");
+    expect(mod.REACT_PACKAGE_VERSION).toBe("0.1.0-rc.0");
   });
 
   it("exports HostCapabilities type (type-only re-export)", async () => {

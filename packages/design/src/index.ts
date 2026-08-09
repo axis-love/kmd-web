@@ -12,7 +12,7 @@
 //   HTML export is an explicit host integration, not automatic
 
 // Package version
-export const DESIGN_VERSION = "0.1.0";
+export const DESIGN_VERSION = "0.1.0-rc.0";
 
 export { clearDesignPipelineCache, runDesignPipelineCached } from "./cache.js";
 // Design mode helpers

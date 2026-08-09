@@ -11,7 +11,7 @@ export const TOKENS_VERSION = "1.0.0";
 /**
  * The @axis-love/styles package version.
  */
-export const STYLES_VERSION = "0.1.0";
+export const STYLES_VERSION = "0.1.0-rc.0";
 
 /**
  * The list of theme variants defined in the canonical token schema.

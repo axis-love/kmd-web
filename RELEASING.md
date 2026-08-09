@@ -5,10 +5,12 @@ procedure for the `@axis-love/*` packages published from this monorepo.
 
 ## Publishable packages
 
-All 11 packages are intended for publication. They are currently `private: true`
-to prevent accidental publishes during development. The release workflow
-flips this by publishing with `--access public` (scoped packages are private
-by default on npm).
+All 11 packages are published. Every one carries `private: false` and
+`publishConfig: { access: "public" }`; the publish script also passes
+`--access public` explicitly, because scoped packages default to restricted on
+npm. `scripts/publish-packages.mjs` skips any package that is marked
+`private: true` with a log line, so marking a package private is how you take it
+out of a release.
 
 | Package | Description | Public entry |
 |---|---|---|
@@ -33,7 +35,37 @@ release bumps all packages together. This simplifies the consumer experience:
 there is exactly one version to pin, and all packages are guaranteed to be
 compatible.
 
-Current version: `0.1.0` across all packages.
+Current version: `0.1.0-rc.0` across all packages — the release candidate frozen
+by the KWEB-024 ecosystem gate (see `docs/rc-gate-report.md`). Prereleases
+publish under their own dist-tag, so `0.1.0-rc.0` never becomes `latest`.
+
+### One version, three places
+
+The same version string is written in three places, and all three are checked:
+
+1. Every `packages/*/package.json` (plus the private root manifest).
+2. Each package's exported version constant — `CORE_VERSION`,
+   `BROWSER_VERSION`, `CONTRACTS_VERSION`, `REACT_PACKAGE_VERSION`,
+   `@axis-love/kmd-web`'s `VERSION`, and so on. `@axis-love/core` stamps
+   `CORE_VERSION` onto every `RenderResult` as `rendererVersion`, so a stale
+   constant misreports which renderer produced a document.
+3. `packages/contracts/manifest.json` → `contractsVersion`, which native ports
+   (kmd-unity) snapshot when they pin a contract revision.
+
+`scripts/check-versions.mjs` fails the build when any of those disagree, when a
+package is missing its version constant, or when a new `export const *VERSION`
+appears without being registered as either a package version or an
+independently-versioned artifact schema (`MANIFEST_SCHEMA_VERSION`,
+`TOKENS_VERSION`). It runs in CI, in the release workflow's `verify` job, and as
+the first step of `npm run verify`:
+
+```bash
+npm run check:versions
+```
+
+Two constants are deliberately exempt from lockstep because they describe data
+shapes rather than the npm release: `MANIFEST_SCHEMA_VERSION` (the conformance
+manifest schema) and `TOKENS_VERSION` (the generated design-token artifacts).
 
 ### Post-1.0
 
@@ -61,13 +93,9 @@ the changelog. A GitHub release is created from the tag with a summary.
 
 ### Prerequisites
 
-1. `npm run verify` passes on `main`
-2. All package versions are lockstep (check with `node -e
-   "console.log(new Set(require('./packages/*/package.json'.replace('*',
-   Object.keys(require('./package.json').workspaces).includes('packages/*') ?
-   Object.keys(require('./package.json').workspaces).map(w=>w.replace('/*',''))
-   : ['packages']).map(d=>require('./'+d+'/package.json').version)).size)"`
-   — should print `1`)
+1. `npm run verify` passes on `main` (its first step is the version check)
+2. All package versions are lockstep and agree with the exported version
+   constants — `npm run check:versions` prints `Version check: OK`
 3. The `publish` GitHub environment is configured with an `NPM_TOKEN` secret
 4. npm trusted publishing (OIDC) is configured for the `@axis-love` scope
 
@@ -76,37 +104,51 @@ the changelog. A GitHub release is created from the tag with a summary.
 1. **Verify everything passes on main:**
    ```bash
    npm run verify
+   npm run check:publish  # per-package publish dry-run
    npm run check:release  # dry-run tarball + consumer verification
    ```
 
 2. **Update all package versions (lockstep):**
    ```bash
-   # Example: bump from 0.1.0 to 0.2.0
+   # Example: bump from 0.1.0-rc.0 to 0.2.0
+   npm version 0.2.0 --no-git-tag-version
    for pkg in packages/*/package.json; do
      npm version 0.2.0 --no-git-tag-version --prefix "$(dirname "$pkg")"
    done
    ```
 
-3. **Commit the version bump:**
+3. **Update the exported version constants to match**, then re-run the guard —
+   `npm version` only touches manifests:
+   ```bash
+   npm run check:versions   # names every constant still on the old version
+   ```
+   Update each reported constant (and `packages/contracts/manifest.json` →
+   `contractsVersion`) until the check passes. The per-package unit tests assert
+   these constants literally, so `npm run test` has to be re-run too.
+
+4. **Commit the version bump:**
    ```bash
    git add -A
    git commit -m "chore: bump version to 0.2.0"
    ```
 
-4. **Tag and push:**
+5. **Tag and push:**
    ```bash
    git tag v0.2.0
    git push origin main
    git push origin v0.2.0
    ```
 
-5. **The release workflow runs automatically:**
-   - `verify` job: lint + typecheck + test + build + package-contents + API-surface
+6. **The release workflow runs automatically:**
+   - `verify` job: version check + lint + typecheck + test + build +
+     package-contents + API-surface
    - `dry-run` job: npm pack + tarball verification + fresh consumer projects +
-     publish dry-run
-   - `publish` job: publishes to npm with `--provenance` (OIDC trusted publishing)
+     publish dry-run (`scripts/publish-packages.mjs --dry-run`)
+   - `publish` job: gated on both, tag pushes only — runs
+     `scripts/publish-packages.mjs`, which publishes each package from its own
+     directory with `--provenance` (OIDC trusted publishing)
 
-6. **Create a GitHub release** from the tag with a summary of changes.
+7. **Create a GitHub release** from the tag with a summary of changes.
 
 ### Manual dispatch
 
@@ -128,6 +170,12 @@ via GitHub OIDC. This requires:
 1. `permissions: id-token: write` on the publish job (already configured)
 2. `NPM_TOKEN` secret in the `publish` GitHub environment
 3. The npm publishing account has provenance enabled
+4. Every publishable manifest declares the metadata the attestation is tied to:
+   an object-form `repository` (`git+https://github.com/axis-love/kmd-web.git`
+   plus the package's own `directory`), `bugs.url`, and `homepage` (KWEB-042).
+   `npm publish --provenance` refuses to run without `repository`, so
+   `scripts/publish-packages.mjs` checks all 11 manifests up front and fails the
+   whole run rather than shipping half a release.
 
 No npm tokens are stored in the repository. The `NPM_TOKEN` is a GitHub
 environment secret that is only available to jobs targeting the `publish`
@@ -242,12 +290,15 @@ npm deprecate @axis-love/core@0.2.0 "Security vulnerability — upgrade to 0.2.1
 
 ### Point release
 
-Cut a new release with the fix:
+Cut a new release with the fix (bump the exported version constants alongside
+the manifests — `npm run check:versions` names any you miss):
 ```bash
 # Bump to 0.2.1
+npm version 0.2.1 --no-git-tag-version
 for pkg in packages/*/package.json; do
   npm version 0.2.1 --no-git-tag-version --prefix "$(dirname "$pkg")"
 done
+npm run check:versions
 git add -A
 git commit -m "fix: security patch (KWEB-XXX)"
 git tag v0.2.1

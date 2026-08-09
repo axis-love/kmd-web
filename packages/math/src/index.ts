@@ -28,7 +28,7 @@ import { visit } from "unist-util-visit";
 // Version
 // ---------------------------------------------------------------------------
 
-export const MATH_VERSION = "0.1.0";
+export const MATH_VERSION = "0.1.0-rc.0";
 
 // ---------------------------------------------------------------------------
 // Constants

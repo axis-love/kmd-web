@@ -87,21 +87,21 @@ describe("import graph — feature packages export implementations", () => {
   it("highlighting should export rehypeShiki", async () => {
     const mod = await import("@axis-love/highlighting");
     expect(mod.rehypeShiki).toBeDefined();
-    expect(mod.HIGHLIGHTING_VERSION).toBe("0.1.0");
+    expect(mod.HIGHLIGHTING_VERSION).toBe("0.1.0-rc.0");
   });
 
   it("mermaid should export renderMermaidPlaceholders", async () => {
     const mod = await import("@axis-love/mermaid");
     expect(mod.renderMermaidPlaceholders).toBeDefined();
     expect(mod.renderMermaid).toBeDefined();
-    expect(mod.MERMAID_VERSION).toBe("0.1.0");
+    expect(mod.MERMAID_VERSION).toBe("0.1.0-rc.0");
   });
 
   it("math should export rehypeKatex", async () => {
     const mod = await import("@axis-love/math");
     expect(mod.rehypeKatex).toBeDefined();
     expect(mod.renderMath).toBeDefined();
-    expect(mod.MATH_VERSION).toBe("0.1.0");
+    expect(mod.MATH_VERSION).toBe("0.1.0-rc.0");
   });
 });
 

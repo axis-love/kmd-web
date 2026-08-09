@@ -616,7 +616,7 @@ describe("@axis-love/element package exports", () => {
 
   it("exports ELEMENT_VERSION", async () => {
     const mod = await import("./index");
-    expect(mod.ELEMENT_VERSION).toBe("0.1.0");
+    expect(mod.ELEMENT_VERSION).toBe("0.1.0-rc.0");
   });
 
   it("exports event detail types (type-only, erased at runtime)", async () => {
