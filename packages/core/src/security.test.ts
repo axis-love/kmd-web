@@ -387,7 +387,7 @@ describe("render — legitimate content is not corrupted", () => {
     const result = await render(source);
 
     // The element is removed entirely — no href carrying the scheme.
-    expect(result.html).not.toContain("href=\"javascript:");
+    expect(result.html).not.toContain('href="javascript:');
     expect(result.html).not.toContain("<a ");
     // And an unsafe-url diagnostic was recorded.
     expect(result.diagnostics.some((d) => d.code === "unsafe-url")).toBe(true);
@@ -479,7 +479,8 @@ describe("render — CSS injection via raw HTML style attributes", () => {
   });
 
   it("strips dangerous style from pre entirely", async () => {
-    const source = '<pre style="position:absolute;background:url(https://evil.example.com)">c</pre>';
+    const source =
+      '<pre style="position:absolute;background:url(https://evil.example.com)">c</pre>';
     const result = await render(source);
     expect(result.html).not.toContain("style=");
     expect(result.html).toContain("c");

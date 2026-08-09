@@ -270,9 +270,7 @@ export class BrowserReader {
     if (!css) return;
     if (typeof document === "undefined") return;
 
-    let styleEl = document.head.querySelector<HTMLStyleElement>(
-      "style[data-kmd-code-highlight]",
-    );
+    let styleEl = document.head.querySelector<HTMLStyleElement>("style[data-kmd-code-highlight]");
     if (!styleEl) {
       styleEl = document.createElement("style");
       styleEl.setAttribute("data-kmd-code-highlight", "");

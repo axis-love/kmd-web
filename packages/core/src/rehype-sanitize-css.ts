@@ -54,7 +54,8 @@ const SAFE_CSS_PROPERTIES = new Set([
 ]);
 
 /** Dangerous value tokens — rejected in any declaration, allow-listed or not. */
-const DANGEROUS_VALUE_RE = /(url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding|@import)/i;
+const DANGEROUS_VALUE_RE =
+  /(url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding|@import)/i;
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — browsers ignore control chars in CSS, so they are stripped to normalize declarations before validation.
 const CONTROL_CHARS_RE = /[\x00-\x1F\x7F]/g;
