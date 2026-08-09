@@ -3,6 +3,15 @@
   "version": "0.1.0-rc.0",
   "description": "Optional <kmd-reader> Web Component wrapper.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axis-love/kmd-web.git",
+    "directory": "packages/element"
+  },
+  "bugs": {
+    "url": "https://github.com/axis-love/kmd-web/issues"
+  },
+  "homepage": "https://github.com/axis-love/kmd-web/tree/main/packages/element#readme",
   "type": "module",
   "private": false,
   "sideEffects": false,

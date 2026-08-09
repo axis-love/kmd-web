@@ -1,13 +1,17 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  BUGS_URL,
   discoverPackages,
   distTagFor,
   expectedTarballName,
+  HOMEPAGE_PREFIX,
   npmPublishArgs,
   parseDryRunReport,
+  REPOSITORY_URL,
   verifyDryRunReport,
+  verifyProvenanceMetadata,
 } from "../scripts/publish-packages.mjs";
 
 const ROOT = process.cwd();
@@ -27,6 +31,9 @@ const CORE = {
   version: "0.1.0-rc.0",
   private: false,
   files: ["dist"],
+  repository: { type: "git", url: REPOSITORY_URL, directory: "packages/core" },
+  bugs: { url: BUGS_URL },
+  homepage: `${HOMEPAGE_PREFIX}core#readme`,
 };
 
 describe("publish package discovery", () => {
@@ -142,6 +149,76 @@ describe("dry-run verification", () => {
 
   it("fails when npm produced no report at all", () => {
     expect(verifyDryRunReport(CORE, null)).toHaveLength(1);
+  });
+});
+
+describe("provenance metadata", () => {
+  it("every publishable package declares repository, bugs and homepage (KWEB-042)", () => {
+    const publishable = discoverPackages().filter((p) => !p.private);
+    expect(publishable).toHaveLength(11);
+    for (const pkg of publishable) {
+      expect(verifyProvenanceMetadata(pkg), `${pkg.name} metadata`).toEqual([]);
+    }
+  });
+
+  it("points every repository field at the kmd-web repo and the package's own directory", () => {
+    for (const pkg of discoverPackages().filter((p) => !p.private)) {
+      const manifest = JSON.parse(readFileSync(join(pkg.dir, "package.json"), "utf-8"));
+      expect(manifest.repository).toEqual({
+        type: "git",
+        url: "git+https://github.com/axis-love/kmd-web.git",
+        directory: `packages/${basename(pkg.dir)}`,
+      });
+      expect(manifest.bugs).toEqual({ url: "https://github.com/axis-love/kmd-web/issues" });
+      expect(manifest.homepage).toBe(
+        `https://github.com/axis-love/kmd-web/tree/main/packages/${basename(pkg.dir)}#readme`,
+      );
+    }
+  });
+
+  it("accepts a manifest carrying the canonical metadata", () => {
+    expect(verifyProvenanceMetadata(CORE)).toEqual([]);
+  });
+
+  it("fails when a publishable package has no repository field", () => {
+    // The pre-KWEB-042 state of every manifest: npm publish --provenance has
+    // nothing to attest the tarball against.
+    const problems = verifyProvenanceMetadata({ ...CORE, repository: undefined });
+    expect(problems.join("\n")).toContain('no "repository" field');
+  });
+
+  it("rejects the string shorthand, which carries no monorepo directory", () => {
+    const problems = verifyProvenanceMetadata({
+      ...CORE,
+      repository: "github:axis-love/kmd-web",
+    });
+    expect(problems.join("\n")).toContain("must be an object");
+  });
+
+  it("fails when the repository points at a different repo", () => {
+    const problems = verifyProvenanceMetadata({
+      ...CORE,
+      repository: {
+        type: "git",
+        url: "git+https://github.com/axis-love/kmd.git",
+        directory: "packages/core",
+      },
+    });
+    expect(problems.join("\n")).toContain('"repository.url"');
+  });
+
+  it("fails when the repository directory points at another package", () => {
+    const problems = verifyProvenanceMetadata({
+      ...CORE,
+      repository: { type: "git", url: REPOSITORY_URL, directory: "packages/react" },
+    });
+    expect(problems.join("\n")).toContain('"repository.directory"');
+  });
+
+  it("fails when bugs or homepage are missing", () => {
+    const problems = verifyProvenanceMetadata({ ...CORE, bugs: undefined, homepage: undefined });
+    expect(problems.join("\n")).toContain('"bugs.url"');
+    expect(problems.join("\n")).toContain('"homepage"');
   });
 });
 

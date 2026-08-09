@@ -13,11 +13,15 @@
  * directory, and --dry-run asserts that npm reported the package it was pointed
  * at — a regression to the root-cwd form fails CI instead of a release.
  *
+ * Before anything is packed, every publishable manifest is checked for the
+ * repository/bugs/homepage metadata that `npm publish --provenance` attests
+ * against (KWEB-042). A missing or mismatched repository fails the run.
+ *
  * Exit code 0 = every non-private package would publish its own contents,
  * 1 = one or more failures.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -28,12 +32,26 @@ const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 const useShell = process.platform === "win32";
 
 /**
+ * Provenance attestation ties a published tarball to a repository and commit,
+ * so `npm publish --provenance` refuses to run when the manifest carries no
+ * repository field — and warns when the URL does not match the building repo
+ * (KWEB-042). These are the canonical values every publishable package must
+ * declare.
+ */
+export const REPOSITORY_URL = "git+https://github.com/axis-love/kmd-web.git";
+export const BUGS_URL = "https://github.com/axis-love/kmd-web/issues";
+export const HOMEPAGE_PREFIX = "https://github.com/axis-love/kmd-web/tree/main/packages/";
+
+/**
  * @typedef {object} WorkspacePackage
  * @property {string} dir     absolute package directory
  * @property {string} name    package.json "name"
  * @property {string} version package.json "version"
  * @property {boolean} private package.json "private" === true
  * @property {string[]} files package.json "files"
+ * @property {unknown} repository package.json "repository"
+ * @property {unknown} bugs       package.json "bugs"
+ * @property {unknown} homepage   package.json "homepage"
  */
 
 /**
@@ -61,9 +79,62 @@ export function discoverPackages(packagesDir = defaultPackagesDir) {
         version: /** @type {string} */ (pkg.version),
         private: pkg.private === true,
         files: /** @type {string[]} */ (pkg.files ?? []),
+        repository: pkg.repository,
+        bugs: pkg.bugs,
+        homepage: pkg.homepage,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Confirm a publishable package declares the repository metadata that
+ * `npm publish --provenance` requires, plus the bugs/homepage links that make
+ * the registry page usable.
+ * @param {WorkspacePackage} pkg
+ * @returns {string[]} problems, empty when the manifest is publish-ready
+ */
+export function verifyProvenanceMetadata(pkg) {
+  /** @type {string[]} */
+  const problems = [];
+  const dirName = basename(pkg.dir);
+
+  const repository = pkg.repository;
+  if (repository === undefined || repository === null) {
+    problems.push(
+      `${pkg.name}: package.json has no "repository" field — npm publish --provenance cannot attest it`,
+    );
+  } else if (typeof repository !== "object" || Array.isArray(repository)) {
+    // The shorthand string form is valid npm, but provenance tooling and the
+    // "directory" hint both want the object form in a monorepo.
+    problems.push(`${pkg.name}: "repository" must be an object with type/url/directory`);
+  } else {
+    const repo = /** @type {Record<string, unknown>} */ (repository);
+    if (repo.type !== "git") {
+      problems.push(`${pkg.name}: "repository.type" is "${repo.type}", expected "git"`);
+    }
+    if (repo.url !== REPOSITORY_URL) {
+      problems.push(`${pkg.name}: "repository.url" is "${repo.url}", expected "${REPOSITORY_URL}"`);
+    }
+    if (repo.directory !== `packages/${dirName}`) {
+      problems.push(
+        `${pkg.name}: "repository.directory" is "${repo.directory}", expected "packages/${dirName}"`,
+      );
+    }
+  }
+
+  const bugs = pkg.bugs;
+  if (typeof bugs !== "object" || bugs === null || /** @type {any} */ (bugs).url !== BUGS_URL) {
+    problems.push(`${pkg.name}: "bugs.url" must be "${BUGS_URL}"`);
+  }
+
+  if (pkg.homepage !== `${HOMEPAGE_PREFIX}${dirName}#readme`) {
+    problems.push(
+      `${pkg.name}: "homepage" is "${pkg.homepage}", expected "${HOMEPAGE_PREFIX}${dirName}#readme"`,
+    );
+  }
+
+  return problems;
 }
 
 /**
@@ -187,6 +258,17 @@ function main(argv) {
   const handled = [];
 
   console.log(dryRun ? "Publish dry-run (no registry writes)\n" : "Publish packages\n");
+
+  // Gate the whole run on manifest metadata: a real publish must not ship half
+  // the packages before hitting the one that cannot be attested.
+  const metadataProblems = packages
+    .filter((pkg) => !pkg.private)
+    .flatMap((pkg) => verifyProvenanceMetadata(pkg));
+  if (metadataProblems.length > 0) {
+    for (const problem of metadataProblems) console.error(`  FAIL  ${problem}`);
+    console.error(`\nPublish metadata check: ${metadataProblems.length} problem(s)`);
+    return 1;
+  }
 
   for (const pkg of packages) {
     if (pkg.private) {

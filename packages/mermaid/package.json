@@ -3,6 +3,15 @@
   "version": "0.1.0-rc.0",
   "description": "Optional Mermaid diagram rendering integration.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axis-love/kmd-web.git",
+    "directory": "packages/mermaid"
+  },
+  "bugs": {
+    "url": "https://github.com/axis-love/kmd-web/issues"
+  },
+  "homepage": "https://github.com/axis-love/kmd-web/tree/main/packages/mermaid#readme",
   "type": "module",
   "private": false,
   "sideEffects": false,
