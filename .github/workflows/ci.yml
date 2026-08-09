@@ -33,14 +33,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Typecheck
-        run: npm run typecheck
+      # Build comes before Test and doubles as the typecheck: `tsc --build`
+      # type-checks every project and fails on errors. A separate
+      # `tsc --build --noEmit` step can never pass on a clean checkout —
+      # packages resolve each other through dist/*.d.ts, and --noEmit
+      # produces no dist. The test suite likewise imports built dist output.
+      - name: Build (and typecheck)
+        run: npm run build
 
       - name: Test
         run: npm run test
-
-      - name: Build
-        run: npm run build
 
       - name: Package contents check
         run: node scripts/check-package-contents.mjs
