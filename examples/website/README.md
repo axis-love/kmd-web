@@ -13,13 +13,19 @@ This is the **third-party-consumer proof** for the KWEB-024 RC gate. It demonstr
 ## Usage
 
 ```bash
-# From the kmd-web repo root, pack tarballs first:
-npm run build && node scripts/dry-run-release.mjs
+# From the kmd-web repo root — builds, repacks .tarballs/, and force-reinstalls this demo:
+npm run refresh:examples
 
-# Then install and build this demo:
+# Then build or run the demo:
 cd examples/website
-npm install
 npm run build
 ```
+
+> **Run `npm run refresh:examples` after any package change.** This demo
+> installs the library from `file:` tarballs pinned at a fixed version, and npm
+> will silently keep an existing install even when a tarball is repacked with
+> new contents under the same version — the demo then renders with stale CSS/JS
+> that no longer matches the workspace. `npm run check:examples` (repo root)
+> detects a stale install without reinstalling.
 
 The demo renders a single page with a `MarkdownReader` component consuming a representative document. The built output is in `dist/`.
