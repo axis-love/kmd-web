@@ -36,11 +36,15 @@ import type {
 } from "@axis-love/kmd-web";
 import {
   BROWSER_VERSION,
+  BrowserReader,
   CapabilityError,
   CONTRACTS_VERSION,
   CORE_VERSION,
   defaultRenderOptions,
+  loadFeatureRehypePlugins,
   RenderError,
+  render,
+  renderWithFeaturePlugins,
   VERSION,
 } from "@axis-love/kmd-web";
 import type { KmdReaderElement, KmdRenderedDetail } from "@axis-love/kmd-web/element";
@@ -161,5 +165,40 @@ describe("@axis-love/kmd-web convenience package", () => {
   it("re-exports error classes", () => {
     expect(new RenderError("parse-error", "x")).toBeInstanceOf(RenderError);
     expect(new CapabilityError("link-blocked", "LinkHandler", "x")).toBeInstanceOf(CapabilityError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Root entry is renderable (KWEB-045)
+//
+// The root entry used to export types and version constants only, so
+// `import { render } from "@axis-love/kmd-web"` — what examples/vanilla/main.js
+// and the README both told consumers to write — resolved to nothing.
+// ---------------------------------------------------------------------------
+
+describe("root entry renderable surface", () => {
+  it("re-exports core's render", async () => {
+    expect(typeof render).toBe("function");
+    const result = await render("# Hello");
+    expect(result.html).toContain("Hello");
+  });
+
+  it("re-exports the browser render path that injects the optional features", async () => {
+    expect(typeof renderWithFeaturePlugins).toBe("function");
+    expect(typeof loadFeatureRehypePlugins).toBe("function");
+    const result = await renderWithFeaturePlugins("# Hello");
+    expect(result.html).toContain("Hello");
+  });
+
+  it("re-exports BrowserReader", () => {
+    expect(typeof BrowserReader).toBe("function");
+    expect(BrowserReader.prototype.update).toBeDefined();
+    expect(BrowserReader.prototype.dispose).toBeDefined();
+  });
+
+  it("keeps the framework surfaces on their subpaths", async () => {
+    const root = await import("@axis-love/kmd-web");
+    expect((root as Record<string, unknown>).MarkdownReader).toBeUndefined();
+    expect((root as Record<string, unknown>).KmdReaderElement).toBeUndefined();
   });
 });

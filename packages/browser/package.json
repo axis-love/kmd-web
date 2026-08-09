@@ -31,10 +31,26 @@
     "@axis-love/contracts": "0.1.0-rc.0",
     "@axis-love/core": "0.1.0-rc.0"
   },
+  "peerDependencies": {
+    "@axis-love/highlighting": "0.1.0-rc.0",
+    "@axis-love/math": "0.1.0-rc.0",
+    "@axis-love/mermaid": "0.1.0-rc.0"
+  },
+  "peerDependenciesMeta": {
+    "@axis-love/highlighting": {
+      "optional": true
+    },
+    "@axis-love/math": {
+      "optional": true
+    },
+    "@axis-love/mermaid": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "@axis-love/highlighting": "*",
-    "@axis-love/math": "*",
-    "@axis-love/mermaid": "*"
+    "@axis-love/highlighting": "0.1.0-rc.0",
+    "@axis-love/math": "0.1.0-rc.0",
+    "@axis-love/mermaid": "0.1.0-rc.0"
   },
   "publishConfig": {
     "access": "public"

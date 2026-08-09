@@ -20,6 +20,9 @@
  *  3. No unregistered `export const *VERSION` is silently drifting — a new one
  *     must be registered as either a package version or an artifact version.
  *  4. The contracts manifest's `contractsVersion` matches the lockstep version.
+ *  5. Every workspace-internal dependency range — in any dependency field,
+ *     including the optional peers @axis-love/browser declares for the lazy
+ *     feature packages (KWEB-045) — names the lockstep version exactly.
  *
  * Exit code 0 = every version agrees, 1 = one or more disagree.
  */
@@ -60,6 +63,22 @@ export const ARTIFACT_VERSION_CONSTANTS = {
   // Shape of the generated design-token artifacts.
   styles: ["TOKENS_VERSION"],
 };
+
+/** The npm scope whose packages are versioned in lockstep by this repo. */
+export const WORKSPACE_SCOPE = "@axis-love/";
+
+/**
+ * Every manifest field npm resolves a workspace package through. `peerDependencies`
+ * counts: @axis-love/browser declares the lazy feature packages there (KWEB-045),
+ * and a peer range that drifts off lockstep is exactly the kind of thing that only
+ * fails in a consumer's install, never in this workspace.
+ */
+export const DEPENDENCY_FIELDS = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+];
 
 /**
  * @typedef {object} VersionConstant
@@ -157,6 +176,47 @@ export function constantProblems(pkg) {
 }
 
 /**
+ * Confirm every workspace-internal dependency range names the lockstep version.
+ *
+ * Workspace links hide drift here: npm satisfies `"@axis-love/core": "*"` from the
+ * local checkout no matter what version it holds, so a stale or wildcard range only
+ * misfires once a consumer installs from the registry and npm resolves it against
+ * published versions.
+ * @param {object} pkg
+ * @param {string} pkg.name       package.json "name"
+ * @param {object} pkg.manifest   the full parsed manifest
+ * @param {string} expected       the lockstep version every range must name
+ * @param {Iterable<string>} workspaceNames  every package name in the workspace
+ * @returns {string[]} problems, empty when every range is on lockstep
+ */
+export function dependencyRangeProblems(pkg, expected, workspaceNames) {
+  /** @type {string[]} */
+  const problems = [];
+  const known = new Set(workspaceNames);
+
+  for (const field of DEPENDENCY_FIELDS) {
+    const deps = /** @type {Record<string, string> | undefined} */ (pkg.manifest[field]);
+    if (!deps) continue;
+    for (const [dep, range] of Object.entries(deps)) {
+      if (!dep.startsWith(WORKSPACE_SCOPE)) continue;
+      if (!known.has(dep)) {
+        problems.push(
+          `${pkg.name}: ${field}["${dep}"] names no package in this workspace — check the spelling`,
+        );
+        continue;
+      }
+      if (range !== expected) {
+        problems.push(
+          `${pkg.name}: ${field}["${dep}"] is "${range}" but the workspace is at "${expected}"`,
+        );
+      }
+    }
+  }
+
+  return problems;
+}
+
+/**
  * Every non-test TypeScript source file under a directory.
  * @param {string} dir
  * @returns {string[]} absolute paths
@@ -202,10 +262,14 @@ export function checkVersions(root = defaultRoot) {
     .map((d) => d.name)
     .sort();
 
+  /** @type {{ name: string, manifest: object }[]} */
+  const packageManifests = [];
+
   for (const dirName of dirNames) {
     const dir = join(packagesDir, dirName);
     const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"));
     manifests.push({ label: manifest.name, version: manifest.version });
+    packageManifests.push({ name: manifest.name, manifest });
 
     const constants = listSourceFiles(join(dir, "src")).flatMap((file) =>
       parseVersionConstants(readFileSync(file, "utf-8"), relative(root, file).replace(/\\/g, "/")),
@@ -219,6 +283,11 @@ export function checkVersions(root = defaultRoot) {
         constants,
       }),
     );
+  }
+
+  const workspaceNames = packageManifests.map((p) => p.name);
+  for (const pkg of packageManifests) {
+    problems.push(...dependencyRangeProblems(pkg, rootManifest.version, workspaceNames));
   }
 
   problems.unshift(...lockstepProblems(manifests));

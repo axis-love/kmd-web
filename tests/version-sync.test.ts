@@ -5,6 +5,8 @@ import {
   ARTIFACT_VERSION_CONSTANTS,
   checkVersions,
   constantProblems,
+  DEPENDENCY_FIELDS,
+  dependencyRangeProblems,
   lockstepProblems,
   PACKAGE_VERSION_CONSTANTS,
   parseVersionConstants,
@@ -149,6 +151,77 @@ describe("constant/manifest drift detection", () => {
       constants: [],
     });
     expect(problems.join("\n")).toContain("no version constant registered");
+  });
+});
+
+describe("workspace dependency range lockstep (KWEB-045)", () => {
+  const WORKSPACE = ["@axis-love/core", "@axis-love/highlighting"];
+
+  it("covers every field npm resolves a workspace package through", () => {
+    expect(DEPENDENCY_FIELDS).toEqual([
+      "dependencies",
+      "devDependencies",
+      "peerDependencies",
+      "optionalDependencies",
+    ]);
+  });
+
+  it("passes ranges that name the lockstep version", () => {
+    const problems = dependencyRangeProblems(
+      {
+        name: "@axis-love/browser",
+        manifest: {
+          dependencies: { "@axis-love/core": "0.1.0-rc.0" },
+          peerDependencies: { "@axis-love/highlighting": "0.1.0-rc.0" },
+        },
+      },
+      "0.1.0-rc.0",
+      WORKSPACE,
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it("fails an optional peer range left off lockstep", () => {
+    const problems = dependencyRangeProblems(
+      {
+        name: "@axis-love/browser",
+        manifest: { peerDependencies: { "@axis-love/highlighting": "0.1.0" } },
+      },
+      "0.1.0-rc.0",
+      WORKSPACE,
+    );
+    expect(problems.join("\n")).toContain('peerDependencies["@axis-love/highlighting"] is "0.1.0"');
+    expect(problems.join("\n")).toContain('workspace is at "0.1.0-rc.0"');
+  });
+
+  it("fails a wildcard range, which a workspace link would silently satisfy", () => {
+    const problems = dependencyRangeProblems(
+      { name: "@axis-love/browser", manifest: { devDependencies: { "@axis-love/core": "*" } } },
+      "0.1.0-rc.0",
+      WORKSPACE,
+    );
+    expect(problems.join("\n")).toContain('devDependencies["@axis-love/core"] is "*"');
+  });
+
+  it("fails a scoped dependency that names no workspace package", () => {
+    const problems = dependencyRangeProblems(
+      {
+        name: "@axis-love/browser",
+        manifest: { peerDependencies: { "@axis-love/highlightning": "0.1.0-rc.0" } },
+      },
+      "0.1.0-rc.0",
+      WORKSPACE,
+    );
+    expect(problems.join("\n")).toContain("names no package in this workspace");
+  });
+
+  it("ignores third-party ranges", () => {
+    const problems = dependencyRangeProblems(
+      { name: "@axis-love/browser", manifest: { dependencies: { shiki: "^4.0.2", react: "^19" } } },
+      "0.1.0-rc.0",
+      WORKSPACE,
+    );
+    expect(problems).toEqual([]);
   });
 });
 

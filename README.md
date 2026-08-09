@@ -14,9 +14,35 @@ Pre-release. See the [implementation plan](https://github.com/axis-love/kmd/blob
 npm install @axis-love/kmd-web
 ```
 
+React:
+
 ```tsx
 import { MarkdownReader } from "@axis-love/kmd-web/react";
 import "@axis-love/kmd-web/styles.css";
+```
+
+Everything else — the root entry is renderable, not contract-only (see the
+[package README](./packages/kmd-web/README.md) for the decision and its rationale):
+
+```js
+import { renderWithFeaturePlugins } from "@axis-love/kmd-web";
+import "@axis-love/kmd-web/styles.css";
+
+const result = await renderWithFeaturePlugins("# Hello");
+```
+
+The root exports `render` (core's DOM-free pipeline), `renderWithFeaturePlugins`
+(the same pipeline with the optional features injected) and `BrowserReader` (the
+full reader lifecycle). `MarkdownReader` and `<kmd-reader>` stay on the `./react`
+and `./element` subpaths so the root never pulls a framework into a bundle that
+did not ask for one.
+
+Syntax highlighting, math, and Mermaid are optional peer dependencies of
+`@axis-love/browser`. They are lazy-loaded: install them to turn the features on,
+omit them and documents still render — code unhighlighted, math as source text.
+
+```bash
+npm install @axis-love/highlighting @axis-love/math @axis-love/mermaid
 ```
 
 Advanced consumers can import only the engine or browser surface they need via individual `@axis-love/*` packages.

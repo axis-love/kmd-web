@@ -10,5 +10,9 @@
   },
   "dependencies": {
     "@axis-love/kmd-web": "*"
+  },
+  "optionalDependencies": {
+    "@axis-love/highlighting": "*",
+    "@axis-love/math": "*"
   }
 }

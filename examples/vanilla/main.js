@@ -1,14 +1,20 @@
 // Vanilla ESM example for @axis-love/kmd-web.
 //
 // Demonstrates:
-// - Importing `render` and the styles from the convenience package.
+// - Importing a render function and the styles from the convenience package.
 // - Rendering a Markdown string to a container element.
 // - Accessing outline, diagnostics, and detectedFeatures from RenderResult.
 // - Handling external links with a simple click handler (no innerHTML).
 //
 // All dynamic text uses textContent — no innerHTML outside the library.
+//
+// `renderWithFeaturePlugins` is core's `render` with KaTeX and Shiki injected
+// when @axis-love/math and @axis-love/highlighting are installed — they are
+// optional peers of @axis-love/browser, so the same call still renders this
+// document without them, just with math left as source and code unhighlighted.
+// The root entry also exports the bare `render` for hosts that want neither.
 
-import { render } from "@axis-love/kmd-web";
+import { renderWithFeaturePlugins } from "@axis-love/kmd-web";
 import "@axis-love/kmd-web/styles.css";
 
 // ---------------------------------------------------------------------------
@@ -72,7 +78,7 @@ const outlineList = document.getElementById("outline-list");
 const featureList = document.getElementById("feature-list");
 
 try {
-  const result = await render(markdown, {
+  const result = await renderWithFeaturePlugins(markdown, {
     features: {
       codeHighlighting: true,
       mermaid: true,
@@ -169,7 +175,8 @@ try {
 // Uses a single delegated event listener on the document. The library's
 // LinkPolicy already handles classification, but this shows how a host
 // can implement its own simple external link handler when using the
-// low-level render() API (which does not attach link interception).
+// low-level render functions (which do not attach link interception —
+// BrowserReader is the surface that does).
 // ---------------------------------------------------------------------------
 
 document.addEventListener("click", (event) => {

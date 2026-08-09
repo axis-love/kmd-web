@@ -144,10 +144,19 @@ export function ensureKatexCss(): void {
   if (katexCssLoaded) return;
   katexCssLoaded = true;
   // Dynamic import of CSS — bundler picks this up as a separate chunk
-  // In Node/SSR this is a no-op
+  // In Node/SSR this is a no-op.
+  //
+  // The rejection has to be handled on the promise: `import()` fails
+  // asynchronously, so a bare try/catch never sees it and Node tears the
+  // process down with ERR_UNKNOWN_FILE_EXTENSION once the tick lands. The
+  // outer try/catch stays for a synchronous throw from the loader itself.
   try {
     // @ts-expect-error — CSS import has no type declaration
-    import("katex/dist/katex.min.css");
+    const loading: Promise<unknown> = import("katex/dist/katex.min.css");
+    loading.catch(() => {
+      // No CSS loader (Node/SSR, or a bundler that does not handle CSS
+      // imports) — the host is responsible for the stylesheet there.
+    });
   } catch {
     // CSS import may fail in non-browser environments — that's fine,
     // the host is responsible for loading CSS in those cases.

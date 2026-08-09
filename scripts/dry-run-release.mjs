@@ -5,13 +5,15 @@
  * 2. Verify tarball file lists match package.json "files" field
  * 3. Create a fresh vanilla consumer project, install tarballs, build
  * 4. Create a fresh React consumer project, install tarballs, build
+ * 5. Install @axis-love/browser without its optional feature peers and confirm
+ *    the reader still renders (KWEB-045)
  *
  * No workspace resolution — tarballs are installed as real dependencies.
  *
  * Exit code 0 = all checks pass, 1 = one or more failures.
  */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, readdirSync } from "node:fs";
-import { join, resolve, relative } from "node:path";
+import { basename, join, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -95,8 +97,13 @@ for (const { name, dir, tarball } of tarballs) {
   const files = /** @type {string[]} */ (pkg.files ?? []);
   const expected = expectedTarballFiles(pkg);
 
-  // List tarball contents
-  const listing = execSync(`tar tzf "${tarball}"`, { encoding: "utf-8" });
+  // List tarball contents. Pass the bare filename from the tarball directory:
+  // GNU tar reads a Windows absolute path's drive letter as a remote host
+  // ("D:\... " → "Cannot connect to D") and aborts the whole run.
+  const listing = execSync(`tar tzf "${basename(tarball)}"`, {
+    cwd: join(root, ".tarballs"),
+    encoding: "utf-8",
+  });
   const tarballFiles = listing.trim().split("\n").map((f) => f.replace(/^package\//, ""));
 
   // Check that every expected file/dir is in the tarball
@@ -204,6 +211,38 @@ checkSubpath("@axis-love/kmd-web/react");
 checkSubpath("@axis-love/kmd-web/element");
 checkSubpath("@axis-love/styles/styles.css");
 checkSubpath("@axis-love/styles/tokens.css");
+
+// The root entry has to be renderable (KWEB-045). examples/vanilla/main.js
+// imports a render function straight off the bare specifier; before KWEB-045
+// the root exported types and version constants only, so that import resolved
+// to undefined against a real install and the example could not run.
+const root = await import("@axis-love/kmd-web");
+for (const name of ["render", "renderWithFeaturePlugins", "BrowserReader"]) {
+  if (typeof root[name] !== "function") {
+    throw new Error("@axis-love/kmd-web: root entry does not export " + name);
+  }
+}
+console.log("@axis-love/kmd-web: root entry exports render, renderWithFeaturePlugins, BrowserReader");
+
+// The framework surfaces must stay on their subpaths.
+for (const name of ["MarkdownReader", "KmdReaderElement"]) {
+  if (root[name] !== undefined) {
+    throw new Error("@axis-love/kmd-web: root entry leaked " + name + " — keep it on its subpath");
+  }
+}
+
+// Every optional peer is installed here, so the features must actually engage.
+const withFeatures = await root.renderWithFeaturePlugins(
+  "# Title\\n\\n$E = mc^2$\\n\\n\`\`\`ts\\nconst x: number = 1;\\n\`\`\`\\n",
+);
+if (!withFeatures.html.includes("Title")) throw new Error("root render produced no document");
+if (!withFeatures.html.includes("katex")) {
+  throw new Error("@axis-love/math is installed but math was not rendered");
+}
+if (!withFeatures.html.includes("shiki-code-block")) {
+  throw new Error("@axis-love/highlighting is installed but code was not highlighted");
+}
+console.log("@axis-love/kmd-web: optional peers installed → math and highlighting both active");
 
 console.log("All packages resolved successfully");
 `,
@@ -363,6 +402,124 @@ console.log("React consumer: all checks passed");
   }
 } finally {
   rmSync(reactDir, { recursive: true, force: true });
+}
+
+console.log("");
+
+// --- Step 5: Consumer without the optional feature peers (KWEB-045) ---
+//
+// @axis-love/browser declares highlighting/math/mermaid as optional
+// peerDependencies. Two things have to hold for that declaration to be worth
+// anything, and neither can be observed in this workspace — npm links every
+// workspace package into the root node_modules whether or not anyone depends on
+// it, so the feature packages are always present here.
+//
+//   1. npm installs @axis-love/browser cleanly with the peers absent.
+//   2. The reader still renders: code unhighlighted, math left as source.
+//
+// Step 3 already covers the other half — every peer installed, both features
+// active — from the same tarballs.
+
+console.log("Step 5: Consumer without the optional feature peers\n");
+
+const bareDir = mkdtempSync(join(tmpdir(), "kmd-no-peers-"));
+try {
+  const FEATURE_PACKAGES = ["@axis-love/highlighting", "@axis-love/math", "@axis-love/mermaid"];
+
+  // Only what @axis-love/browser genuinely requires. No feature packages.
+  const deps = {};
+  for (const { name, tarball } of tarballs) {
+    if (FEATURE_PACKAGES.includes(name)) continue;
+    if (!["@axis-love/contracts", "@axis-love/core", "@axis-love/browser"].includes(name)) continue;
+    deps[name] = `file:${tarball}`;
+  }
+
+  writeFileSync(
+    join(bareDir, "package.json"),
+    JSON.stringify(
+      { name: "kmd-no-peers-consumer", private: true, type: "module", dependencies: deps },
+      null,
+      2,
+    ) + "\n",
+  );
+
+  writeFileSync(
+    join(bareDir, "consumer.mjs"),
+    `// No-peers consumer — the optional features must degrade, not explode.
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
+for (const name of ["@axis-love/highlighting", "@axis-love/math", "@axis-love/mermaid"]) {
+  if (existsSync(join("node_modules", name))) {
+    throw new Error(name + " was installed — this consumer is supposed to be without it");
+  }
+}
+console.log("optional peers: none installed (as intended)");
+
+const { loadFeatureRehypePlugins, renderWithFeaturePlugins, BrowserReader } =
+  await import("@axis-love/browser");
+
+if (typeof BrowserReader !== "function") throw new Error("BrowserReader did not load");
+
+const { plugins } = await loadFeatureRehypePlugins();
+if (plugins.length !== 0) {
+  throw new Error("expected no feature plugins, got " + plugins.length);
+}
+console.log("loadFeatureRehypePlugins: 0 plugins injected");
+
+const result = await renderWithFeaturePlugins(
+  "# Title\\n\\n$E = mc^2$\\n\\n\`\`\`ts\\nconst x: number = 1;\\n\`\`\`\\n",
+);
+if (!result.html.includes("Title")) throw new Error("document did not render");
+if (!result.html.includes("const x: number = 1;")) throw new Error("code block was lost");
+if (result.html.includes("katex")) throw new Error("math rendered without @axis-love/math");
+if (result.html.includes("shiki-code-block")) {
+  throw new Error("code highlighted without @axis-love/highlighting");
+}
+if (result.codeHighlightCss !== undefined) {
+  throw new Error("highlight CSS emitted without @axis-love/highlighting");
+}
+const errors = result.diagnostics.filter((d) => d.severity === "error");
+if (errors.length > 0) {
+  throw new Error("missing optional peers produced errors: " + JSON.stringify(errors));
+}
+console.log("render OK: document intact, math as source, code unhighlighted, no error diagnostics");
+console.log("No-peers consumer: all checks passed");
+`,
+  );
+
+  console.log(`  Consumer dir: ${bareDir}`);
+  console.log("  Installing @axis-love/browser without the optional peers...");
+  try {
+    execSync("npm install --no-audit --no-fund 2>&1", {
+      cwd: bareDir,
+      encoding: "utf-8",
+      stdio: "pipe",
+    });
+    console.log("  Install OK");
+  } catch (e) {
+    const stderr = e.stderr ? e.stderr.toString() : String(e);
+    const stdout = e.stdout ? e.stdout.toString() : "";
+    console.error(`  FAIL  npm install failed — an optional peer is not optional enough`);
+    if (stdout) console.error(`  stdout: ${stdout}`);
+    if (stderr) console.error(`  stderr: ${stderr}`);
+    failures++;
+  }
+
+  console.log("  Running consumer...");
+  try {
+    const out = execSync("node consumer.mjs 2>&1", { cwd: bareDir, encoding: "utf-8" });
+    console.log(`  Output:\n${out.split("\n").map((l) => `    ${l}`).join("\n")}`);
+  } catch (e) {
+    const stderr = e.stderr ? e.stderr.toString() : String(e);
+    const stdout = e.stdout ? e.stdout.toString() : "";
+    console.error(`  FAIL  no-peers consumer run failed`);
+    if (stdout) console.error(`  stdout: ${stdout}`);
+    if (stderr) console.error(`  stderr: ${stderr}`);
+    failures++;
+  }
+} finally {
+  rmSync(bareDir, { recursive: true, force: true });
 }
 
 console.log("");
