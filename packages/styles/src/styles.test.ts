@@ -53,8 +53,8 @@ describe("scope isolation", () => {
 
     const unscoped: string[] = [];
     for (const sel of selectors) {
-      // Allow :root (default theme tokens, system preference)
-      if (sel.startsWith(":root")) continue;
+      // Allow :root and :where(:root) (default theme tokens, system preference)
+      if (sel.startsWith(":root") || sel.startsWith(":where(:root)")) continue;
       // Allow theme attribute/class selectors (data-theme, data-kmd-theme, .kmd-theme-*)
       if (sel.startsWith("[data-theme=") || sel.startsWith("[data-kmd-theme=")) continue;
       if (sel.startsWith(".kmd-theme-")) continue;
@@ -210,6 +210,28 @@ describe("themes", () => {
     expect(css).toContain("--kmd-color-neutral: #f4ecd8");
     expect(css).toContain("--kmd-color-surface: #faf3e0");
     expect(css).toContain("--kmd-color-on-surface: #3b2f1f");
+  });
+
+  it("should declare the default dark colors at zero specificity", () => {
+    // generated/tokens.css is @imported at the top of styles.css, so its theme
+    // rules ([data-theme="light"], .kmd-theme-light, …) come first in source
+    // order. A plain `:root` default block has the same specificity (0,1,0) as
+    // those theme selectors and would therefore win on any element that is both
+    // the root and the theme host — e.g. <html data-theme="light"> — silently
+    // forcing dark colors. :where() drops the default block to (0,0,0) so every
+    // explicit theme selector wins regardless of order.
+    expect(css).toContain(":where(:root) {");
+  });
+
+  it("should not declare theme color tokens in a plain :root block", () => {
+    const noComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    const plainRootBlocks = [...noComments.matchAll(/(^|\n)\s*:root\s*\{([^}]*)\}/g)];
+    for (const [, , body] of plainRootBlocks) {
+      expect(
+        body,
+        "a plain :root block must not set --kmd-color-* — it would out-specify the theme selectors",
+      ).not.toMatch(/--kmd-color-[a-z0-9-]+\s*:/);
+    }
   });
 });
 
