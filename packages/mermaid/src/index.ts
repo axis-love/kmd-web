@@ -168,6 +168,7 @@ function initializeMermaid(api: MermaidApi, theme: MermaidThemeConfig): void {
 export function resetMermaidState(): void {
   mermaidCache = null;
   initializedThemeId = null;
+  renderQueue = Promise.resolve();
   for (const dispose of [...activeThemeWatchers]) {
     dispose();
   }
@@ -238,24 +239,41 @@ export async function renderMermaid(
   const timeoutMs = options?.timeoutMs ?? DEFAULT_RENDER_TIMEOUT_MS;
   const theme = options?.theme ?? resolveMermaidTheme(options?.themeScope);
   const api = await loadMermaid();
-  initializeMermaid(api, theme);
 
-  const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`;
+  // Mermaid holds one global configuration, so initialize + render must run
+  // as an atomic pair: two containers with different palettes rendering
+  // concurrently could otherwise re-initialize between another render's
+  // initialize and its render, baking the wrong palette into the SVG.
+  const result = await enqueueRender(() => {
+    initializeMermaid(api, theme);
 
-  const renderPromise = api.render(id, source);
+    const id = `mermaid-${Math.random().toString(36).slice(2, 10)}`;
+    const renderPromise = api.render(id, source);
 
-  if (timeoutMs > 0) {
-    const result = await Promise.race([
-      renderPromise,
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Mermaid render timeout")), timeoutMs),
-      ),
-    ]);
-    return { svg: result.svg };
-  }
-
-  const result = await renderPromise;
+    if (timeoutMs > 0) {
+      return Promise.race([
+        renderPromise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Mermaid render timeout")), timeoutMs),
+        ),
+      ]);
+    }
+    return renderPromise;
+  });
   return { svg: result.svg };
+}
+
+/**
+ * Serialize initialize+render pairs. The timeout clock starts when a task
+ * starts, not when it is enqueued, so a slow diagram ahead in the queue
+ * cannot burn another diagram's budget.
+ */
+let renderQueue: Promise<unknown> = Promise.resolve();
+
+function enqueueRender<T>(task: () => Promise<T>): Promise<T> {
+  const run = renderQueue.then(task);
+  renderQueue = run.catch(() => {});
+  return run;
 }
 
 // ---------------------------------------------------------------------------

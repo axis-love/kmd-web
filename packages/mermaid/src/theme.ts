@@ -112,8 +112,13 @@ export interface MermaidThemeConfig {
   readonly darkMode: boolean;
   /** Where the palette came from — useful for diagnostics and tests. */
   readonly source: "tokens" | "fallback";
-  /** Mermaid theme variables. Empty on the fallback path. */
-  readonly themeVariables: Readonly<Record<string, string>>;
+  /**
+   * Mermaid theme variables. Empty on the fallback path. All colors are
+   * strings; `darkMode` is a real boolean because mermaid's theme-base
+   * branches on its truthiness, and the string "false" is truthy — passing a
+   * string flips every derived variable in light mode onto the dark path.
+   */
+  readonly themeVariables: Readonly<Record<string, string | boolean>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -395,7 +400,7 @@ function themeId(
   source: MermaidThemeConfig["source"],
   theme: string,
   darkMode: boolean,
-  variables: Record<string, string>,
+  variables: Record<string, string | boolean>,
 ): string {
   const serialized = Object.keys(variables)
     .sort()
@@ -425,8 +430,10 @@ export function resolveMermaidTheme(scope?: Element | null): MermaidThemeConfig 
     // themes the selector list doesn't know about, sepia included.
     const parsed = parseCssColor(tokens.background);
     const darkMode = parsed ? relativeLuminance(parsed) < 0.5 : detectDarkMode(scope);
-    const themeVariables = buildThemeVariables(tokens);
-    themeVariables.darkMode = String(darkMode);
+    const themeVariables: Record<string, string | boolean> = buildThemeVariables(tokens);
+    // Must stay a boolean: mermaid's theme-base branches on truthiness, and
+    // the string "false" is truthy.
+    themeVariables.darkMode = darkMode;
     return {
       id: themeId("tokens", CUSTOMIZABLE_THEME, darkMode, themeVariables),
       theme: CUSTOMIZABLE_THEME,

@@ -1,7 +1,17 @@
 // @vitest-environment happy-dom
 import type { DetectedFeatures } from "@axis-love/contracts";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FeatureCoordinator } from "./feature-coordination";
+
+// Keep the real mermaid library out of this worker: importing it costs tens of
+// seconds of transform under full-suite load, and the dispose test below only
+// exercises the watcher lifecycle, not diagram drawing.
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: () => {},
+    render: async () => ({ svg: "<svg>rendered</svg>" }),
+  },
+}));
 
 const NO_FEATURES: DetectedFeatures = {
   hasMath: false,
@@ -133,6 +143,39 @@ describe("FeatureCoordinator", () => {
     expect(results.map((r) => r.feature)).toContain("mermaid");
     expect(results.map((r) => r.feature)).toContain("math");
     expect(results.map((r) => r.feature)).toContain("highlighting");
+  });
+
+  it("dispose stops the theme watcher the mermaid pass installed", async () => {
+    const { resetMermaidState, watchMermaidTheme } = await import("@axis-love/mermaid");
+    resetMermaidState();
+    try {
+      const coordinator = new FeatureCoordinator({ mermaidTimeoutMs: 200 });
+      const container = document.createElement("div");
+      const encoded = Buffer.from("flowchart TD\n  A --> B", "utf-8").toString("base64");
+      container.innerHTML =
+        `<div class="mermaid-placeholder" data-mermaid-source="${encoded}">` +
+        '<div class="mermaid-render-target"></div></div>';
+      document.body.appendChild(container);
+
+      // The diagram itself may fail to draw in the test DOM — irrelevant here;
+      // the watcher is installed before any diagram renders.
+      await coordinator.enhance(container, { ...NO_FEATURES, hasMermaid: true });
+
+      // watchMermaidTheme is idempotent per container, so getting the same
+      // disposer back proves the pass's watcher is still active.
+      const disposer = watchMermaidTheme(container);
+      expect(watchMermaidTheme(container)).toBe(disposer);
+
+      coordinator.dispose(container);
+
+      // A fresh disposer means the old watcher was torn down.
+      const fresh = watchMermaidTheme(container);
+      expect(fresh).not.toBe(disposer);
+      fresh();
+      container.remove();
+    } finally {
+      resetMermaidState();
+    }
   });
 
   it("graceful fallback when feature package is unavailable (import fails)", async () => {

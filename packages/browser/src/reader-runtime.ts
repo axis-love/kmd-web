@@ -223,6 +223,7 @@ export class BrowserReader {
     this.disposed = true;
 
     this.bridge.dispose();
+    this.features.dispose(this.container);
     this.assets.revokeAll();
     this.detachLinkHandler?.();
     this.detachLinkHandler = null;

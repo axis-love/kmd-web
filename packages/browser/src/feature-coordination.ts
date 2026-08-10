@@ -66,8 +66,25 @@ export interface FeatureCoordinationOptions {
 export class FeatureCoordinator {
   private readonly mermaidTimeoutMs: number;
 
+  /**
+   * The mermaid module once a mermaid pass has loaded it. Kept so dispose()
+   * can stop the theme watcher `renderMermaidPlaceholders` installs on the
+   * container — the watcher holds the container strongly and otherwise only
+   * self-disposes when a theme mutation fires after the container detaches.
+   */
+  private mermaidModule: typeof import("@axis-love/mermaid") | null = null;
+
   constructor(options?: FeatureCoordinationOptions) {
     this.mermaidTimeoutMs = options?.mermaidTimeoutMs ?? 10_000;
+  }
+
+  /**
+   * Release everything the enhancement passes attached to the container.
+   * Currently that is the mermaid theme watcher. Safe to call when no pass
+   * ever ran, and more than once.
+   */
+  dispose(container: HTMLElement): void {
+    this.mermaidModule?.stopMermaidThemeWatch(container);
   }
 
   /**
@@ -110,6 +127,7 @@ export class FeatureCoordinator {
   private async runMermaidPass(container: HTMLElement): Promise<FeaturePassResult> {
     try {
       const mermaidMod = await import("@axis-love/mermaid");
+      this.mermaidModule = mermaidMod;
       // Check the DOM directly for placeholders. If there are none,
       // the pass is a no-op (not an error).
       const hasPlaceholders = container.querySelector(".mermaid-placeholder") !== null;

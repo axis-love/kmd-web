@@ -139,9 +139,13 @@ describe("resolveMermaidTheme — token path", () => {
     expect(resolveMermaidTheme(mount(LIGHT_TOKENS)).darkMode).toBe(false);
   });
 
-  it("passes darkMode through to mermaid", () => {
-    expect(resolveMermaidTheme(mount(DARK_TOKENS)).themeVariables.darkMode).toBe("true");
-    expect(resolveMermaidTheme(mount(LIGHT_TOKENS)).themeVariables.darkMode).toBe("false");
+  it("passes darkMode through to mermaid as a real boolean", () => {
+    // Mermaid's theme-base branches on truthiness, and the string "false" is
+    // truthy — a stringified flag would push every derived variable in light
+    // mode (gantt, git graph, edgeLabelBackground fallbacks, ...) onto the
+    // dark-mode code paths.
+    expect(resolveMermaidTheme(mount(DARK_TOKENS)).themeVariables.darkMode).toBe(true);
+    expect(resolveMermaidTheme(mount(LIGHT_TOKENS)).themeVariables.darkMode).toBe(false);
   });
 
   it("gives light and dark distinct ids, and repeats the same id for the same tokens", () => {
