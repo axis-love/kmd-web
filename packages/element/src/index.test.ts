@@ -15,6 +15,40 @@ async function flushAsync(): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 100));
 }
 
+// Waiting is condition-based with a generous deadline (see waitFor below), so
+// the test timeout must sit above WAIT_DEADLINE_MS, not at vitest's 5s default.
+vi.setConfig({ testTimeout: 30_000 });
+
+/**
+ * How long a render is allowed to take before assertions run anyway. The
+ * pipeline is fast in isolation but can take many seconds under full-suite
+ * load or on a slow CI runner — a fixed 100ms flush is what made these tests
+ * flaky (KWEB-054).
+ */
+const WAIT_DEADLINE_MS = 20_000;
+
+/**
+ * Flush async work until `condition` holds or the deadline passes. On
+ * timeout it returns normally so the assertions that follow fail with their
+ * own descriptive message rather than a generic waitFor error.
+ */
+async function waitFor(condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + WAIT_DEADLINE_MS;
+  for (;;) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    if (condition()) return;
+    if (Date.now() > deadline) return;
+  }
+}
+
+/** Wait until the reader content under `scope` contains every fragment. */
+async function waitForContent(scope: HTMLElement, ...expected: string[]): Promise<void> {
+  await waitFor(() => {
+    const html = scope.querySelector(".kmd-reader-content")?.innerHTML ?? "";
+    return expected.every((fragment) => html.includes(fragment));
+  });
+}
+
 /** Create a container div appended to document.body. */
 function createContainer(): HTMLDivElement {
   const container = document.createElement("div");
@@ -95,7 +129,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Hello World";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "<h1", "Hello World");
 
     const content = el.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1");
@@ -106,7 +140,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Title\n\nParagraph text.\n\n```ts\nconst x = 1;\n```\n\n- Item 1\n- Item 2";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "<h1", "<p>", "<pre", "<ul>");
 
     const content = el.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1");
@@ -142,7 +176,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Hello";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitFor(() => (el.querySelector(".mdr-loading") as HTMLElement).hidden);
 
     const loading = el.querySelector(".mdr-loading");
     expect((loading as HTMLElement).hidden).toBe(true);
@@ -152,7 +186,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Hello";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitFor(() => (el.querySelector(".kmd-reader-content") as HTMLElement).hidden === false);
 
     const content = el.querySelector(".kmd-reader-content") as HTMLElement;
     expect(content.hidden).toBe(false);
@@ -163,7 +197,7 @@ describe("<kmd-reader> custom element", () => {
     el.source = "x".repeat(20);
     el.renderOptions = { maxSourceSize: 10 };
     document.body.appendChild(el);
-    await flushAsync();
+    await waitFor(() => (el.querySelector(".mdr-error") as HTMLElement).hidden === false);
 
     const errorEl = el.querySelector(".mdr-error") as HTMLElement;
     expect(errorEl.hidden).toBe(false);
@@ -176,12 +210,12 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# First";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "First");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("First");
 
     el.source = "# Second";
-    await flushAsync();
+    await waitForContent(el, "Second");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Second");
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).not.toContain("First");
@@ -192,7 +226,7 @@ describe("<kmd-reader> custom element", () => {
     el.source = "# Hello";
     el.renderOptions = { features: { mermaid: false } };
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "Hello");
 
     expect(el.querySelector("h1")?.textContent).toBe("Hello");
 
@@ -268,12 +302,12 @@ describe("<kmd-reader> custom element", () => {
     const el = document.createElement("kmd-reader");
     el.setAttribute("source", "# First");
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el as HTMLElement, "First");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("First");
 
     el.setAttribute("source", "# Second");
-    await flushAsync();
+    await waitForContent(el as HTMLElement, "Second");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Second");
   });
@@ -304,7 +338,7 @@ describe("<kmd-reader> custom element", () => {
 
     const handler = vi.fn();
     el.addEventListener("kmd:outline-change", handler);
-    await flushAsync();
+    await waitFor(() => (handler.mock.calls.at(-1)?.[0]?.detail?.outline?.length ?? 0) === 2);
 
     expect(handler).toHaveBeenCalled();
     const lastCall = handler.mock.calls[handler.mock.calls.length - 1];
@@ -321,7 +355,7 @@ describe("<kmd-reader> custom element", () => {
 
     const handler = vi.fn();
     el.addEventListener("kmd:rendered", handler);
-    await flushAsync();
+    await waitFor(() => handler.mock.calls.length > 0);
 
     expect(handler).toHaveBeenCalled();
     const detail = handler.mock.calls[0][0].detail;
@@ -337,7 +371,7 @@ describe("<kmd-reader> custom element", () => {
 
     const handler = vi.fn();
     el.addEventListener("kmd:error", handler);
-    await flushAsync();
+    await waitFor(() => handler.mock.calls.length > 0);
 
     expect(handler).toHaveBeenCalled();
     const detail = handler.mock.calls[0][0].detail;
@@ -360,7 +394,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "[Example](https://example.com)";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "<a");
 
     const handler = vi.fn();
     el.addEventListener("kmd:link-external", handler);
@@ -368,7 +402,7 @@ describe("<kmd-reader> custom element", () => {
     const link = el.querySelector<HTMLAnchorElement>(".kmd-reader-content a");
     expect(link).not.toBeNull();
     link?.click();
-    await flushAsync();
+    await waitFor(() => handler.mock.calls.length > 0);
 
     expect(handler).toHaveBeenCalled();
     const detail = handler.mock.calls[0][0].detail;
@@ -380,7 +414,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "[Other](./other.md)";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "<a");
 
     const handler = vi.fn();
     el.addEventListener("kmd:link-document", handler);
@@ -388,7 +422,7 @@ describe("<kmd-reader> custom element", () => {
     const link = el.querySelector<HTMLAnchorElement>(".kmd-reader-content a");
     expect(link).not.toBeNull();
     link?.click();
-    await flushAsync();
+    await waitFor(() => handler.mock.calls.length > 0);
 
     expect(handler).toHaveBeenCalled();
     const detail = handler.mock.calls[0][0].detail;
@@ -404,7 +438,7 @@ describe("<kmd-reader> custom element", () => {
 
     const handler = vi.fn();
     container.addEventListener("kmd:rendered", handler);
-    await flushAsync();
+    await waitFor(() => handler.mock.calls.length > 0);
 
     expect(handler).toHaveBeenCalled();
   });
@@ -415,7 +449,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Title\n\n[link](https://example.com)";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "<a");
 
     const handler = vi.fn();
     el.addEventListener("kmd:link-external", handler);
@@ -460,7 +494,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Hello";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "Hello");
 
     el.remove();
 
@@ -473,7 +507,7 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# Hello";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "Hello");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Hello");
 
@@ -481,7 +515,7 @@ describe("<kmd-reader> custom element", () => {
     expect(el.querySelector(".kmd-reader-content")).toBeNull();
 
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "Hello");
 
     expect(el.querySelector(".kmd-reader-content")).not.toBeNull();
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Hello");
@@ -491,14 +525,14 @@ describe("<kmd-reader> custom element", () => {
     const el = new KmdReaderElement();
     el.source = "# First";
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "First");
 
     el.remove();
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(el, "First");
 
     el.source = "# Second";
-    await flushAsync();
+    await waitForContent(el, "Second");
 
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Second");
   });
@@ -514,7 +548,8 @@ describe("<kmd-reader> custom element", () => {
     el2.source = "# Second Document";
     document.body.appendChild(el2);
 
-    await flushAsync();
+    await waitForContent(el1, "First Document");
+    await waitForContent(el2, "Second Document");
 
     const content1 = el1.querySelector(".kmd-reader-content");
     const content2 = el2.querySelector(".kmd-reader-content");
@@ -534,10 +569,11 @@ describe("<kmd-reader> custom element", () => {
     el2.source = "# Second";
     document.body.appendChild(el2);
 
-    await flushAsync();
+    await waitForContent(el1, "First");
+    await waitForContent(el2, "Second");
 
     el1.source = "# First Updated";
-    await flushAsync();
+    await waitForContent(el1, "First Updated");
 
     const content1 = el1.querySelector(".kmd-reader-content");
     const content2 = el2.querySelector(".kmd-reader-content");
@@ -556,7 +592,8 @@ describe("<kmd-reader> custom element", () => {
     el2.source = "# Second";
     document.body.appendChild(el2);
 
-    await flushAsync();
+    await waitForContent(el1, "First");
+    await waitForContent(el2, "Second");
 
     el1.remove();
     await flushAsync();
@@ -573,7 +610,7 @@ describe("<kmd-reader> custom element", () => {
     document.body.appendChild(el);
 
     el.style.width = "320px";
-    await flushAsync();
+    await waitForContent(el, "Narrow");
 
     const content = el.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("Narrow");
@@ -591,7 +628,8 @@ describe("<kmd-reader> custom element", () => {
     el2.style.width = "320px";
     document.body.appendChild(el2);
 
-    await flushAsync();
+    await waitForContent(el1, "Doc 1");
+    await waitForContent(el2, "Doc 2");
 
     expect(el1.querySelector(".kmd-reader-content")?.innerHTML).toContain("Doc 1");
     expect(el2.querySelector(".kmd-reader-content")?.innerHTML).toContain("Doc 2");

@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MarkdownReader } from "./index";
+
+// Waiting is condition-based with a generous deadline (see waitFor below), so
+// the test timeout must sit above WAIT_DEADLINE_MS, not at vitest's 5s default.
+vi.setConfig({ testTimeout: 30_000 });
 
 function createContainer(): HTMLDivElement {
   const container = document.createElement("div");
@@ -10,12 +14,35 @@ function createContainer(): HTMLDivElement {
   return container;
 }
 
-async function flushAsync(): Promise<void> {
-  await act(async () => {
-    // The renderFn now does `await import("@axis-love/math")` and
-    // `await import("@axis-love/highlighting")` before calling render(),
-    // adding extra async ticks beyond a single setTimeout(0).
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+/**
+ * How long a render is allowed to take before assertions run anyway. The
+ * pipeline is fast in isolation but can take many seconds under full-suite
+ * load or on a slow CI runner — a fixed 100ms flush is what made these tests
+ * flaky (KWEB-054).
+ */
+const WAIT_DEADLINE_MS = 20_000;
+
+/**
+ * Flush async work until `condition` holds or the deadline passes. On
+ * timeout it returns normally so the assertions that follow fail with their
+ * own descriptive message rather than a generic waitFor error.
+ */
+async function waitFor(condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + WAIT_DEADLINE_MS;
+  for (;;) {
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    });
+    if (condition()) return;
+    if (Date.now() > deadline) return;
+  }
+}
+
+/** Wait until the reader content under `scope` contains every fragment. */
+async function waitForContent(scope: HTMLElement, ...expected: string[]): Promise<void> {
+  await waitFor(() => {
+    const html = scope.querySelector(".kmd-reader-content")?.innerHTML ?? "";
+    return expected.every((fragment) => html.includes(fragment));
   });
 }
 
@@ -113,7 +140,7 @@ describe("MarkdownReader integration — representative fixtures", () => {
       act(() => {
         root.render(<MarkdownReader source={fixture.source} />);
       });
-      await flushAsync();
+      await waitForContent(container, ...fixture.expectations);
 
       const content = container.querySelector(".kmd-reader-content");
       expect(content).not.toBeNull();
@@ -161,7 +188,7 @@ See [the docs](https://example.com) for more.
     act(() => {
       root.render(<MarkdownReader source={complexSource} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<h1", "<pre", "<table>", "markdown-alert");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1");
@@ -213,7 +240,8 @@ describe("MarkdownReader multiple instances", () => {
       root1.render(<MarkdownReader source="# First Document" />);
       root2.render(<MarkdownReader source="# Second Document" />);
     });
-    await flushAsync();
+    await waitForContent(container1, "First Document");
+    await waitForContent(container2, "Second Document");
 
     const content1 = container1.querySelector(".kmd-reader-content");
     const content2 = container2.querySelector(".kmd-reader-content");
@@ -233,13 +261,14 @@ describe("MarkdownReader multiple instances", () => {
       root1.render(<MarkdownReader source="# First" />);
       root2.render(<MarkdownReader source="# Second" />);
     });
-    await flushAsync();
+    await waitForContent(container1, "First");
+    await waitForContent(container2, "Second");
 
     // Update first reader
     act(() => {
       root1.render(<MarkdownReader source="# First Updated" />);
     });
-    await flushAsync();
+    await waitForContent(container1, "First Updated");
 
     const content1 = container1.querySelector(".kmd-reader-content");
     const content2 = container2.querySelector(".kmd-reader-content");
@@ -257,7 +286,8 @@ describe("MarkdownReader multiple instances", () => {
       root1.render(<MarkdownReader source="# First" />);
       root2.render(<MarkdownReader source="# Second" />);
     });
-    await flushAsync();
+    await waitForContent(container1, "First");
+    await waitForContent(container2, "Second");
 
     // Unmount first reader
     act(() => {
@@ -303,7 +333,7 @@ describe("MarkdownReader cancellation", () => {
     act(() => {
       root.render(<MarkdownReader source="# Second" />);
     });
-    await flushAsync();
+    await waitForContent(container, "Second");
 
     const content = container.querySelector(".kmd-reader-content");
     // The final content should be "Second", not "First" (stale).
@@ -327,7 +357,7 @@ describe("MarkdownReader cancellation", () => {
     act(() => {
       root.render(<MarkdownReader source="# D" />);
     });
-    await flushAsync();
+    await waitForContent(container, "D");
 
     const content = container.querySelector(".kmd-reader-content");
     // After all rapid changes, the final content should be "D".

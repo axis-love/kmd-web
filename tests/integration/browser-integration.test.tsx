@@ -25,6 +25,10 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Waiting is condition-based with a generous deadline (see waitFor below), so
+// the test timeout must sit above WAIT_DEADLINE_MS, not at vitest's 5s default.
+vi.setConfig({ testTimeout: 30_000 });
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -43,6 +47,40 @@ async function flushAsync(): Promise<void> {
     // adding extra async ticks beyond a single setTimeout(0).
     await new Promise<void>((resolve) => setTimeout(resolve, 100));
   });
+}
+
+/**
+ * How long a render is allowed to take before assertions run anyway. The
+ * pipeline is fast in isolation but can take many seconds under full-suite
+ * load or on a slow CI runner — a fixed 100ms flush is what made this file
+ * flaky (KWEB-054).
+ */
+const WAIT_DEADLINE_MS = 20_000;
+
+/**
+ * Flush async work until `condition` holds or the deadline passes. On
+ * timeout it returns normally so the assertions that follow fail with their
+ * own descriptive message rather than a generic waitFor error.
+ */
+async function waitFor(condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + WAIT_DEADLINE_MS;
+  for (;;) {
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+    });
+    if (condition()) return;
+    if (Date.now() > deadline) return;
+  }
+}
+
+/** The reader content HTML under `scope`, or "" before the first paint. */
+function contentHtml(scope: HTMLElement): string {
+  return scope.querySelector(".kmd-reader-content")?.innerHTML ?? "";
+}
+
+/** Wait until the reader content under `scope` contains every fragment. */
+async function waitForContent(scope: HTMLElement, ...expected: string[]): Promise<void> {
+  await waitFor(() => expected.every((fragment) => contentHtml(scope).includes(fragment)));
 }
 
 /** Read a contract fixture file. */
@@ -120,7 +158,7 @@ describe("browser integration — representative fixtures via React entry", () =
       act(() => {
         root.render(<MarkdownReader source={f.source} />);
       });
-      await flushAsync();
+      await waitForContent(container, ...f.expects);
 
       const content = container.querySelector(".kmd-reader-content");
       expect(content).not.toBeNull();
@@ -136,7 +174,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "Main Title", "Section One");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("Main Title");
@@ -149,7 +187,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "markdown-alert-note", "markdown-alert-warning");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("markdown-alert-note");
@@ -162,7 +200,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<table>", "task-list");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<table>");
@@ -175,7 +213,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<pre", "shiki-code-block");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<pre");
@@ -188,7 +226,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "katex");
 
     const content = container.querySelector(".kmd-reader-content");
     // Math is rendered as KaTeX HTML in the pipeline (rehypeKatex plugin).
@@ -202,7 +240,7 @@ describe("browser integration — representative fixtures via React entry", () =
     act(() => {
       root.render(<MarkdownReader source={source} />);
     });
-    await flushAsync();
+    await waitForContent(container, "mermaid");
 
     const content = container.querySelector(".kmd-reader-content");
     // Mermaid source is base64-encoded into data-mermaid-source attributes.
@@ -247,7 +285,8 @@ describe("browser integration — multiple readers on same page", () => {
       root1.render(<MarkdownReader source="# Document Alpha" />);
       root2.render(<MarkdownReader source="# Document Beta" />);
     });
-    await flushAsync();
+    await waitForContent(c1, "Alpha");
+    await waitForContent(c2, "Beta");
 
     expect(c1.querySelector(".kmd-reader-content")?.innerHTML).toContain("Alpha");
     expect(c1.querySelector(".kmd-reader-content")?.innerHTML).not.toContain("Beta");
@@ -262,7 +301,8 @@ describe("browser integration — multiple readers on same page", () => {
     const el2 = document.createElement("kmd-reader") as KmdReaderElement;
     el2.setAttribute("source", "# Element Beta");
     document.body.append(el1, el2);
-    await flushAsync();
+    await waitForContent(el1, "Alpha");
+    await waitForContent(el2, "Beta");
 
     expect(el1.querySelector(".kmd-reader-content")?.innerHTML).toContain("Alpha");
     expect(el1.querySelector(".kmd-reader-content")?.innerHTML).not.toContain("Beta");
@@ -280,7 +320,8 @@ describe("browser integration — multiple readers on same page", () => {
     const el = document.createElement("kmd-reader") as KmdReaderElement;
     el.setAttribute("source", "# Element Reader");
     document.body.appendChild(el);
-    await flushAsync();
+    await waitForContent(c1, "React Reader");
+    await waitForContent(el, "Element Reader");
 
     expect(c1.querySelector(".kmd-reader-content")?.innerHTML).toContain("React Reader");
     expect(el.querySelector(".kmd-reader-content")?.innerHTML).toContain("Element Reader");
@@ -318,12 +359,12 @@ describe("browser integration — link routing", () => {
     act(() => {
       root.render(<MarkdownReader source="[Example](https://example.com)" capabilities={caps} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<a");
 
     const link = container.querySelector<HTMLAnchorElement>(".kmd-reader-content a");
     expect(link).not.toBeNull();
     link?.click();
-    await flushAsync();
+    await waitFor(() => openExternal.mock.calls.length > 0);
 
     expect(openExternal).toHaveBeenCalledTimes(1);
     expect(openExternal.mock.calls[0][0]).toBeInstanceOf(URL);
@@ -340,12 +381,12 @@ describe("browser integration — link routing", () => {
     act(() => {
       root.render(<MarkdownReader source="[Other](./other.md)" capabilities={caps} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<a");
 
     const link = container.querySelector<HTMLAnchorElement>(".kmd-reader-content a");
     expect(link).not.toBeNull();
     link?.click();
-    await flushAsync();
+    await waitFor(() => openDocument.mock.calls.length > 0);
 
     expect(openDocument).toHaveBeenCalledTimes(1);
     expect(openDocument.mock.calls[0][0].href).toBe("./other.md");
@@ -362,7 +403,7 @@ describe("browser integration — link routing", () => {
     act(() => {
       root.render(<MarkdownReader source={source} capabilities={caps} />);
     });
-    await flushAsync();
+    await waitForContent(container, "#section");
 
     const links = container.querySelectorAll<HTMLAnchorElement>(".kmd-reader-content a");
     // The fragment link should be the last link
@@ -387,7 +428,9 @@ describe("browser integration — link routing", () => {
     act(() => {
       root.render(<MarkdownReader source="[xss](javascript:alert(1))" capabilities={caps} />);
     });
-    await flushAsync();
+    // Wait for the paragraph (the link text survives sanitization) so the
+    // negative assertions below run against a completed render.
+    await waitForContent(container, "xss");
 
     // The blocked link should have been stripped — no <a> element
     const link = container.querySelector(".kmd-reader-content a");
@@ -401,7 +444,7 @@ describe("browser integration — link routing", () => {
     act(() => {
       root.render(<MarkdownReader source="[Example](https://example.com)" />);
     });
-    await flushAsync();
+    await waitForContent(container, "<a");
 
     const link = container.querySelector<HTMLAnchorElement>(".kmd-reader-content a");
     expect(link).not.toBeNull();
@@ -443,7 +486,13 @@ describe("browser integration — asset resolution", () => {
     act(() => {
       root.render(<MarkdownReader source="![cat](cat.png)" capabilities={caps} />);
     });
-    await flushAsync();
+    await waitFor(
+      () =>
+        container
+          .querySelector(".kmd-reader-content img")
+          ?.getAttribute("src")
+          ?.startsWith("blob:") === true,
+    );
 
     expect(resolveAsset).toHaveBeenCalledTimes(1);
     expect(resolveAsset).toHaveBeenCalledWith(
@@ -466,7 +515,7 @@ describe("browser integration — asset resolution", () => {
     act(() => {
       root.render(<MarkdownReader source="![img](image.png)" capabilities={caps} />);
     });
-    await flushAsync();
+    await waitFor(() => resolveAsset.mock.calls.length > 0);
 
     expect(resolveAsset).toHaveBeenCalled();
 
@@ -484,6 +533,7 @@ describe("browser integration — asset resolution", () => {
     act(() => {
       root.render(<MarkdownReader source="![cat](cat.png)" />);
     });
+    await waitFor(() => contentHtml(container).length > 0);
     await flushAsync();
 
     const img = container.querySelector<HTMLImageElement>(".kmd-reader-content img");
@@ -521,7 +571,7 @@ describe("browser integration — worker fallback", () => {
     act(() => {
       root.render(<MarkdownReader source="# Main Thread Render" />);
     });
-    await flushAsync();
+    await waitForContent(container, "Main Thread Render");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("Main Thread Render");
@@ -542,7 +592,7 @@ describe("browser integration — worker fallback", () => {
     act(() => {
       root.render(<MarkdownReader source="# Small Doc" capabilities={caps} />);
     });
-    await flushAsync();
+    await waitForContent(container, "Small Doc");
 
     expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("Small Doc");
   });
@@ -570,7 +620,7 @@ describe("browser integration — worker fallback", () => {
     act(() => {
       root.render(<MarkdownReader source={largeSource} capabilities={caps} />);
     });
-    await flushAsync();
+    await waitForContent(container, "Big Document");
 
     // Fallback should produce the rendered content
     expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("Big Document");
@@ -610,12 +660,12 @@ describe("browser integration — code copy", () => {
         <MarkdownReader source={"```ts\nconst x = 42;\n```"} capabilities={caps} onCopy={onCopy} />,
       );
     });
-    await flushAsync();
+    await waitFor(() => container.querySelector(".kmd-reader-content .code-copy-button") !== null);
 
     const button = container.querySelector(".kmd-reader-content .code-copy-button");
     if (button) {
       button.click();
-      await flushAsync();
+      await waitFor(() => writeText.mock.calls.length > 0);
       expect(writeText).toHaveBeenCalled();
       expect(onCopy).toHaveBeenCalledWith("Copied to clipboard");
     }
@@ -640,12 +690,12 @@ describe("browser integration — code copy", () => {
     act(() => {
       root.render(<MarkdownReader source={"```ts\nconst y = 10;\n```"} />);
     });
-    await flushAsync();
+    await waitFor(() => container.querySelector(".kmd-reader-content .code-copy-button") !== null);
 
     const button = container.querySelector(".kmd-reader-content .code-copy-button");
     if (button) {
       button.click();
-      await flushAsync();
+      await waitFor(() => writeText.mock.calls.length > 0);
       expect(writeText).toHaveBeenCalled();
     }
   });
@@ -667,6 +717,9 @@ describe("browser integration — code copy", () => {
     act(() => {
       root.render(<MarkdownReader source={"```ts\nconst z = 0;\n```"} />);
     });
+    // Wait for the code block itself, then settle — the assertion is negative,
+    // so there is no positive condition to wait on beyond a completed render.
+    await waitForContent(container, "<pre");
     await flushAsync();
 
     // Copy buttons should be removed from the DOM (hidden)
@@ -705,7 +758,7 @@ describe("browser integration — outline navigation", () => {
         <MarkdownReader source={FIXTURE_SOURCES.longHeading} onOutlineChange={onOutlineChange} />,
       );
     });
-    await flushAsync();
+    await waitFor(() => (onOutlineChange.mock.calls.at(-1)?.[0]?.length ?? 0) >= 5);
 
     expect(onOutlineChange).toHaveBeenCalled();
     const outline = onOutlineChange.mock.calls[onOutlineChange.mock.calls.length - 1][0];
@@ -726,7 +779,7 @@ describe("browser integration — outline navigation", () => {
         <MarkdownReader source={FIXTURE_SOURCES.longHeading} onOutlineChange={onOutlineChange} />,
       );
     });
-    await flushAsync();
+    await waitFor(() => (onOutlineChange.mock.calls.at(-1)?.[0]?.length ?? 0) >= 5);
 
     expect(onOutlineChange).toHaveBeenCalled();
     const outline = onOutlineChange.mock.calls[onOutlineChange.mock.calls.length - 1][0];
@@ -742,7 +795,7 @@ describe("browser integration — outline navigation", () => {
     act(() => {
       root.render(<MarkdownReader source="" onOutlineChange={onOutlineChange} />);
     });
-    await flushAsync();
+    await waitFor(() => onOutlineChange.mock.calls.length > 0);
 
     // Should have been called with an empty array at some point
     const lastCall = onOutlineChange.mock.calls[onOutlineChange.mock.calls.length - 1];
@@ -778,7 +831,7 @@ describe("browser integration — optional feature failure isolation", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.mermaid} />);
     });
-    await flushAsync();
+    await waitForContent(container, "mermaid");
 
     const content = container.querySelector(".kmd-reader-content");
     // The mermaid source should still be in the DOM as a placeholder
@@ -792,7 +845,7 @@ describe("browser integration — optional feature failure isolation", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.math} />);
     });
-    await flushAsync();
+    await waitForContent(container, "katex");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("katex");
@@ -804,7 +857,7 @@ describe("browser integration — optional feature failure isolation", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.code} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<pre");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<pre");
@@ -815,7 +868,7 @@ describe("browser integration — optional feature failure isolation", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.mixed} />);
     });
-    await flushAsync();
+    await waitForContent(container, "Document", "<table>", "<pre");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("Document");
@@ -850,7 +903,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.headings} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<h1");
 
     expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<h1");
   });
@@ -860,7 +913,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.tables} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<table>", "table-wrapper");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<table>");
@@ -873,7 +926,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.code} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<pre");
 
     expect(container.querySelector(".kmd-reader-content")?.innerHTML).toContain("<pre");
   });
@@ -883,7 +936,7 @@ describe("browser integration — narrow viewport (375px)", () => {
     act(() => {
       root.render(<MarkdownReader source={FIXTURE_SOURCES.mixed} />);
     });
-    await flushAsync();
+    await waitForContent(container, "<h1", "<table>", "<pre");
 
     const content = container.querySelector(".kmd-reader-content");
     expect(content?.innerHTML).toContain("<h1");
