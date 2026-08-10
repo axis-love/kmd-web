@@ -106,10 +106,15 @@ describe("resolveMermaidTheme — token path", () => {
     // (which is a foreground color in kmd).
     expect(themeVariables.mainBkg).toBe("#2c2f35");
     expect(themeVariables.primaryColor).toBe("#2c2f35");
-    // Edges and node outlines.
-    expect(themeVariables.lineColor).toBe("#9aa0ab");
-    expect(themeVariables.nodeBorder).toBe("#9aa0ab");
-    expect(themeVariables.signalColor).toBe("#9aa0ab");
+    // Strong tier — everything that carries meaning as a 1px line.
+    expect(themeVariables.lineColor).toBe("#e8eaed");
+    expect(themeVariables.defaultLinkColor).toBe("#e8eaed");
+    expect(themeVariables.nodeBorder).toBe("#e8eaed");
+    expect(themeVariables.signalColor).toBe("#e8eaed");
+    expect(themeVariables.actorLineColor).toBe("#e8eaed");
+    // Quiet tier — containers whose fill already separates them.
+    expect(themeVariables.clusterBorder).toBe("#9aa0ab");
+    expect(themeVariables.noteBorderColor).toBe("#9aa0ab");
     // Text.
     expect(themeVariables.textColor).toBe("#e8eaed");
     expect(themeVariables.nodeTextColor).toBe("#e8eaed");
@@ -120,28 +125,13 @@ describe("resolveMermaidTheme — token path", () => {
     expect(themeVariables.fontFamily).toBe('"Inter", system-ui, sans-serif');
   });
 
-  it("keeps diagram text legible against the node fill in the dark theme", () => {
+  it("never colors diagram geometry with --kmd-color-border", () => {
+    // At #3a3f48 on #1a1c1f the border token is ~1.6:1 — invisible at a 1px
+    // stroke. Using it is what made cluster and note outlines disappear.
     const { themeVariables } = resolveMermaidTheme(mount(DARK_TOKENS));
+    const borderToken = DARK_TOKENS["--kmd-color-border"];
 
-    const fill = parseCssColor(themeVariables.mainBkg ?? "");
-    const text = parseCssColor(themeVariables.nodeTextColor ?? "");
-    const line = parseCssColor(themeVariables.lineColor ?? "");
-    expect(fill).not.toBeNull();
-    expect(text).not.toBeNull();
-    expect(line).not.toBeNull();
-    if (!fill || !text || !line) return;
-
-    const contrast = (
-      a: readonly [number, number, number],
-      b: readonly [number, number, number],
-    ) => {
-      const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
-      return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
-    };
-
-    // The bug being fixed was near-black text and edges on a dark surface.
-    expect(contrast(text, fill)).toBeGreaterThan(4.5);
-    expect(contrast(line, fill)).toBeGreaterThan(3);
+    expect(Object.values(themeVariables)).not.toContain(borderToken);
   });
 
   it("classifies dark and light themes from the resolved background token", () => {
@@ -169,6 +159,91 @@ describe("resolveMermaidTheme — token path", () => {
     ).id;
 
     expect(after).not.toBe(before);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Contrast table — the guardrail on token choice
+//
+// These thresholds are what "legible" means for this mapping, checked against
+// the real kmd token values in both themes. The original bug passed every
+// functional test and still shipped invisible diagrams; only these numbers
+// would have caught it.
+// ---------------------------------------------------------------------------
+
+function contrastRatio(a: string, b: string): number {
+  const left = parseCssColor(a);
+  const right = parseCssColor(b);
+  if (!left || !right) throw new Error(`unparseable color pair: ${a} / ${b}`);
+  const [hi, lo] = [relativeLuminance(left), relativeLuminance(right)].sort((x, y) => y - x);
+  return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
+}
+
+/**
+ * Each row: which variable, what it is drawn against, and the floor it must
+ * clear. Text and 1px strokes get the 4.5:1 text threshold rather than the
+ * 3:1 graphical-object one — a hairline is harder to read than a glyph, not
+ * easier. Quiet-tier container outlines get 3:1 because their fill is doing
+ * most of the separating.
+ */
+const CONTRAST_RULES: readonly (readonly [string, string, number])[] = [
+  // Strong tier — meaning-carrying lines, against the page they sit on.
+  ["lineColor", "background", 7],
+  ["defaultLinkColor", "background", 7],
+  ["nodeBorder", "background", 7],
+  ["signalColor", "background", 7],
+  ["actorLineColor", "background", 7],
+  ["actorBorder", "background", 7],
+  ["activationBorderColor", "background", 7],
+  // Node outlines also have to read against the node they enclose.
+  ["nodeBorder", "mainBkg", 4.5],
+  ["actorBorder", "actorBkg", 4.5],
+  // Quiet tier — container outlines.
+  ["clusterBorder", "background", 3],
+  ["noteBorderColor", "background", 3],
+  ["labelBoxBorderColor", "background", 3],
+  ["pieOuterStrokeColor", "background", 3],
+  // Text.
+  ["textColor", "background", 4.5],
+  ["nodeTextColor", "mainBkg", 4.5],
+  ["noteTextColor", "noteBkgColor", 4.5],
+  ["labelTextColor", "labelBoxBkgColor", 4.5],
+  ["titleColor", "background", 4.5],
+  ["classText", "mainBkg", 4.5],
+  ["signalTextColor", "background", 4.5],
+];
+
+describe("contrast in both themes", () => {
+  for (const [themeName, tokens] of [
+    ["dark", DARK_TOKENS],
+    ["light", LIGHT_TOKENS],
+  ] as const) {
+    describe(themeName, () => {
+      for (const [foreground, backdrop, floor] of CONTRAST_RULES) {
+        it(`${foreground} on ${backdrop} clears ${floor}:1`, () => {
+          const { themeVariables } = resolveMermaidTheme(mount(tokens));
+          const fg = themeVariables[foreground];
+          const bg = themeVariables[backdrop];
+          expect(fg, `${foreground} is unset`).toBeDefined();
+          expect(bg, `${backdrop} is unset`).toBeDefined();
+          if (!fg || !bg) return;
+
+          expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(floor);
+        });
+      }
+    });
+  }
+
+  it("draws edges at least twice as strongly as the quiet container tier", () => {
+    for (const tokens of [DARK_TOKENS, LIGHT_TOKENS]) {
+      const { themeVariables } = resolveMermaidTheme(mount(tokens));
+      const edge = contrastRatio(themeVariables.lineColor ?? "", themeVariables.background ?? "");
+      const quiet = contrastRatio(
+        themeVariables.clusterBorder ?? "",
+        themeVariables.background ?? "",
+      );
+      expect(edge).toBeGreaterThan(quiet * 2);
+    }
   });
 });
 

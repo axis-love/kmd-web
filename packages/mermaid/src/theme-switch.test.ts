@@ -125,7 +125,8 @@ describe("theme-aware initialization", () => {
     expect(config?.startOnLoad).toBe(false);
 
     const variables = config?.themeVariables as Record<string, string>;
-    expect(variables.lineColor).toBe("#9aa0ab");
+    expect(variables.lineColor).toBe("#e8eaed");
+    expect(variables.clusterBorder).toBe("#9aa0ab");
     expect(variables.mainBkg).toBe("#2c2f35");
     expect(variables.textColor).toBe("#e8eaed");
     expect(variables.darkMode).toBe("true");
@@ -212,7 +213,8 @@ describe("re-render on theme change", () => {
 
     expect(mermaidMock.initializeCalls.length).toBe(2);
     const variables = lastInitialize()?.themeVariables as Record<string, string>;
-    expect(variables.lineColor).toBe("#626872");
+    expect(variables.lineColor).toBe("#15171a");
+    expect(variables.clusterBorder).toBe("#626872");
     expect(variables.textColor).toBe("#15171a");
     expect(variables.darkMode).toBe("false");
   });
@@ -241,7 +243,7 @@ describe("re-render on theme change", () => {
     await renderMermaidPlaceholders(container);
 
     applyTokens(container, LIGHT_TOKENS);
-    applyTokens(container, { ...DARK_TOKENS, "--kmd-color-secondary": "#c0c6d0" });
+    applyTokens(container, { ...DARK_TOKENS, "--kmd-color-on-surface": "#c0c6d0" });
     await settle();
 
     const expected = resolveMermaidTheme(container).id;

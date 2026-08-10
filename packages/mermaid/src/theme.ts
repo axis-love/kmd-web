@@ -56,7 +56,6 @@ const TOKEN_SOURCES = {
   onSurface: ["--kmd-color-on-surface", "--kmd-color-body"],
   onPrimary: ["--kmd-color-on-primary"],
   muted: ["--kmd-color-secondary", "--kmd-color-muted"],
-  border: ["--kmd-color-border"],
   heading: ["--kmd-color-heading", "--kmd-color-primary"],
   accent: ["--kmd-color-accent", "--kmd-color-tertiary"],
   info: ["--kmd-color-info"],
@@ -72,15 +71,13 @@ type TokenBundle = Partial<Record<TokenKey, string>>;
 
 /**
  * Tokens without which the mapping cannot guarantee a legible diagram —
- * surfaces, text, and the line color used for every edge.
+ * surfaces, text, and the two stroke strengths.
+ *
+ * --kmd-color-border is deliberately *not* required, and not used for any
+ * diagram geometry: it is tuned for large quiet surfaces and lands around
+ * 1.6:1 against the dark background, which is invisible at a 1px stroke.
  */
-type RequiredTokenKey =
-  | "background"
-  | "surface"
-  | "surfaceMuted"
-  | "onSurface"
-  | "muted"
-  | "border";
+type RequiredTokenKey = "background" | "surface" | "surfaceMuted" | "onSurface" | "muted";
 
 type ResolvedTokens = TokenBundle & Record<RequiredTokenKey, string>;
 
@@ -90,9 +87,9 @@ type ResolvedTokens = TokenBundle & Record<RequiredTokenKey, string>;
  * A null return means the built-in mermaid themes take over.
  */
 function requireTokens(tokens: TokenBundle): ResolvedTokens | null {
-  const { background, surface, surfaceMuted, onSurface, muted, border } = tokens;
-  if (!background || !surface || !surfaceMuted || !onSurface || !muted || !border) return null;
-  return { ...tokens, background, surface, surfaceMuted, onSurface, muted, border };
+  const { background, surface, surfaceMuted, onSurface, muted } = tokens;
+  if (!background || !surface || !surfaceMuted || !onSurface || !muted) return null;
+  return { ...tokens, background, surface, surfaceMuted, onSurface, muted };
 }
 
 // ---------------------------------------------------------------------------
@@ -280,16 +277,29 @@ export function relativeLuminance(rgb: readonly [number, number, number]): numbe
 /**
  * Map the kmd tokens onto mermaid's "base" theme variables.
  *
- * Two deliberate choices, both about legibility:
- * - Nodes are filled with the muted *surface* token, not --kmd-color-primary.
- *   In kmd, "primary" is a foreground color, so using it as a fill produces
- *   the near-black-on-dark failure this mapping exists to fix.
- * - Edges, node borders, and sequence lines use --kmd-color-secondary rather
- *   than --kmd-color-border. Border is tuned for large, quiet surfaces; a
- *   one-pixel diagram edge needs the stronger of the two in both themes.
+ * Diagram strokes get exactly two strengths, because a diagram line is a 1px
+ * hairline on a large canvas: a token that reads fine as the edge of a tall
+ * surface disappears at that width.
+ *
+ * - `strong` = --kmd-color-on-surface, the body text color. Everything that
+ *   carries meaning as a line — flowchart edges and their arrowheads, node
+ *   outlines, sequence lifelines and signals — has to be as readable as text.
+ *   That is ~14:1 on dark and ~17:1 on light against the page.
+ * - `quiet` = --kmd-color-secondary. Only for containers whose fill already
+ *   separates them from the page: clusters, notes, label boxes. ~6.5:1 on
+ *   dark and ~5.2:1 on light — present without shouting.
+ *
+ * --kmd-color-border is deliberately unused. It sits near 1.6:1 against the
+ * dark background, which is why cluster and note outlines were invisible.
+ *
+ * Node fills use the muted *surface* token, never --kmd-color-primary: in kmd
+ * "primary" is a foreground color, and filling a node with it is what produced
+ * the near-black-on-dark diagrams this mapping exists to fix.
  */
 function buildThemeVariables(tokens: ResolvedTokens): Record<string, string> {
-  const { background, surface, surfaceMuted, onSurface, muted, border } = tokens;
+  const { background, surface, surfaceMuted, onSurface, muted } = tokens;
+  const strong = onSurface;
+  const quiet = muted;
   const heading = tokens.heading ?? onSurface;
   const accent = tokens.accent ?? muted;
   const onAccent = tokens.onPrimary ?? background;
@@ -299,43 +309,43 @@ function buildThemeVariables(tokens: ResolvedTokens): Record<string, string> {
     background,
     primaryColor: surfaceMuted,
     primaryTextColor: onSurface,
-    primaryBorderColor: muted,
+    primaryBorderColor: strong,
     secondaryColor: surface,
     secondaryTextColor: onSurface,
-    secondaryBorderColor: border,
+    secondaryBorderColor: quiet,
     tertiaryColor: background,
     tertiaryTextColor: onSurface,
-    tertiaryBorderColor: border,
-    lineColor: muted,
+    tertiaryBorderColor: quiet,
+    lineColor: strong,
     textColor: onSurface,
     titleColor: heading,
     fontFamily: tokens.fontBody ?? "inherit",
 
     // Flowchart
     mainBkg: surfaceMuted,
-    nodeBorder: muted,
+    nodeBorder: strong,
     nodeTextColor: onSurface,
     edgeLabelBackground: background,
     clusterBkg: surface,
-    clusterBorder: border,
-    defaultLinkColor: muted,
+    clusterBorder: quiet,
+    defaultLinkColor: strong,
 
     // Sequence diagrams
     actorBkg: surfaceMuted,
-    actorBorder: muted,
+    actorBorder: strong,
     actorTextColor: onSurface,
-    actorLineColor: muted,
-    signalColor: muted,
+    actorLineColor: strong,
+    signalColor: strong,
     signalTextColor: onSurface,
     labelBoxBkgColor: surface,
-    labelBoxBorderColor: border,
+    labelBoxBorderColor: quiet,
     labelTextColor: onSurface,
     loopTextColor: onSurface,
     noteBkgColor: surface,
-    noteBorderColor: border,
+    noteBorderColor: quiet,
     noteTextColor: onSurface,
     activationBkgColor: surfaceMuted,
-    activationBorderColor: muted,
+    activationBorderColor: strong,
     sequenceNumberColor: onAccent,
 
     // Class and state diagrams
@@ -348,7 +358,7 @@ function buildThemeVariables(tokens: ResolvedTokens): Record<string, string> {
     pieSectionTextColor: onAccent,
     pieLegendTextColor: onSurface,
     pieStrokeColor: background,
-    pieOuterStrokeColor: border,
+    pieOuterStrokeColor: quiet,
 
     // Errors
     errorBkgColor: surface,
