@@ -39,6 +39,10 @@
           : window.matchMedia("(prefers-color-scheme: dark)").matches
             ? "dark"
             : "light";
+      // ?theme=light|dark pins the theme for this load without touching the
+      // persisted preference — used to review both themes side by side.
+      var pinned = new URLSearchParams(location.search).get("theme");
+      if (pinned === "light" || pinned === "dark") theme = pinned;
       document.documentElement.setAttribute("data-theme", theme);
       document.documentElement.style.backgroundColor =
         theme === "dark" ? "#222428" : "#ffffff";
