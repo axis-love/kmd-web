@@ -15,6 +15,7 @@ const root = resolve(fileURLToPath(import.meta.url), "../..");
 const packagesDir = join(root, "packages");
 
 let failures = 0;
+let warnings = 0;
 
 /**
  * @param {string} pkgDir
@@ -33,7 +34,14 @@ function checkPackage(pkgDir, pkg) {
     }
   }
 
-  // 2. dist/ must exist if there are build outputs
+  // 2. A publishable package should ship a README.md (warn only — npm falls
+  // back to a bare package page without one)
+  if (pkg.private !== true && !existsSync(join(pkgDir, "README.md"))) {
+    console.warn(`  WARN  ${name}: publishable package has no README.md`);
+    warnings++;
+  }
+
+  // 3. dist/ must exist if there are build outputs
   const distDir = join(pkgDir, "dist");
   if (!existsSync(distDir)) {
     if (files.includes("dist")) {
@@ -43,7 +51,7 @@ function checkPackage(pkgDir, pkg) {
     return;
   }
 
-  // 3. Verify every export path resolves to a real file or directory
+  // 4. Verify every export path resolves to a real file or directory
   for (const [exportKey, exportValue] of Object.entries(exports)) {
     const paths = resolveExportPaths(exportValue);
     for (const { condition, path } of paths) {
@@ -120,6 +128,9 @@ for (const pkgName of packages) {
 }
 
 console.log("");
+if (warnings > 0) {
+  console.warn(`Package contents check: ${warnings} warning(s)`);
+}
 if (failures > 0) {
   console.error(`Package contents check: ${failures} failure(s)`);
   process.exit(1);
