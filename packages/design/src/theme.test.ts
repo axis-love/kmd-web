@@ -157,6 +157,24 @@ describe("emitThemeTokens — dark derivation", () => {
     expect(parseInt(darkText.slice(1, 3), 16)).toBeGreaterThan(0xb0);
   });
 
+  it("skips text-role candidates with unreadable contrast against the background", () => {
+    const result = emitThemeTokens(
+      docWithColors([
+        { name: "color-background", value: "#fafaf9" },
+        // "subtle" gives this the text-muted role, but it is nearly the
+        // background color — it must be skipped, not emitted.
+        { name: "border-subtle", value: "#e7e5e4" },
+        { name: "color-text", value: "#1c1917" },
+      ]),
+    );
+
+    expect(result.authoredMode).toBe("light");
+    expect(result.light["--kmd-color-primary"]).toBe("#1c1917");
+    // No readable muted-text candidate → not emitted, defaults cascade.
+    expect(result.light["--kmd-color-secondary"]).toBeUndefined();
+    expect(result.light["--kmd-color-blockquote-text"]).toBeUndefined();
+  });
+
   it("prefers an enriched pair over derivation", () => {
     const result = emitThemeTokens(
       docWithColors([

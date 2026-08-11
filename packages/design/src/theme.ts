@@ -214,13 +214,50 @@ interface RoleSlots {
   info?: ColorToken;
 }
 
+/**
+ * Minimum WCAG contrast ratio a text-role color must have against the
+ * background to be used. Role inference works on names and can hand a
+ * near-background color the muted-text role (e.g. a "Border Subtle" token);
+ * emitting it would make captions and blockquotes unreadable, while dropping
+ * it just lets the default theme value cascade.
+ */
+const MIN_TEXT_CONTRAST = 2;
+
+function contrastRatio(a: Rgba, b: Rgba): number {
+  const la = luminance(a);
+  const lb = luminance(b);
+  const [hi, lo] = la >= lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * First token carrying a text role that is actually readable against the
+ * background. Unparseable candidates pass through (they can't be judged);
+ * parseable ones must clear MIN_TEXT_CONTRAST when the background is known.
+ */
+function firstReadableWithRole(
+  tokens: readonly ColorToken[],
+  role: ColorRole,
+  background: ColorToken | undefined,
+): ColorToken | undefined {
+  const bgRgba = background ? parseColor(background.value) : null;
+  for (const t of tokens) {
+    if (t.role !== role) continue;
+    if (!bgRgba) return t;
+    const rgba = parseColor(t.value);
+    if (!rgba || contrastRatio(rgba, bgRgba) >= MIN_TEXT_CONTRAST) return t;
+  }
+  return undefined;
+}
+
 function collectRoles(tokens: readonly ColorToken[]): RoleSlots {
+  const background = firstWithRole(tokens, "background");
   return {
     accent: firstWithRole(tokens, "accent") ?? firstWithRole(tokens, "brand"),
-    background: firstWithRole(tokens, "background"),
+    background,
     surface: firstWithRole(tokens, "surface"),
-    text: firstWithRole(tokens, "text"),
-    textMuted: firstWithRole(tokens, "text-muted"),
+    text: firstReadableWithRole(tokens, "text", background),
+    textMuted: firstReadableWithRole(tokens, "text-muted", background),
     divider: firstWithRole(tokens, "divider"),
     success: firstWithRole(tokens, "success"),
     warning: firstWithRole(tokens, "warning"),

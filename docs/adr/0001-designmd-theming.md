@@ -89,7 +89,11 @@ value heuristics second).
 | radius tokens named `sm`/`md`/`lg`/`xl`/`full` (suffix match) | `--kmd-radius-sm/md/lg/xl/full` |
 
 Where a role has several candidate tokens, the first token carrying that role
-in spec order wins (stable across runs). Semantic aliases
+in spec order wins (stable across runs). For the two text roles, candidates
+that parse but fail a minimum contrast ratio of 2:1 against the extracted
+background are skipped — role inference is name-based and can hand a
+near-background color (e.g. "Border Subtle") a text role; dropping it lets
+the readable default cascade instead. Semantic aliases
 (`--kmd-color-heading`, `-body`, `-muted`, `-accent`, `-background`, `-card`)
 are **not** re-emitted — they already reference the base tokens via `var()` in
 the default themes and follow automatically.
