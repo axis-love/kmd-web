@@ -8,3 +8,6 @@ Architecture and planning documents live in the [kmd repository](https://github.
 - [Security and Privacy Specification](https://github.com/axis-love/kmd/blob/main/docs/planning/09-security-privacy.md)
 
 API documentation will be generated from package exports once production code lands.
+
+Architecture decision records for kmd-web itself live under [adr/](./adr/):
+- [ADR 0001 — DesignMD-driven theming of the kmd-web reader](./adr/0001-designmd-theming.md)
