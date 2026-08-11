@@ -87,5 +87,7 @@ export { EXTRACTOR_PRECEDENCE, mergeSpecs, stageMerge } from "./merge.js";
 export { runDesignPipeline, type StageFn } from "./pipeline.js";
 // Resolve stage
 export { resolveSpec } from "./resolve.js";
+// Theme token emitter (KWEB-060 — see docs/adr/0001-designmd-theming.md)
+export { type DesignThemeTokens, designThemeCss, emitThemeTokens } from "./theme.js";
 // Design-doc validation (moved from core)
 export { scanDesignDoc } from "./validate.js";

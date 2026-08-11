@@ -77,7 +77,7 @@ value heuristics second).
 
 | Spec source (role / token kind) | Emitted `--kmd-*` tokens |
 |---|---|
-| color role `brand` or `accent` (first by role priority: accent, then brand) | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-link-hover` (derived: lightened/darkened step), `--kmd-color-selection-bg` (alpha 0.2 of accent), `--kmd-color-outline-active-bg` (alpha 0.12), `--kmd-color-outline-active-border` |
+| color role `brand` or `accent` (first by role priority: accent, then brand) | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-link-hover` (derived: lightened step), `--kmd-color-selection-bg` (accent at mode-tuned alpha: 0.3 dark / 0.15 light, matching defaults), `--kmd-color-outline-active-bg` (accent at 0.12 dark / 0.1 light), `--kmd-color-outline-active-border` |
 | color role `background` | `--kmd-color-neutral` |
 | color role `surface` | `--kmd-color-surface`, `--kmd-color-table-header-bg`; derived `--kmd-color-surface-muted` (mix toward text), `--kmd-color-code-bg` (same as surface-muted) |
 | color role `text` | `--kmd-color-primary`, `--kmd-color-on-surface`, `--kmd-color-code-text`, `--kmd-color-outline-depth-0/1` (and depth-2/3 derived by mixing toward background), `--kmd-color-on-primary` (the opposing mode's text or background, contrast-checked) |
@@ -169,8 +169,8 @@ blank the document. Failures are non-fatal by contract and flow through
 
 1. Determine `authoredMode` from the background role's relative luminance
    (WCAG formula, already in enrich.ts): luminance > 0.5 → authored light,
-   else dark. No background token → use the text token inverted; neither →
-   `empty` result.
+   else dark. No background token → fall back to surface, then to the text
+   token inverted; no parseable signal at all → `empty` result.
 2. The authored mode's set is emitted as extracted.
 3. For the opposing mode, per token: if `enrichSpec` paired it with a
    counterpart (`pair`), use the counterpart's value; otherwise derive by
