@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/styles",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0",
   "description": "Scoped reader CSS and generated design tokens for kmd-web.",
   "license": "MIT",
   "repository": {

@@ -48,7 +48,7 @@ import {
   sanitizeSchema,
 } from "./sanitize.js";
 
-export const CORE_VERSION = "0.1.0-rc.1";
+export const CORE_VERSION = "0.1.0";
 
 // ---------------------------------------------------------------------------
 // Plugin injection types

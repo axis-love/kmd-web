@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/kmd-web",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0",
   "description": "Convenience exports for the supported public kmd-web entry points.",
   "license": "MIT",
   "repository": {
@@ -40,12 +40,12 @@
     "styles.css"
   ],
   "dependencies": {
-    "@axis-love/contracts": "0.1.0-rc.1",
-    "@axis-love/core": "0.1.0-rc.1",
-    "@axis-love/browser": "0.1.0-rc.1",
-    "@axis-love/react": "0.1.0-rc.1",
-    "@axis-love/element": "0.1.0-rc.1",
-    "@axis-love/styles": "0.1.0-rc.1"
+    "@axis-love/contracts": "0.1.0",
+    "@axis-love/core": "0.1.0",
+    "@axis-love/browser": "0.1.0",
+    "@axis-love/react": "0.1.0",
+    "@axis-love/element": "0.1.0",
+    "@axis-love/styles": "0.1.0"
   },
   "publishConfig": {
     "access": "public"

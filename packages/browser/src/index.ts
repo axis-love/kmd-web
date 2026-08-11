@@ -4,7 +4,7 @@
 
 import type { AssetRequest, DocumentTarget, ResolvedAsset } from "@axis-love/contracts";
 
-export const BROWSER_VERSION = "0.1.0-rc.1";
+export const BROWSER_VERSION = "0.1.0";
 
 // ---------------------------------------------------------------------------
 // Host capabilities

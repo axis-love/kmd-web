@@ -74,7 +74,7 @@ describe("@axis-love/mermaid", () => {
   });
 
   it("should export a version string", () => {
-    expect(MERMAID_VERSION).toBe("0.1.0-rc.1");
+    expect(MERMAID_VERSION).toBe("0.1.0");
   });
 
   // -------------------------------------------------------------------------

@@ -102,7 +102,7 @@ describe("conformance manifest", () => {
   });
 
   it("has the correct contracts version", () => {
-    expect(manifest.contractsVersion).toBe("0.1.0-rc.1");
+    expect(manifest.contractsVersion).toBe("0.1.0");
   });
 
   it("lists at least 2 platforms", () => {

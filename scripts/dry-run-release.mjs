@@ -104,7 +104,9 @@ for (const { name, dir, tarball } of tarballs) {
     cwd: join(root, ".tarballs"),
     encoding: "utf-8",
   });
-  const tarballFiles = listing.trim().split("\n").map((f) => f.replace(/^package\//, ""));
+  // Split on \r?\n: Windows bsdtar emits CRLF line endings through execSync,
+  // which left a trailing \r on every entry and failed all exact-name matches.
+  const tarballFiles = listing.trim().split(/\r?\n/).map((f) => f.replace(/^package\//, ""));
 
   // Check that every expected file/dir is in the tarball
   for (const exp of expected) {

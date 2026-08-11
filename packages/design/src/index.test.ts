@@ -521,7 +521,7 @@ describe("IR helpers", () => {
 describe("DESIGN_VERSION", () => {
   it("should be defined", async () => {
     const mod = await import("./index.js");
-    expect(mod.DESIGN_VERSION).toBe("0.1.0-rc.1");
+    expect(mod.DESIGN_VERSION).toBe("0.1.0");
   });
 });
 

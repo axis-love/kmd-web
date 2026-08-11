@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/design",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0",
   "description": "Optional DESIGN.md extraction pipeline and HTML-export contract. Hosts provide the presentation.",
   "license": "MIT",
   "repository": {
@@ -32,8 +32,8 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "0.1.0-rc.1",
-    "@axis-love/core": "0.1.0-rc.1",
+    "@axis-love/contracts": "0.1.0",
+    "@axis-love/core": "0.1.0",
     "js-yaml": "^4.1.1",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-gfm-table": "^2.0.0",

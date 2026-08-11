@@ -17,7 +17,7 @@
 // docs/planning/20-kmd-web-extraction-inventory.md in the kmd repo.
 
 // Package version
-export const DESIGN_VERSION = "0.1.0-rc.1";
+export const DESIGN_VERSION = "0.1.0";
 
 export { clearDesignPipelineCache, runDesignPipelineCached } from "./cache.js";
 // Design mode helpers

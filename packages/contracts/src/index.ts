@@ -9,7 +9,7 @@
 // Package version
 // ---------------------------------------------------------------------------
 
-export const CONTRACTS_VERSION = "0.1.0-rc.1";
+export const CONTRACTS_VERSION = "0.1.0";
 
 // ---------------------------------------------------------------------------
 // Feature matrix (cross-platform)
