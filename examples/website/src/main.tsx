@@ -4,13 +4,21 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 // Loaded as raw strings at build time via Vite's ?raw suffix so the demo
-// showcases kmd-web rendering a real .md file (not a hardcoded string).
-import designDoc from "./sample-design.md?raw";
+// showcases kmd-web rendering real .md files (not hardcoded strings).
+import emberDesign from "./sample-design.md?raw";
 import demoDoc from "./sample-doc-showcase.md?raw";
+import thoughtstreamDesign from "./thoughtstream-DESIGN.md?raw";
 
-// ?design=1 pins the custom designMD theme on for this load — pairs with the
-// ?theme=light|dark pin for reviewing all four combinations.
-const designPinned = new URLSearchParams(location.search).get("design") === "1";
+// ?design=1|thoughtstream|ember pins a designMD theme on for this load —
+// pairs with the ?theme=light|dark pin, so all four combinations are
+// reviewable by URL alone:
+//   ?theme=dark                  kmd default dark
+//   ?theme=light                 kmd default light
+//   ?design=1&theme=dark         designMD extracted dark
+//   ?design=1&theme=light        designMD extracted light
+const designParam = new URLSearchParams(location.search).get("design");
+const designPinned = designParam !== null && designParam !== "0";
+const pinnedDesignDoc = designParam === "ember" ? emberDesign : thoughtstreamDesign;
 
 function App() {
   const [useDesign, setUseDesign] = useState(designPinned);
@@ -29,11 +37,11 @@ function App() {
           checked={useDesign}
           onChange={(e) => setUseDesign(e.currentTarget.checked)}
         />
-        Custom design.md theme (Ember)
+        Custom design.md theme ({designParam === "ember" ? "Ember" : "ThoughtStream"})
       </label>
       <MarkdownReader
         source={demoDoc}
-        designSource={useDesign ? designDoc : undefined}
+        designSource={useDesign ? pinnedDesignDoc : undefined}
         onDesignTheme={onDesignTheme}
       />
     </>
