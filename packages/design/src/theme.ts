@@ -193,6 +193,17 @@ function collectColorTokens(doc: DesignDocument): ColorToken[] {
   const scratch = emptyDesignDocument("");
   scratch.spec.colorTokens = tokens;
   enrichSpec(scratch);
+
+  // Post-enrichment adjustment: "Text Secondary" / "Text Subtle" tokens are
+  // muted TEXT colors, but the generic \bsecondary\b name pattern claims them
+  // for the accent role first. A text-prefixed name always wins as text-muted
+  // (matches the design-mode showcase's interpretation).
+  for (const t of tokens) {
+    const norm = t.name.toLowerCase().replace(/[-_]/g, " ");
+    if (/\btext\b/.test(norm) && /\b(secondary|muted|subtle|dim|tertiary)\b/.test(norm)) {
+      t.role = "text-muted";
+    }
+  }
   return tokens;
 }
 
@@ -253,7 +264,10 @@ function firstReadableWithRole(
 function collectRoles(tokens: readonly ColorToken[]): RoleSlots {
   const background = firstWithRole(tokens, "background");
   return {
-    accent: firstWithRole(tokens, "accent") ?? firstWithRole(tokens, "brand"),
+    // Brand first: a design.md's "Primary" is its lead color and is what the
+    // design-mode showcase drives accents with; role "accent" (from
+    // "secondary" names) is the fallback.
+    accent: firstWithRole(tokens, "brand") ?? firstWithRole(tokens, "accent"),
     background,
     surface: firstWithRole(tokens, "surface"),
     text: firstReadableWithRole(tokens, "text", background),
@@ -279,14 +293,32 @@ const NEUTRAL_CHROMA = 0.15;
 
 /**
  * How a slot derives its opposing-mode value:
- * - "structural" (background, surface, text, muted text, divider): always
- *   invert lightness, preserving hue and saturation — these define which
- *   mode the theme *is*.
+ * - structural slots (background, surface, text, muted text, divider):
+ *   invert lightness, then clamp into a per-role comfort band — raw
+ *   inversion of a near-white paper background lands at pitch black, while
+ *   the design-mode showcase (and every hand-made dark theme) sits in a
+ *   softer charcoal band. Hue and saturation are preserved.
  * - "accent" (accent + semantic status colors): neutrals invert; chromatic
  *   colors keep hue/saturation with lightness clamped into the readable
  *   band for the target mode.
  */
-type DeriveKind = "structural" | "accent";
+type DeriveKind = "background" | "surface" | "text" | "textMuted" | "divider" | "accent";
+
+/**
+ * Comfort bands for structural slots, [min, max] lightness per target mode.
+ * Dark values are aligned with the design-mode showcase's dark palette
+ * (background #1e1e1e, surface #141414, body text #dddddc).
+ */
+const STRUCTURAL_BANDS: Record<
+  Exclude<DeriveKind, "accent">,
+  { dark: [number, number]; light: [number, number] }
+> = {
+  background: { dark: [0.09, 0.14], light: [0.94, 0.99] },
+  surface: { dark: [0.07, 0.12], light: [0.92, 0.98] },
+  text: { dark: [0.82, 0.9], light: [0.08, 0.15] },
+  textMuted: { dark: [0.55, 0.72], light: [0.28, 0.42] },
+  divider: { dark: [0.16, 0.26], light: [0.78, 0.88] },
+};
 
 /**
  * Derive the opposing-mode counterpart of a color per the ADR rules.
@@ -298,7 +330,10 @@ function deriveOpposing(value: string, targetMode: Mode, kind: DeriveKind): stri
   const hsl = rgbToHsl(rgba);
   const chroma = (Math.max(rgba.r, rgba.g, rgba.b) - Math.min(rgba.r, rgba.g, rgba.b)) / 255;
   let l: number;
-  if (kind === "structural" || chroma < NEUTRAL_CHROMA) {
+  if (kind !== "accent") {
+    const [min, max] = STRUCTURAL_BANDS[kind][targetMode];
+    l = Math.min(max, Math.max(min, 1 - hsl.l));
+  } else if (chroma < NEUTRAL_CHROMA) {
     l = 1 - hsl.l;
   } else {
     l = targetMode === "dark" ? Math.max(hsl.l, 0.6) : Math.min(hsl.l, 0.45);
@@ -596,7 +631,7 @@ export function emitThemeTokens(doc: DesignDocument): DesignThemeTokens {
       slot === "text" ||
       slot === "textMuted" ||
       slot === "divider"
-        ? "structural"
+        ? slot
         : "accent";
     const derived = deriveOpposing(token.value, derivedMode, kind);
     if (derived) {

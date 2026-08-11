@@ -77,7 +77,7 @@ value heuristics second).
 
 | Spec source (role / token kind) | Emitted `--kmd-*` tokens |
 |---|---|
-| color role `brand` or `accent` (first by role priority: accent, then brand) | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-link-hover` (derived: lightened step), `--kmd-color-selection-bg` (accent at mode-tuned alpha: 0.3 dark / 0.15 light, matching defaults), `--kmd-color-outline-active-bg` (accent at 0.12 dark / 0.1 light), `--kmd-color-outline-active-border` |
+| color role `brand` or `accent` (first by role priority: brand, then accent — a design.md's "Primary" is its lead color, matching the design-mode showcase) | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-link-hover` (derived: lightened step), `--kmd-color-selection-bg` (accent at mode-tuned alpha: 0.3 dark / 0.15 light, matching defaults), `--kmd-color-outline-active-bg` (accent at 0.12 dark / 0.1 light), `--kmd-color-outline-active-border` |
 | color role `background` | `--kmd-color-neutral` |
 | color role `surface` | `--kmd-color-surface`, `--kmd-color-table-header-bg`; derived `--kmd-color-surface-muted` (mix toward text), `--kmd-color-code-bg` (same as surface-muted) |
 | color role `text` | `--kmd-color-primary`, `--kmd-color-on-surface`, `--kmd-color-code-text`, `--kmd-color-outline-depth-0/1` (and depth-2/3 derived by mixing toward background), `--kmd-color-on-primary` (the opposing mode's text or background, contrast-checked) |
@@ -184,8 +184,13 @@ blank the document. Failures are non-fatal by contract and flow through
    counterpart (`pair`), use the counterpart's value; otherwise derive by
    HSL inversion:
    - structural roles (background, surface, text, muted text, divider):
-     `L' = 1 − L` with hue/saturation kept — these define which mode the
-     theme is, so they always flip;
+     `L' = 1 − L` with hue/saturation kept, then clamped into a per-role
+     comfort band (e.g. dark background L ∈ [0.09, 0.14]) — raw inversion of
+     a near-white paper background lands at pitch black, while the kmd
+     design-mode showcase (dark background #1e1e1e, surface #141414) and
+     every hand-made dark theme sit in a softer charcoal band; the derived
+     reader theme must agree with the design-mode presentation of the same
+     file;
    - accent and semantic status colors: near-neutrals (chroma < 0.15 — chroma,
      not HSL saturation, which misclassifies off-whites) also invert; chromatic
      colors keep hue and saturation with lightness clamped into the readable
