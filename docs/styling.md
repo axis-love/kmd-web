@@ -1,5 +1,8 @@
 # Styling and Theming
 
+> Looking to theme the reader from a `DESIGN.md` file instead of hand-written
+> CSS? See [DesignMD Theming](./design-theming.md).
+
 kmd-web's visual design is built entirely on CSS custom properties (variables). There are no `@font-face` declarations and no inline stylesheets generated at runtime — all reader styles live in `@axis-love/styles` and are scoped to specific class selectors.
 
 ## Import

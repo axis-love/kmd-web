@@ -139,6 +139,24 @@ describe("emitThemeTokens — dark derivation", () => {
     expect(r).toBeGreaterThan(0x5a);
   });
 
+  it("always inverts structural roles, even warm off-whites with high HSL saturation", () => {
+    const result = emitThemeTokens(
+      docWithColors([
+        // #faf4ec is nearly white but has HSL saturation ≈ 0.58 — chroma,
+        // not saturation, must decide neutrality for structural roles.
+        { name: "color-background", value: "#faf4ec" },
+        { name: "color-text", value: "#2b2118" },
+      ]),
+    );
+
+    expect(result.authoredMode).toBe("light");
+    const darkBg = result.dark["--kmd-color-neutral"]!;
+    expect(darkBg).not.toBe("#faf4ec");
+    expect(parseInt(darkBg.slice(1, 3), 16)).toBeLessThan(0x40);
+    const darkText = result.dark["--kmd-color-primary"]!;
+    expect(parseInt(darkText.slice(1, 3), 16)).toBeGreaterThan(0xb0);
+  });
+
   it("prefers an enriched pair over derivation", () => {
     const result = emitThemeTokens(
       docWithColors([
@@ -204,6 +222,26 @@ describe("emitThemeTokens — fonts and radii", () => {
 
     const result = emitThemeTokens(doc);
     expect(result.light["--kmd-font-body"]).toBe("DM Sans, sans-serif");
+  });
+
+  it("reads families from table-extractor composite and size-prefixed values", () => {
+    const doc = lightPalette();
+    doc.spec.typographyTokens = [
+      // Table with a generic Value column: family lands in a size: segment.
+      { name: "font-body", value: "size:Georgia, serif", provenance: { extractor: "test" } },
+      // Composite with an explicit family segment.
+      {
+        name: "font-mono",
+        value: "size:14px; family:JetBrains Mono, monospace; weight:400",
+        provenance: { extractor: "test" },
+      },
+      // A real size must not be mistaken for a family.
+      { name: "font-caption", value: "size:12px", provenance: { extractor: "test" } },
+    ];
+
+    const result = emitThemeTokens(doc);
+    expect(result.light["--kmd-font-body"]).toBe("Georgia, serif");
+    expect(result.light["--kmd-font-mono"]).toBe("JetBrains Mono, monospace");
   });
 
   it("maps size-suffixed radius tokens and ignores non-length values", () => {

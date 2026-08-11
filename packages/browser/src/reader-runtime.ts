@@ -17,6 +17,7 @@ import type { OutlineEntry, RenderOptions, RenderResult } from "@axis-love/contr
 import { findAnchorTarget, ScrollTracker } from "./anchor-navigation.js";
 import { AssetLifecycle } from "./asset-lifecycle.js";
 import { CodeCopyEnhancer } from "./code-copy.js";
+import { DesignThemeController, type DesignThemeInfo } from "./design-theme.js";
 import { morphMarkdownBody } from "./dom-morph.js";
 import { FeatureCoordinator } from "./feature-coordination.js";
 import { renderWithFeaturePlugins } from "./feature-plugins.js";
@@ -53,6 +54,24 @@ export interface BrowserReaderOptions {
   readonly onRendered?: (result: RenderResult) => void;
   /** Callback for render errors. */
   readonly onError?: (error: Error) => void;
+  /**
+   * Optional designMD source text (never a path). When provided, the design
+   * pipeline extracts a custom theme and its `--kmd-*` overrides are applied
+   * scoped to the reader (see docs/adr/0001-designmd-theming.md). Requires
+   * the optional `@axis-love/design` peer; loaded lazily, never bundled.
+   */
+  readonly designSource?: string;
+  /**
+   * Element that receives the design-theme scope attribute. Defaults to
+   * `container`. Hosts whose reader root wraps the container (e.g. a
+   * `.kmd-reader` wrapper) pass that root so sibling states are themed too.
+   */
+  readonly designThemeRoot?: HTMLElement;
+  /**
+   * Reports the outcome of each design-theme apply attempt. Design-theme
+   * problems are non-fatal by contract and never go through `onError`.
+   */
+  readonly onDesignTheme?: (info: DesignThemeInfo) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +105,7 @@ export class BrowserReader {
   private readonly linkPolicy: LinkPolicy;
   private readonly assets: AssetLifecycle;
   private readonly features: FeatureCoordinator;
+  private readonly designTheme: DesignThemeController;
 
   private scrollTracker: ScrollTracker | null = null;
   private scrollTrackerCleanup: (() => void) | null = null;
@@ -131,6 +151,25 @@ export class BrowserReader {
     });
 
     this.features = new FeatureCoordinator();
+
+    this.designTheme = new DesignThemeController(
+      options.designThemeRoot ?? this.container,
+      options.onDesignTheme,
+    );
+    if (options.designSource !== undefined) {
+      // apply() never rejects — failures surface through onDesignTheme.
+      void this.designTheme.apply(options.designSource);
+    }
+  }
+
+  /**
+   * Apply, replace, or remove (pass `undefined`) the designMD custom theme.
+   * Never throws and never affects the rendered document; the outcome is
+   * reported through the `onDesignTheme` callback.
+   */
+  async setDesignSource(source: string | undefined): Promise<void> {
+    if (this.disposed) throw new Error("BrowserReader is disposed");
+    await this.designTheme.apply(source);
   }
 
   /**
@@ -223,6 +262,7 @@ export class BrowserReader {
     this.disposed = true;
 
     this.bridge.dispose();
+    this.designTheme.dispose();
     this.features.dispose(this.container);
     this.assets.revokeAll();
     this.detachLinkHandler?.();

@@ -175,10 +175,14 @@ blank the document. Failures are non-fatal by contract and flow through
 3. For the opposing mode, per token: if `enrichSpec` paired it with a
    counterpart (`pair`), use the counterpart's value; otherwise derive by
    HSL inversion:
-   - near-neutral colors (saturation < 0.15): `L' = 1 − L` (hue/saturation kept);
-   - chromatic colors (accents, semantic): hue and saturation kept, lightness
-     clamped into the readable band for the target mode (dark mode:
-     `L' = max(L, 0.60)`; light mode: `L' = min(L, 0.45)`);
+   - structural roles (background, surface, text, muted text, divider):
+     `L' = 1 − L` with hue/saturation kept — these define which mode the
+     theme is, so they always flip;
+   - accent and semantic status colors: near-neutrals (chroma < 0.15 — chroma,
+     not HSL saturation, which misclassifies off-whites) also invert; chromatic
+     colors keep hue and saturation with lightness clamped into the readable
+     band for the target mode (dark mode: `L' = max(L, 0.60)`; light mode:
+     `L' = min(L, 0.45)`);
    - colors that fail to parse (gradients, `color-mix()`, named colors outside
      the parser) are dropped from the derived mode only, with an `info`
      diagnostic — the default theme value covers that mode.

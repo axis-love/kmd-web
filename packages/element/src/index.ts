@@ -14,7 +14,7 @@
 // - sideEffects: false
 // - ESM-first
 
-import type { HostCapabilities, LinkHandler } from "@axis-love/browser";
+import type { DesignThemeInfo, HostCapabilities, LinkHandler } from "@axis-love/browser";
 import { BrowserReader } from "@axis-love/browser";
 import type {
   DocumentTarget,
@@ -37,7 +37,7 @@ export const ELEMENT_VERSION = "0.1.0";
 const ELEMENT_NAME = "kmd-reader";
 
 /** Attributes observed by attributeChangedCallback. */
-const OBSERVED_ATTRIBUTES = ["source", "theme", "data-source-url"] as const;
+const OBSERVED_ATTRIBUTES = ["source", "theme", "data-source-url", "design-source"] as const;
 
 /** Valid theme values. */
 const VALID_THEMES = new Set(["dark", "light", "sepia"]);
@@ -94,6 +94,11 @@ export interface KmdLinkDocumentDetail {
 /** Detail for kmd:copy events. */
 export interface KmdCopyDetail {
   readonly message: string;
+}
+
+/** Detail for kmd:design-theme events. */
+export interface KmdDesignThemeDetail {
+  readonly info: DesignThemeInfo;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +170,7 @@ export class KmdReaderElement extends HTMLElement {
   private _capabilities: HostCapabilities | undefined;
   private _theme = "dark";
   private _dataSourceUrl: string | undefined;
+  private _designSource: string | undefined;
 
   private hasError = false;
 
@@ -261,6 +267,34 @@ export class KmdReaderElement extends HTMLElement {
     }
   }
 
+  /**
+   * Optional designMD source text (never a path). Extracts a custom theme
+   * and applies its --kmd-* overrides scoped to this element (see
+   * docs/adr/0001-designmd-theming.md). Requires the optional
+   * `@axis-love/design` peer of @axis-love/browser. Setting `undefined`
+   * removes the overrides. Outcomes are reported through the
+   * kmd:design-theme event; failures never produce an error state.
+   */
+  get designSource(): string | undefined {
+    return this._designSource;
+  }
+
+  set designSource(value: unknown) {
+    if (value !== undefined && typeof value !== "string") {
+      this.emitError(new Error(`design-source must be a string, got ${typeof value}`));
+      return;
+    }
+    this._designSource = value;
+    if (value !== undefined) {
+      this.setAttributeInternal("design-source", value);
+    } else {
+      this.removeAttribute("design-source");
+    }
+    if (this.isConnected && this.reader) {
+      void this.reader.setDesignSource(value);
+    }
+  }
+
   // --- Lifecycle ---
 
   /**
@@ -318,6 +352,11 @@ export class KmdReaderElement extends HTMLElement {
       }
     } else if (name === "data-source-url") {
       this._dataSourceUrl = newValue ?? undefined;
+    } else if (name === "design-source") {
+      this._designSource = newValue ?? undefined;
+      if (this.isConnected && this.reader) {
+        void this.reader.setDesignSource(this._designSource);
+      }
     }
   }
 
@@ -445,6 +484,11 @@ export class KmdReaderElement extends HTMLElement {
       },
       onCopy: (message) => {
         this.emit("kmd:copy", { message } satisfies KmdCopyDetail);
+      },
+      designSource: this._designSource,
+      designThemeRoot: this,
+      onDesignTheme: (info) => {
+        this.emit("kmd:design-theme", { info } satisfies KmdDesignThemeDetail);
       },
     });
   }

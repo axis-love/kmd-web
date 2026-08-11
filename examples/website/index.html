@@ -25,6 +25,19 @@
       color: var(--kmd-color-on-surface);
       background-color: var(--kmd-color-neutral);
     }
+    /* DesignMD theming demo toggle (KWEB-061). Sits in the page shell,
+       outside .kmd-reader — intentionally NOT restyled by the custom theme,
+       which stays scoped to the reader subtree. */
+    .design-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: var(--kmd-width-content-max);
+      margin: 12px auto 0;
+      font-size: 14px;
+      opacity: 0.85;
+      cursor: pointer;
+    }
   </style>
   <script>
     // Match the kmd desktop app's theme boot: set data-theme on <html> so the

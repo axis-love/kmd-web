@@ -233,20 +233,35 @@ function collectRoles(tokens: readonly ColorToken[]): RoleSlots {
 // Dark/light derivation
 // ---------------------------------------------------------------------------
 
-const NEUTRAL_SATURATION = 0.15;
+/**
+ * Chroma threshold below which a color counts as neutral. Chroma (max−min
+ * channel spread) is used instead of HSL saturation, which blows up near
+ * white/black and misclassifies warm off-whites as chromatic.
+ */
+const NEUTRAL_CHROMA = 0.15;
 
 /**
- * Derive the opposing-mode counterpart of a color per the ADR rules:
- * near-neutrals invert lightness; chromatic colors keep hue/saturation with
- * lightness clamped into the readable band for the target mode.
+ * How a slot derives its opposing-mode value:
+ * - "structural" (background, surface, text, muted text, divider): always
+ *   invert lightness, preserving hue and saturation — these define which
+ *   mode the theme *is*.
+ * - "accent" (accent + semantic status colors): neutrals invert; chromatic
+ *   colors keep hue/saturation with lightness clamped into the readable
+ *   band for the target mode.
+ */
+type DeriveKind = "structural" | "accent";
+
+/**
+ * Derive the opposing-mode counterpart of a color per the ADR rules.
  * Returns null when the value cannot be parsed.
  */
-function deriveOpposing(value: string, targetMode: Mode): string | null {
+function deriveOpposing(value: string, targetMode: Mode, kind: DeriveKind): string | null {
   const rgba = parseColor(value);
   if (!rgba) return null;
   const hsl = rgbToHsl(rgba);
+  const chroma = (Math.max(rgba.r, rgba.g, rgba.b) - Math.min(rgba.r, rgba.g, rgba.b)) / 255;
   let l: number;
-  if (hsl.s < NEUTRAL_SATURATION) {
+  if (kind === "structural" || chroma < NEUTRAL_CHROMA) {
     l = 1 - hsl.l;
   } else {
     l = targetMode === "dark" ? Math.max(hsl.l, 0.6) : Math.min(hsl.l, 0.45);
@@ -351,11 +366,16 @@ function expandMode(roles: RoleValues, mode: Mode): Record<string, string> {
 // Fonts and radii (mode-independent)
 // ---------------------------------------------------------------------------
 
-/** Extract a font-family string from a typography token value. */
+/**
+ * Extract a font-family string from a typography token value.
+ *
+ * Handles the shapes the extractors produce: composite `size:…; family:…`
+ * strings from the tables/CSS extractors, JSON objects from the YAML
+ * extractor, and flat family lists. A generic `size:` segment (a table with
+ * only a Value column) is unwrapped and kept only when it reads as a family
+ * list rather than a size/weight.
+ */
 function familyFromValue(value: string): string | null {
-  if (value.startsWith("family:")) {
-    return value.slice(7).trim() || null;
-  }
   if (value.startsWith("{")) {
     try {
       const obj = JSON.parse(value) as Record<string, unknown>;
@@ -366,10 +386,23 @@ function familyFromValue(value: string): string | null {
     }
     return null;
   }
+
+  const segments = value.split(";").map((s) => s.trim());
+  for (const seg of segments) {
+    if (/^family\s*:/i.test(seg)) {
+      const fam = seg.replace(/^family\s*:/i, "").trim();
+      return fam || null;
+    }
+  }
+
   // Flat values: accept only strings that look like a family list, not a
-  // size/weight ("17px", "600", "1.5").
-  const v = value.trim();
+  // size/weight ("17px", "600", "1.5"). A lone size: segment is unwrapped.
+  let v = value.trim();
+  if (segments.length === 1 && /^size\s*:/i.test(v)) {
+    v = v.replace(/^size\s*:/i, "").trim();
+  }
   if (/^[\d.]+(px|rem|em|%)?$/.test(v)) return null;
+  if (/[:;{}]/.test(v)) return null;
   if (!/[a-zA-Z]{2}/.test(v)) return null;
   return v;
 }
@@ -503,7 +536,15 @@ export function emitThemeTokens(doc: DesignDocument): DesignThemeTokens {
       derivedRoles[slot] = paired.value;
       continue;
     }
-    const derived = deriveOpposing(token.value, derivedMode);
+    const kind: DeriveKind =
+      slot === "background" ||
+      slot === "surface" ||
+      slot === "text" ||
+      slot === "textMuted" ||
+      slot === "divider"
+        ? "structural"
+        : "accent";
+    const derived = deriveOpposing(token.value, derivedMode, kind);
     if (derived) {
       derivedRoles[slot] = derived;
     } else {

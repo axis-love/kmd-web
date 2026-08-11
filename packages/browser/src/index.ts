@@ -162,6 +162,11 @@ export {
 } from "./anchor-navigation.js";
 export { AssetLifecycle, type AssetLifecycleOptions } from "./asset-lifecycle.js";
 export { CodeCopyEnhancer, type CodeCopyOptions, type CopyNotifier } from "./code-copy.js";
+export {
+  DesignThemeController,
+  type DesignThemeDiagnostic,
+  type DesignThemeInfo,
+} from "./design-theme.js";
 export { morphMarkdownBody, RAW_IMAGE_SRC_ATTR } from "./dom-morph.js";
 export {
   type FeatureCoordinationOptions,

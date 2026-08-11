@@ -9,7 +9,7 @@
 
 import "@axis-love/styles/styles.css";
 
-import type { HostCapabilities } from "@axis-love/browser";
+import type { DesignThemeInfo, HostCapabilities } from "@axis-love/browser";
 import {
   BrowserReader,
   findAnchorTarget,
@@ -56,6 +56,16 @@ export interface MarkdownReaderProps {
   readonly onActiveHeadingChange?: (slug: string | undefined) => void;
   /** Called when a copy action succeeds (e.g. code block copy button). */
   readonly onCopy?: (message: string) => void;
+  /**
+   * Optional designMD source text (never a path). Extracts a custom theme
+   * and applies its `--kmd-*` overrides scoped to this reader (see
+   * docs/adr/0001-designmd-theming.md). Requires the optional
+   * `@axis-love/design` peer; loaded lazily. Invalid or empty design
+   * sources fall back to the default themes — never an error state.
+   */
+  readonly designSource?: string;
+  /** Called with the outcome of each design-theme apply attempt. */
+  readonly onDesignTheme?: (info: DesignThemeInfo) => void;
 }
 
 /**
@@ -88,7 +98,10 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
   onOutlineChange,
   onActiveHeadingChange,
   onCopy,
+  designSource,
+  onDesignTheme,
 }) => {
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<BrowserReader | null>(null);
   const sourceRef = useRef(source);
@@ -109,10 +122,12 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
   const onOutlineChangeRef = useRef(onOutlineChange);
   const onActiveHeadingChangeRef = useRef(onActiveHeadingChange);
   const onCopyRef = useRef(onCopy);
+  const onDesignThemeRef = useRef(onDesignTheme);
   onErrorRef.current = onError;
   onOutlineChangeRef.current = onOutlineChange;
   onActiveHeadingChangeRef.current = onActiveHeadingChange;
   onCopyRef.current = onCopy;
+  onDesignThemeRef.current = onDesignTheme;
 
   // Create BrowserReader once on mount and dispose on unmount.
   // The reader is created with stable callbacks that read from refs.
@@ -151,6 +166,12 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
           onErrorRef.current?.(err);
         }
       },
+      designThemeRoot: rootRef.current ?? undefined,
+      onDesignTheme: (info) => {
+        if (mountedRef.current) {
+          onDesignThemeRef.current?.(info);
+        }
+      },
     });
 
     readerRef.current = reader;
@@ -166,6 +187,14 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
     // construction time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Apply / update / remove the design theme when designSource changes.
+  // Non-fatal by contract — outcomes flow through onDesignTheme only.
+  useEffect(() => {
+    const reader = readerRef.current;
+    if (!reader) return;
+    void reader.setDesignSource(designSource);
+  }, [designSource]);
 
   // Update the document when source or renderOptions change.
   useEffect(() => {
@@ -223,7 +252,7 @@ export const MarkdownReader: FC<MarkdownReaderProps> = ({
   // states) so the BrowserReader has a stable container reference.
   // The error/empty/loading indicators are siblings, not replacements.
   return (
-    <div className={`kmd-reader${className ? ` ${className}` : ""}`}>
+    <div ref={rootRef} className={`kmd-reader${className ? ` ${className}` : ""}`}>
       {isLoading && !error && source !== "" && (
         <div className="mdr-loading" aria-busy="true" aria-live="polite">
           <p>Loading…</p>

@@ -32,11 +32,15 @@
     "@axis-love/core": "0.1.0"
   },
   "peerDependencies": {
+    "@axis-love/design": "0.1.0",
     "@axis-love/highlighting": "0.1.0",
     "@axis-love/math": "0.1.0",
     "@axis-love/mermaid": "0.1.0"
   },
   "peerDependenciesMeta": {
+    "@axis-love/design": {
+      "optional": true
+    },
     "@axis-love/highlighting": {
       "optional": true
     },
@@ -48,6 +52,7 @@
     }
   },
   "devDependencies": {
+    "@axis-love/design": "0.1.0",
     "@axis-love/highlighting": "0.1.0",
     "@axis-love/math": "0.1.0",
     "@axis-love/mermaid": "0.1.0"
