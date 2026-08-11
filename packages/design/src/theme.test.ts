@@ -76,6 +76,12 @@ describe("emitThemeTokens — mapping", () => {
     // semantic roles
     expect(light["--kmd-color-success"]).toBe("#2f855a");
     expect(light["--kmd-color-danger"]).toBe("#c53030");
+    // semantic aliases re-emitted on the scope so they resolve against the
+    // overridden bases (ancestor theme blocks bake them to defaults otherwise)
+    expect(light["--kmd-color-background"]).toBe("var(--kmd-color-neutral)");
+    expect(light["--kmd-color-body"]).toBe("var(--kmd-color-on-surface)");
+    expect(light["--kmd-color-heading"]).toBe("var(--kmd-color-primary)");
+    expect(light["--kmd-focus-outline-color"]).toBe("var(--kmd-color-tertiary)");
   });
 
   it("does not emit tokens for roles absent from the spec (per-token fallback)", () => {

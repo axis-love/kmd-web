@@ -93,10 +93,14 @@ in spec order wins (stable across runs). For the two text roles, candidates
 that parse but fail a minimum contrast ratio of 2:1 against the extracted
 background are skipped — role inference is name-based and can hand a
 near-background color (e.g. "Border Subtle") a text role; dropping it lets
-the readable default cascade instead. Semantic aliases
-(`--kmd-color-heading`, `-body`, `-muted`, `-accent`, `-background`, `-card`)
-are **not** re-emitted — they already reference the base tokens via `var()` in
-the default themes and follow automatically.
+the readable default cascade instead. The semantic aliases
+(`--kmd-color-heading`, `-body`, `-muted`, `-accent`, `-background`, `-card`,
+plus `--kmd-focus-outline-color`) **are re-emitted** as `var()` references on
+the scope element. This is load-bearing, not redundancy: the default themes
+declare them on the ancestor carrying the theme selector, and custom
+properties inherit by computed value — the ancestor bakes them to the default
+base values, so a scoped override of the base tokens alone would never reach
+anything styled through an alias (including the reader background itself).
 
 Missing roles emit nothing: any token not in the emitted set falls back to the
 default theme value through the normal cascade. Fallback is therefore

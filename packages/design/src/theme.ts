@@ -396,6 +396,23 @@ function expandMode(roles: RoleValues, mode: Mode): Record<string, string> {
   set("--kmd-color-danger", roles.error);
   set("--kmd-color-info", roles.info);
 
+  // Re-emit the semantic aliases as var() references. The default themes
+  // declare these on the ancestor carrying the theme selector, and custom
+  // properties inherit by COMPUTED value — an alias like
+  // `--kmd-color-background: var(--kmd-color-neutral)` is baked to the
+  // default neutral at that ancestor, so overriding the base token on the
+  // scoped element alone never reaches it. Declaring the aliases on the
+  // scope makes them resolve there, against the overridden bases.
+  if (Object.keys(out).length > 0) {
+    out["--kmd-color-heading"] = "var(--kmd-color-primary)";
+    out["--kmd-color-body"] = "var(--kmd-color-on-surface)";
+    out["--kmd-color-muted"] = "var(--kmd-color-secondary)";
+    out["--kmd-color-accent"] = "var(--kmd-color-tertiary)";
+    out["--kmd-color-background"] = "var(--kmd-color-neutral)";
+    out["--kmd-color-card"] = "var(--kmd-color-surface)";
+    out["--kmd-focus-outline-color"] = "var(--kmd-color-tertiary)";
+  }
+
   return out;
 }
 
