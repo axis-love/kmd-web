@@ -1,8 +1,8 @@
 # ADR 0001 — DesignMD-driven theming of the kmd-web reader
 
-- Status: Proposed (KWEB-059, epic KWEB-058)
+- Status: Accepted (KWEB-059, epic KWEB-058; Nyx review 2026-08-20)
 - Date: 2026-08-11
-- Deciders: Nyx (review pending)
+- Deciders: Nyx
 - Related: KWEB-028 (API stabilization), KWEB-055 (mermaid theme re-resolution), KWEB-056 (`?theme=` pin)
 
 ## Context
