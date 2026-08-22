@@ -87,7 +87,50 @@ export { EXTRACTOR_PRECEDENCE, mergeSpecs, stageMerge } from "./merge.js";
 export { runDesignPipeline, type StageFn } from "./pipeline.js";
 // Resolve stage
 export { resolveSpec } from "./resolve.js";
-// Theme token emitter (KWEB-060 — see docs/adr/0001-designmd-theming.md)
+// Showcase token extractor (KWEB-068) — the single DESIGN.md → theme-variable
+// extractor shared by kmd's design-mode showcase and the reader theme emitter.
+export {
+  buildGoogleFontStylesheetUrl,
+  buildShowcaseThemeVars,
+  buildTypographyVars,
+  clampPageFontSize,
+  cleanFontFamilyText,
+  collectDesignFontFamilyNames,
+  detectIsDarkTheme,
+  extractFamilyFromValue,
+  extractPrimaryFontFamilyName,
+  fillDerivedVars,
+  findFontFamily,
+  getTypography,
+  inferFontGeneric,
+  inferRecipeFamily,
+  invertColor,
+  invertThemeVars,
+  isColorDark,
+  isGenericCardRecipe,
+  isOnVariant,
+  isPaletteAccentToken,
+  isTextLikeToken,
+  mapRadiusToken,
+  mapRecipeStyles,
+  normalizeTokenName,
+  type ParsedTypography,
+  parseColor,
+  pickBest,
+  pickBestForVar,
+  pickRecipeProp,
+  quoteFontFamily,
+  resolveRecipeValue,
+  type ShowcaseThemeVars,
+  safeCssValue,
+  sanitizeFontFamilyName,
+  scoreToken,
+  scoreTokenForVar,
+  type TypographyEntry,
+  type TypographyRole,
+  withFontFallback,
+} from "./showcase.js";
+// Theme token emitter (KWEB-060/068 — see docs/adr/0001-designmd-theming.md)
 export { type DesignThemeTokens, designThemeCss, emitThemeTokens } from "./theme.js";
 // Design-doc validation (moved from core)
 export { scanDesignDoc } from "./validate.js";

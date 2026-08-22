@@ -1,6 +1,6 @@
 # ADR 0001 — DesignMD-driven theming of the kmd-web reader
 
-- Status: Accepted (KWEB-059, epic KWEB-058; Nyx review 2026-08-20)
+- Status: Accepted (KWEB-059, epic KWEB-058; Nyx review 2026-08-20). Amended by KWEB-068 (2026-08-22): single extractor.
 - Date: 2026-08-11
 - Deciders: Nyx
 - Related: KWEB-028 (API stabilization), KWEB-055 (mermaid theme re-resolution), KWEB-056 (`?theme=` pin)
@@ -32,6 +32,28 @@ Constraints that shape the decision:
   A custom theme must flow through those existing mechanisms untouched.
 - Reader styles are scoped under `.kmd-reader`; overrides must never leak into
   the host page.
+
+## Amendment — KWEB-068: one token extractor (2026-08-22)
+
+The original §2 and §5 described a second, role-based extractor inside
+`emitThemeTokens` (enrich-stage roles plus name patches). In practice it never
+agreed with the kmd design-mode showcase on the same DESIGN.md: Apple's
+derived dark theme got a `#2997ff` page background, Nyx's light theme lost its
+accent and border, Dylan Brouwer emitted no surface or divider, and heading
+fonts and type scale were never themed. Every new fixture needed another patch.
+
+Decision (Master): **there is exactly one DESIGN.md token extractor, and it
+lives in kmd-web.** The showcase extraction core moved from
+`kmd/src/components/design/showcaseTheme.ts` into
+`packages/design/src/showcase.ts` as `buildShowcaseThemeVars(doc) → { light,
+dark }` (`--nyx-*` variable maps; DOM-free). `emitThemeTokens` is now a fixed
+projection of those maps onto `--kmd-*` tokens — a table, no heuristics. kmd
+keeps only the presentation half (`buildShowcaseCSS` serializes the maps onto
+`.nyx-showcase` selectors) and re-exports the helpers from the package, so the
+showcase and the reader can no longer drift: what design mode shows for a
+file is what the reader is themed with.
+
+Sections §2 and §5 below are superseded as noted; §1, §3, §4, §6, §7 stand.
 
 ## Decision
 
@@ -68,43 +90,46 @@ An `empty` result (undetectable design doc, no color tokens, pipeline failure)
 emits **no CSS at all** — the default themes are untouched, and the reason is
 reported through `diagnostics`.
 
-### 2. Spec → token mapping table
+### 2. Showcase-variable → token mapping table (KWEB-068)
 
-Only *semantic roles* map to tokens, never raw token names — a design.md's
-`primary` is its brand color, not kmd's `--kmd-color-primary` (which is the
-primary *text* color). Roles come from `enrichSpec` (name patterns first,
-value heuristics second).
+`emitThemeTokens` projects each `--nyx-*` showcase variable onto `--kmd-*`
+tokens, per mode. A showcase variable that is absent emits nothing, so the
+default theme value cascades per token. Values are sanitized before emission.
 
-| Spec source (role / token kind) | Emitted `--kmd-*` tokens |
+| Showcase variable | Emitted `--kmd-*` tokens |
 |---|---|
-| color role `brand` or `accent` (first by role priority: brand, then accent — a design.md's "Primary" is its lead color, matching the design-mode showcase) | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-link-hover` (derived: lightened step), `--kmd-color-selection-bg` (accent at mode-tuned alpha: 0.3 dark / 0.15 light, matching defaults), `--kmd-color-outline-active-bg` (accent at 0.12 dark / 0.1 light), `--kmd-color-outline-active-border` |
-| color role `background` | `--kmd-color-neutral` |
-| color role `surface` | `--kmd-color-surface`, `--kmd-color-table-header-bg`; derived `--kmd-color-surface-muted` (mix toward text), `--kmd-color-code-bg` (same as surface-muted) |
-| color role `text` | `--kmd-color-primary`, `--kmd-color-on-surface`, `--kmd-color-code-text`, `--kmd-color-outline-depth-0/1` (and depth-2/3 derived by mixing toward background), `--kmd-color-on-primary` (the opposing mode's text or background, contrast-checked) |
-| color role `text-muted` | `--kmd-color-secondary`, `--kmd-color-blockquote-text` |
-| color role `divider` | `--kmd-color-border`, `--kmd-color-table-border`, `--kmd-color-blockquote-border`, `--kmd-color-scrollbar-thumb` |
-| color roles `success` / `warning` / `error` / `info` | `--kmd-color-success` / `--kmd-color-warning` / `--kmd-color-danger` / `--kmd-color-info` |
-| typography token whose name/value indicates a mono/code stack | `--kmd-font-mono` |
-| first body-ish typography token with a `font-family` | `--kmd-font-body` |
-| radius tokens named `sm`/`md`/`lg`/`xl`/`full` (suffix match) | `--kmd-radius-sm/md/lg/xl/full` |
+| `--nyx-bg` | `--kmd-color-neutral` |
+| `--nyx-surface` | `--kmd-color-surface` |
+| `--nyx-surface-elevated` | `--kmd-color-surface-muted`, `--kmd-color-code-bg`, `--kmd-color-table-header-bg` |
+| `--nyx-text-head` | `--kmd-color-primary`, `--kmd-color-outline-depth-0` |
+| `--nyx-text-body` | `--kmd-color-on-surface`, `--kmd-color-code-text`, `--kmd-color-outline-depth-1` |
+| `--nyx-text-muted` | `--kmd-color-secondary`, `--kmd-color-blockquote-text`, `--kmd-color-outline-depth-2` |
+| `--nyx-text-dim` | `--kmd-color-outline-depth-3` |
+| `--nyx-btn-primary-text` | `--kmd-color-on-primary` |
+| `--nyx-sep` | `--kmd-color-border`, `--kmd-color-table-border`, `--kmd-color-blockquote-border`, `--kmd-color-scrollbar-thumb` |
+| `--nyx-accent` | `--kmd-color-tertiary`, `--kmd-color-link`, `--kmd-color-outline-active-border` |
+| `--nyx-accent-hover` | `--kmd-color-link-hover` |
+| `--nyx-accent-bg` | `--kmd-color-selection-bg`, `--kmd-color-outline-active-bg` |
+| `--nyx-positive` / `-warning` / `-error` / `-info` | `--kmd-color-success` / `-warning` / `-danger` / `-info` |
+| `--nyx-font-body` / `-heading` / `-code` | `--kmd-font-body` / `--kmd-font-heading` (new token, KWEB-068) / `--kmd-font-mono` |
+| `--nyx-body-size`, `--nyx-body-line` | `--kmd-font-size-body-md`, `--kmd-line-height-body-md` |
+| `--nyx-heading-weight`, `--nyx-heading-line` | `--kmd-font-weight-headline-lg/md`, `--kmd-line-height-headline-lg/md` |
+| `--nyx-code-size`, `--nyx-code-line` | `--kmd-font-size-code-md`, `--kmd-line-height-code-md` |
+| `--nyx-label-size` / `-weight` / `-track` | `--kmd-font-size-label-caps` / `--kmd-font-weight-label-caps` / `--kmd-letter-spacing-label-caps` |
+| `--nyx-radius-sm` / `-md` / `-lg` / `-xl` / `-full` (size-named radius tokens; a global radius fills gaps — component radii like `-btn`/`-tag` are never projected) | `--kmd-radius-sm` / `-md` / `-lg` / `-xl` / `-full` |
 
-Where a role has several candidate tokens, the first token carrying that role
-in spec order wins (stable across runs). For the two text roles, candidates
-that parse but fail a minimum contrast ratio of 2:1 against the extracted
-background are skipped — role inference is name-based and can hand a
-near-background color (e.g. "Border Subtle") a text role; dropping it lets
-the readable default cascade instead. The semantic aliases
-(`--kmd-color-heading`, `-body`, `-muted`, `-accent`, `-background`, `-card`,
-plus `--kmd-focus-outline-color`) **are re-emitted** as `var()` references on
-the scope element. This is load-bearing, not redundancy: the default themes
-declare them on the ancestor carrying the theme selector, and custom
-properties inherit by computed value — the ancestor bakes them to the default
-base values, so a scoped override of the base tokens alone would never reach
-anything styled through an alias (including the reader background itself).
+The semantic aliases (`--kmd-color-heading`, `-body`, `-muted`, `-accent`,
+`-background`, `-card`, plus `--kmd-focus-outline-color`) **are re-emitted** as
+`var()` references on the scope element whenever anything is emitted. This is
+load-bearing, not redundancy: the default themes declare them on the ancestor
+carrying the theme selector, and custom properties inherit by computed value —
+the ancestor bakes them to the default base values, so a scoped override of
+the base tokens alone would never reach anything styled through an alias
+(including the reader background itself).
 
-Missing roles emit nothing: any token not in the emitted set falls back to the
-default theme value through the normal cascade. Fallback is therefore
-per-token, not all-or-nothing.
+`authoredMode` is informational (both modes are always emitted): the polarity
+of the design's page background, else its surface, else the inverse of its
+text color.
 
 ### 3. Scoping mechanism
 
@@ -173,33 +198,16 @@ a path; consistent with `source`).
 blank the document. Failures are non-fatal by contract and flow through
 `onDesignTheme` / `kmd:design-theme` only.
 
-### 5. Dark-variant derivation
+### 5. Dark/light derivation (KWEB-068)
 
-1. Determine `authoredMode` from the background role's relative luminance
-   (WCAG formula, already in enrich.ts): luminance > 0.5 → authored light,
-   else dark. No background token → fall back to surface, then to the text
-   token inverted; no parseable signal at all → `empty` result.
-2. The authored mode's set is emitted as extracted.
-3. For the opposing mode, per token: if `enrichSpec` paired it with a
-   counterpart (`pair`), use the counterpart's value; otherwise derive by
-   HSL inversion:
-   - structural roles (background, surface, text, muted text, divider):
-     `L' = 1 − L` with hue/saturation kept, then clamped into a per-role
-     comfort band (e.g. dark background L ∈ [0.09, 0.14]) — raw inversion of
-     a near-white paper background lands at pitch black, while the kmd
-     design-mode showcase (dark background #1e1e1e, surface #141414) and
-     every hand-made dark theme sit in a softer charcoal band; the derived
-     reader theme must agree with the design-mode presentation of the same
-     file;
-   - accent and semantic status colors: near-neutrals (chroma < 0.15 — chroma,
-     not HSL saturation, which misclassifies off-whites) also invert; chromatic
-     colors keep hue and saturation with lightness clamped into the readable
-     band for the target mode (dark mode: `L' = max(L, 0.60)`; light mode:
-     `L' = min(L, 0.45)`);
-   - colors that fail to parse (gradients, `color-mix()`, named colors outside
-     the parser) are dropped from the derived mode only, with an `info`
-     diagnostic — the default theme value covers that mode.
-4. Derivation is pure arithmetic on the parsed color — deterministic.
+Derivation of the non-authored mode is the showcase's, unchanged and shared:
+`buildShowcaseThemeVars` classifies tokens by light/dark affinity (`…-on-dark`,
+`dark-surface`, …), scores candidates per variable with keyword confidence,
+keeps accents identical across modes, derives missing structural values
+conservatively (charcoal band for backgrounds/surfaces, lifted text, low-alpha
+separators), and repairs polarity so a light-authored file never yields a
+light dark-mode background or vice versa. `emitThemeTokens` adds no derivation
+of its own. Deterministic: identical spec in → byte-identical output out.
 
 ### 6. Cache and invalidation
 
@@ -221,10 +229,11 @@ the scope attribute and drops the style element reference synchronously.
 
 ## Not themeable in v1 (and why)
 
-- **Spacing, layout widths, font sizes, line heights** — these are legibility
-  and layout-integrity tokens; a design.md tuned for marketing pages can
-  easily produce an unreadable reader. Colors, font families, and radii
-  restyle without breaking layout.
+- **Spacing and layout widths** — layout-integrity tokens; a design.md tuned
+  for marketing pages can easily produce an unreadable reader. Since KWEB-068
+  the body/code/label sizes and line heights and the headline weights/line
+  heights *are* themed, but only through the showcase's page-clamped
+  typography (`clampPageFontSize`), never raw display sizes.
 - **Motion tokens** — interact with `prefers-reduced-motion` accessibility
   overrides; deferred.
 - **Component recipes, gradients, elevation, breakpoints, icon hints** — no

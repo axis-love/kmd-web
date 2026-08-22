@@ -1,10 +1,12 @@
 /**
- * Resolved-spec → --kmd-* theme token emitter (KWEB-060).
+ * Showcase vars → --kmd-* theme token emitter (KWEB-060, KWEB-068).
  *
- * Maps an enriched DesignDocument to scoped light + dark `--kmd-*`
- * custom-property sets per docs/adr/0001-designmd-theming.md. The mapping is
- * role-based (enrich stage roles), never name-based: a design.md's "primary"
- * is its brand color, not kmd's primary *text* color.
+ * The reader theme is a fixed projection of the design-mode showcase
+ * variables (`buildShowcaseThemeVars` in ./showcase.ts) onto the `--kmd-*`
+ * token set described in docs/adr/0001-designmd-theming.md. There is exactly
+ * one token extractor: whatever design mode shows for a DESIGN.md is what the
+ * reader is themed with. This module holds no heuristics of its own — it is a
+ * mapping table plus value sanitization.
  *
  * Contract:
  * - DOM-free (runs in workers and Node).
@@ -15,9 +17,8 @@
  *   Markdown and must not be able to break out of a CSS declaration.
  */
 
-import { enrichSpec } from "./enrich.js";
-import type { ColorRole, ColorToken, DesignDocument, Diagnostic } from "./ir.js";
-import { emptyDesignDocument } from "./ir.js";
+import type { DesignDocument, Diagnostic } from "./ir.js";
+import { buildShowcaseThemeVars, isColorDark, normalizeTokenName } from "./showcase.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -34,131 +35,6 @@ export interface DesignThemeTokens {
   diagnostics: Diagnostic[];
 }
 
-type Mode = "light" | "dark";
-
-// ---------------------------------------------------------------------------
-// Color parsing (hex / rgb / rgba only — anything else is passed through
-// verbatim in the authored mode and dropped from the derived mode)
-// ---------------------------------------------------------------------------
-
-interface Rgba {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-}
-
-function parseColor(value: string): Rgba | null {
-  const v = value.trim();
-
-  let m = v.match(/^#([0-9a-f]{3})$/i);
-  if (m) {
-    const [r, g, b] = m[1]!.split("").map((c) => parseInt(c + c, 16));
-    return { r: r!, g: g!, b: b!, a: 1 };
-  }
-
-  m = v.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
-  if (m) {
-    const hex = m[1]!;
-    return {
-      r: parseInt(hex.slice(0, 2), 16),
-      g: parseInt(hex.slice(2, 4), 16),
-      b: parseInt(hex.slice(4, 6), 16),
-      a: m[2] ? parseInt(m[2], 16) / 255 : 1,
-    };
-  }
-
-  m = v.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+)\s*)?\)$/i);
-  if (m) {
-    const r = Number(m[1]);
-    const g = Number(m[2]);
-    const b = Number(m[3]);
-    if (r > 255 || g > 255 || b > 255) return null;
-    const a = m[4] !== undefined ? Number(m[4]) : 1;
-    if (!Number.isFinite(a) || a < 0 || a > 1) return null;
-    return { r, g, b, a };
-  }
-
-  return null;
-}
-
-interface Hsl {
-  h: number;
-  s: number;
-  l: number;
-}
-
-function rgbToHsl({ r, g, b }: Rgba): Hsl {
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  const l = (max + min) / 2;
-  if (max === min) return { h: 0, s: 0, l };
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h: number;
-  if (max === rn) h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
-  else if (max === gn) h = ((bn - rn) / d + 2) / 6;
-  else h = ((rn - gn) / d + 4) / 6;
-  return { h, s, l };
-}
-
-function hslToRgb({ h, s, l }: Hsl): Rgba {
-  if (s === 0) {
-    const v = Math.round(l * 255);
-    return { r: v, g: v, b: v, a: 1 };
-  }
-  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-  const p = 2 * l - q;
-  const hue = (t: number): number => {
-    let tt = t;
-    if (tt < 0) tt += 1;
-    if (tt > 1) tt -= 1;
-    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
-    if (tt < 1 / 2) return q;
-    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
-    return p;
-  };
-  return {
-    r: Math.round(hue(h + 1 / 3) * 255),
-    g: Math.round(hue(h) * 255),
-    b: Math.round(hue(h - 1 / 3) * 255),
-    a: 1,
-  };
-}
-
-function toHex({ r, g, b }: Rgba): string {
-  const c = (n: number) => n.toString(16).padStart(2, "0");
-  return `#${c(r)}${c(g)}${c(b)}`;
-}
-
-/** WCAG 2.x relative luminance of an sRGB color, 0–1. */
-function luminance({ r, g, b }: Rgba): number {
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-}
-
-/** Shift HSL lightness by delta (clamped 0–1) and return hex. */
-function shiftLightness(rgba: Rgba, delta: number): string {
-  const hsl = rgbToHsl(rgba);
-  return toHex(hslToRgb({ ...hsl, l: Math.min(1, Math.max(0, hsl.l + delta)) }));
-}
-
-/** Linear sRGB-channel mix of a toward b by t (0–1), returned as hex. */
-function mix(a: Rgba, b: Rgba, t: number): string {
-  const ch = (x: number, y: number) => Math.round(x + (y - x) * t);
-  return toHex({ r: ch(a.r, b.r), g: ch(a.g, b.g), b: ch(a.b, b.b), a: 1 });
-}
-
-function rgbaString(c: Rgba, alpha: number): string {
-  return `rgba(${c.r},${c.g},${c.b},${alpha})`;
-}
-
 // ---------------------------------------------------------------------------
 // Value sanitization — design.md is untrusted; a value must not be able to
 // terminate the declaration or block, pull external resources, or smuggle
@@ -172,381 +48,142 @@ function isSafeCssValue(value: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Role collection
+// Mapping table: showcase `--nyx-*` variable → `--kmd-*` tokens
 // ---------------------------------------------------------------------------
 
 /**
- * Gather color tokens from the spec: the enriched token array plus synthetic
- * tokens for flat-map-only entries. Enrichment runs on a scratch copy so the
- * input document is never mutated.
+ * Per-mode color/typography/radius projection. Order is irrelevant (the CSS
+ * serializer sorts), but the table is grouped by showcase variable for
+ * readability. A showcase variable that is absent simply emits nothing.
  */
-function collectColorTokens(doc: DesignDocument): ColorToken[] {
-  const tokens: ColorToken[] = (doc.spec.colorTokens ?? []).map((t) => ({ ...t }));
-  const known = new Set(tokens.map((t) => t.name));
-  for (const [name, value] of Object.entries(doc.spec.colors)) {
-    if (!known.has(name)) {
-      tokens.push({ name, value, provenance: { extractor: "theme-emitter" } });
-    }
-  }
-  if (tokens.length === 0) return tokens;
-
-  const scratch = emptyDesignDocument("");
-  scratch.spec.colorTokens = tokens;
-  enrichSpec(scratch);
-
-  // Post-enrichment adjustment: "Text Secondary" / "Text Subtle" tokens are
-  // muted TEXT colors, but the generic \bsecondary\b name pattern claims them
-  // for the accent role first. A text-prefixed name always wins as text-muted
-  // (matches the design-mode showcase's interpretation).
-  for (const t of tokens) {
-    const norm = t.name.toLowerCase().replace(/[-_]/g, " ");
-    if (/\btext\b/.test(norm) && /\b(secondary|muted|subtle|dim|tertiary)\b/.test(norm)) {
-      t.role = "text-muted";
-    }
-  }
-  return tokens;
-}
-
-/** First token carrying the given role, in spec order. */
-function firstWithRole(tokens: readonly ColorToken[], role: ColorRole): ColorToken | undefined {
-  return tokens.find((t) => t.role === role);
-}
-
-interface RoleSlots {
-  accent?: ColorToken;
-  background?: ColorToken;
-  surface?: ColorToken;
-  text?: ColorToken;
-  textMuted?: ColorToken;
-  divider?: ColorToken;
-  success?: ColorToken;
-  warning?: ColorToken;
-  error?: ColorToken;
-  info?: ColorToken;
-}
+const MODE_MAP: ReadonlyArray<readonly [nyxVar: string, kmdTokens: readonly string[]]> = [
+  // Surfaces
+  ["--nyx-bg", ["--kmd-color-neutral"]],
+  ["--nyx-surface", ["--kmd-color-surface"]],
+  [
+    "--nyx-surface-elevated",
+    ["--kmd-color-surface-muted", "--kmd-color-code-bg", "--kmd-color-table-header-bg"],
+  ],
+  // Text
+  ["--nyx-text-head", ["--kmd-color-primary", "--kmd-color-outline-depth-0"]],
+  [
+    "--nyx-text-body",
+    ["--kmd-color-on-surface", "--kmd-color-code-text", "--kmd-color-outline-depth-1"],
+  ],
+  [
+    "--nyx-text-muted",
+    ["--kmd-color-secondary", "--kmd-color-blockquote-text", "--kmd-color-outline-depth-2"],
+  ],
+  ["--nyx-text-dim", ["--kmd-color-outline-depth-3"]],
+  ["--nyx-btn-primary-text", ["--kmd-color-on-primary"]],
+  // Dividers
+  [
+    "--nyx-sep",
+    [
+      "--kmd-color-border",
+      "--kmd-color-table-border",
+      "--kmd-color-blockquote-border",
+      "--kmd-color-scrollbar-thumb",
+    ],
+  ],
+  // Accent
+  [
+    "--nyx-accent",
+    ["--kmd-color-tertiary", "--kmd-color-link", "--kmd-color-outline-active-border"],
+  ],
+  ["--nyx-accent-hover", ["--kmd-color-link-hover"]],
+  ["--nyx-accent-bg", ["--kmd-color-selection-bg", "--kmd-color-outline-active-bg"]],
+  // Semantic status
+  ["--nyx-positive", ["--kmd-color-success"]],
+  ["--nyx-warning", ["--kmd-color-warning"]],
+  ["--nyx-error", ["--kmd-color-danger"]],
+  ["--nyx-info", ["--kmd-color-info"]],
+  // Typography
+  ["--nyx-font-body", ["--kmd-font-body"]],
+  ["--nyx-font-heading", ["--kmd-font-heading"]],
+  ["--nyx-font-code", ["--kmd-font-mono"]],
+  ["--nyx-body-size", ["--kmd-font-size-body-md"]],
+  ["--nyx-body-line", ["--kmd-line-height-body-md"]],
+  ["--nyx-heading-weight", ["--kmd-font-weight-headline-lg", "--kmd-font-weight-headline-md"]],
+  ["--nyx-heading-line", ["--kmd-line-height-headline-lg", "--kmd-line-height-headline-md"]],
+  ["--nyx-code-size", ["--kmd-font-size-code-md"]],
+  ["--nyx-code-line", ["--kmd-line-height-code-md"]],
+  ["--nyx-label-size", ["--kmd-font-size-label-caps"]],
+  ["--nyx-label-weight", ["--kmd-font-weight-label-caps"]],
+  ["--nyx-label-track", ["--kmd-letter-spacing-label-caps"]],
+  // Radii — the showcase's size scale only. Its component radii
+  // (btn/tag/badge/card) are deliberately NOT projected: a pill button radius
+  // must never land on code blocks or alerts.
+  ["--nyx-radius-sm", ["--kmd-radius-sm"]],
+  ["--nyx-radius-md", ["--kmd-radius-md"]],
+  ["--nyx-radius-lg", ["--kmd-radius-lg"]],
+  ["--nyx-radius-xl", ["--kmd-radius-xl"]],
+  ["--nyx-radius-full", ["--kmd-radius-full"]],
+];
 
 /**
- * Minimum WCAG contrast ratio a text-role color must have against the
- * background to be used. Role inference works on names and can hand a
- * near-background color the muted-text role (e.g. a "Border Subtle" token);
- * emitting it would make captions and blockquotes unreadable, while dropping
- * it just lets the default theme value cascade.
+ * Semantic aliases re-emitted as var() references on the scope element.
+ *
+ * The default themes declare these on the ancestor carrying the theme
+ * selector, and custom properties inherit by COMPUTED value — an alias like
+ * `--kmd-color-background: var(--kmd-color-neutral)` is baked to the default
+ * neutral at that ancestor, so overriding the base token on the scoped
+ * element alone never reaches it. Declaring the aliases on the scope makes
+ * them resolve there, against the overridden bases.
  */
-const MIN_TEXT_CONTRAST = 2;
-
-function contrastRatio(a: Rgba, b: Rgba): number {
-  const la = luminance(a);
-  const lb = luminance(b);
-  const [hi, lo] = la >= lb ? [la, lb] : [lb, la];
-  return (hi + 0.05) / (lo + 0.05);
-}
-
-/**
- * First token carrying a text role that is actually readable against the
- * background. Unparseable candidates pass through (they can't be judged);
- * parseable ones must clear MIN_TEXT_CONTRAST when the background is known.
- */
-function firstReadableWithRole(
-  tokens: readonly ColorToken[],
-  role: ColorRole,
-  background: ColorToken | undefined,
-): ColorToken | undefined {
-  const bgRgba = background ? parseColor(background.value) : null;
-  for (const t of tokens) {
-    if (t.role !== role) continue;
-    if (!bgRgba) return t;
-    const rgba = parseColor(t.value);
-    if (!rgba || contrastRatio(rgba, bgRgba) >= MIN_TEXT_CONTRAST) return t;
-  }
-  return undefined;
-}
-
-function collectRoles(tokens: readonly ColorToken[]): RoleSlots {
-  const background = firstWithRole(tokens, "background");
-  return {
-    // Brand first: a design.md's "Primary" is its lead color and is what the
-    // design-mode showcase drives accents with; role "accent" (from
-    // "secondary" names) is the fallback.
-    accent: firstWithRole(tokens, "brand") ?? firstWithRole(tokens, "accent"),
-    background,
-    surface: firstWithRole(tokens, "surface"),
-    text: firstReadableWithRole(tokens, "text", background),
-    textMuted: firstReadableWithRole(tokens, "text-muted", background),
-    divider: firstWithRole(tokens, "divider"),
-    success: firstWithRole(tokens, "success"),
-    warning: firstWithRole(tokens, "warning"),
-    error: firstWithRole(tokens, "error"),
-    info: firstWithRole(tokens, "info"),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Dark/light derivation
-// ---------------------------------------------------------------------------
-
-/**
- * Chroma threshold below which a color counts as neutral. Chroma (max−min
- * channel spread) is used instead of HSL saturation, which blows up near
- * white/black and misclassifies warm off-whites as chromatic.
- */
-const NEUTRAL_CHROMA = 0.15;
-
-/**
- * How a slot derives its opposing-mode value:
- * - structural slots (background, surface, text, muted text, divider):
- *   invert lightness, then clamp into a per-role comfort band — raw
- *   inversion of a near-white paper background lands at pitch black, while
- *   the design-mode showcase (and every hand-made dark theme) sits in a
- *   softer charcoal band. Hue and saturation are preserved.
- * - "accent" (accent + semantic status colors): neutrals invert; chromatic
- *   colors keep hue/saturation with lightness clamped into the readable
- *   band for the target mode.
- */
-type DeriveKind = "background" | "surface" | "text" | "textMuted" | "divider" | "accent";
-
-/**
- * Comfort bands for structural slots, [min, max] lightness per target mode.
- * Dark values are aligned with the design-mode showcase's dark palette
- * (background #1e1e1e, surface #141414, body text #dddddc).
- */
-const STRUCTURAL_BANDS: Record<
-  Exclude<DeriveKind, "accent">,
-  { dark: [number, number]; light: [number, number] }
-> = {
-  background: { dark: [0.09, 0.14], light: [0.94, 0.99] },
-  surface: { dark: [0.07, 0.12], light: [0.92, 0.98] },
-  text: { dark: [0.82, 0.9], light: [0.08, 0.15] },
-  textMuted: { dark: [0.55, 0.72], light: [0.28, 0.42] },
-  divider: { dark: [0.16, 0.26], light: [0.78, 0.88] },
+const ALIASES: Readonly<Record<string, string>> = {
+  "--kmd-color-heading": "var(--kmd-color-primary)",
+  "--kmd-color-body": "var(--kmd-color-on-surface)",
+  "--kmd-color-muted": "var(--kmd-color-secondary)",
+  "--kmd-color-accent": "var(--kmd-color-tertiary)",
+  "--kmd-color-background": "var(--kmd-color-neutral)",
+  "--kmd-color-card": "var(--kmd-color-surface)",
+  "--kmd-focus-outline-color": "var(--kmd-color-tertiary)",
 };
 
-/**
- * Derive the opposing-mode counterpart of a color per the ADR rules.
- * Returns null when the value cannot be parsed.
- */
-function deriveOpposing(value: string, targetMode: Mode, kind: DeriveKind): string | null {
-  const rgba = parseColor(value);
-  if (!rgba) return null;
-  const hsl = rgbToHsl(rgba);
-  const chroma = (Math.max(rgba.r, rgba.g, rgba.b) - Math.min(rgba.r, rgba.g, rgba.b)) / 255;
-  let l: number;
-  if (kind !== "accent") {
-    const [min, max] = STRUCTURAL_BANDS[kind][targetMode];
-    l = Math.min(max, Math.max(min, 1 - hsl.l));
-  } else if (chroma < NEUTRAL_CHROMA) {
-    l = 1 - hsl.l;
-  } else {
-    l = targetMode === "dark" ? Math.max(hsl.l, 0.6) : Math.min(hsl.l, 0.45);
-  }
-  const out = hslToRgb({ ...hsl, l });
-  if (rgba.a < 1) return rgbaString(out, rgba.a);
-  return toHex(out);
-}
-
-// ---------------------------------------------------------------------------
-// Mode expansion — role values → --kmd-* token map
-// ---------------------------------------------------------------------------
-
-type RoleValues = Partial<
-  Record<
-    | "accent"
-    | "background"
-    | "surface"
-    | "text"
-    | "textMuted"
-    | "divider"
-    | "success"
-    | "warning"
-    | "error"
-    | "info",
-    string
-  >
->;
-
-function expandMode(roles: RoleValues, mode: Mode): Record<string, string> {
+function projectMode(vars: ReadonlyMap<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
-  const set = (token: string, value: string | undefined | null) => {
-    if (value && isSafeCssValue(value)) out[token] = value;
-  };
-
-  const accent = roles.accent;
-  const accentRgba = accent ? parseColor(accent) : null;
-  set("--kmd-color-tertiary", accent);
-  set("--kmd-color-link", accent);
-  set("--kmd-color-outline-active-border", accent);
-  if (accentRgba) {
-    set("--kmd-color-link-hover", shiftLightness(accentRgba, 0.08));
-    set("--kmd-color-selection-bg", rgbaString(accentRgba, mode === "dark" ? 0.3 : 0.15));
-    set("--kmd-color-outline-active-bg", rgbaString(accentRgba, mode === "dark" ? 0.12 : 0.1));
+  for (const [nyxVar, kmdTokens] of MODE_MAP) {
+    const value = vars.get(nyxVar);
+    if (value === undefined) continue;
+    const trimmed = value.trim();
+    if (!isSafeCssValue(trimmed)) continue;
+    for (const token of kmdTokens) out[token] = trimmed;
   }
-
-  set("--kmd-color-neutral", roles.background);
-
-  const text = roles.text;
-  const textRgba = text ? parseColor(text) : null;
-  set("--kmd-color-primary", text);
-  set("--kmd-color-on-surface", text);
-  set("--kmd-color-code-text", text);
-  set("--kmd-color-outline-depth-0", text);
-  set("--kmd-color-outline-depth-1", text);
-  if (text) {
-    // Text drawn on primary-colored fills: the mode's background (or surface).
-    set("--kmd-color-on-primary", roles.background ?? roles.surface);
-  }
-
-  const surface = roles.surface;
-  const surfaceRgba = surface ? parseColor(surface) : null;
-  set("--kmd-color-surface", surface);
-  if (surfaceRgba) {
-    // Muted surface: nudge toward the text color (matches default themes'
-    // slightly-lifted code/table backgrounds); without a parseable text
-    // color, shift lightness toward the mode's opposite extreme.
-    const muted = textRgba
-      ? mix(surfaceRgba, textRgba, 0.07)
-      : shiftLightness(surfaceRgba, mode === "dark" ? 0.05 : -0.05);
-    set("--kmd-color-surface-muted", muted);
-    set("--kmd-color-code-bg", muted);
-    set("--kmd-color-table-header-bg", muted);
-  }
-
-  const textMuted = roles.textMuted;
-  const textMutedRgba = textMuted ? parseColor(textMuted) : null;
-  set("--kmd-color-secondary", textMuted);
-  set("--kmd-color-blockquote-text", textMuted);
-  set("--kmd-color-outline-depth-2", textMuted);
-  if (textMutedRgba) {
-    const bgRgba = roles.background ? parseColor(roles.background) : null;
-    if (bgRgba) {
-      set("--kmd-color-outline-depth-3", mix(textMutedRgba, bgRgba, 0.35));
-    }
-  }
-
-  set("--kmd-color-border", roles.divider);
-  set("--kmd-color-table-border", roles.divider);
-  set("--kmd-color-blockquote-border", roles.divider);
-  set("--kmd-color-scrollbar-thumb", roles.divider);
-
-  set("--kmd-color-success", roles.success);
-  set("--kmd-color-warning", roles.warning);
-  set("--kmd-color-danger", roles.error);
-  set("--kmd-color-info", roles.info);
-
-  // Re-emit the semantic aliases as var() references. The default themes
-  // declare these on the ancestor carrying the theme selector, and custom
-  // properties inherit by COMPUTED value — an alias like
-  // `--kmd-color-background: var(--kmd-color-neutral)` is baked to the
-  // default neutral at that ancestor, so overriding the base token on the
-  // scoped element alone never reaches it. Declaring the aliases on the
-  // scope makes them resolve there, against the overridden bases.
   if (Object.keys(out).length > 0) {
-    out["--kmd-color-heading"] = "var(--kmd-color-primary)";
-    out["--kmd-color-body"] = "var(--kmd-color-on-surface)";
-    out["--kmd-color-muted"] = "var(--kmd-color-secondary)";
-    out["--kmd-color-accent"] = "var(--kmd-color-tertiary)";
-    out["--kmd-color-background"] = "var(--kmd-color-neutral)";
-    out["--kmd-color-card"] = "var(--kmd-color-surface)";
-    out["--kmd-focus-outline-color"] = "var(--kmd-color-tertiary)";
+    for (const [alias, ref] of Object.entries(ALIASES)) out[alias] = ref;
   }
-
   return out;
 }
 
 // ---------------------------------------------------------------------------
-// Fonts and radii (mode-independent)
+// Authored-mode detection (informational — both modes are always emitted)
 // ---------------------------------------------------------------------------
 
+const AUTHORED_BG_NAME = /\b(?:background|bg|canvas|page)\b/;
+const AUTHORED_SURFACE_NAME = /\bsurface\b/;
+const AUTHORED_TEXT_NAME = /\b(?:text|ink|foreground|body|heading)\b/;
+
 /**
- * Extract a font-family string from a typography token value.
- *
- * Handles the shapes the extractors produce: composite `size:…; family:…`
- * strings from the tables/CSS extractors, JSON objects from the YAML
- * extractor, and flat family lists. A generic `size:` segment (a table with
- * only a Value column) is unwrapped and kept only when it reads as a family
- * list rather than a size/weight.
+ * The mode the design.md was written for: the polarity of its page
+ * background, else its surface, else the inverse of its text color. Falls
+ * back to "light" when nothing parseable is declared.
  */
-function familyFromValue(value: string): string | null {
-  if (value.startsWith("{")) {
-    try {
-      const obj = JSON.parse(value) as Record<string, unknown>;
-      const fam = obj["font-family"] ?? obj.fontFamily;
-      if (typeof fam === "string" && fam.trim() !== "") return fam.trim();
-    } catch {
-      // not JSON
+function detectAuthoredMode(doc: DesignDocument): "light" | "dark" {
+  const tokens = doc.spec.colorTokens ?? [];
+  const pick = (pattern: RegExp): boolean | null => {
+    for (const token of tokens) {
+      if (!pattern.test(normalizeTokenName(token.name))) continue;
+      const dark = isColorDark(token.value);
+      if (dark !== null) return dark;
     }
     return null;
-  }
-
-  const segments = value.split(";").map((s) => s.trim());
-  for (const seg of segments) {
-    if (/^family\s*:/i.test(seg)) {
-      const fam = seg.replace(/^family\s*:/i, "").trim();
-      return fam || null;
-    }
-  }
-
-  // Flat values: accept only strings that look like a family list, not a
-  // size/weight ("17px", "600", "1.5"). A lone size: segment is unwrapped.
-  let v = value.trim();
-  if (segments.length === 1 && /^size\s*:/i.test(v)) {
-    v = v.replace(/^size\s*:/i, "").trim();
-  }
-  if (/^[\d.]+(px|rem|em|%)?$/.test(v)) return null;
-  if (/[:;{}]/.test(v)) return null;
-  if (!/[a-zA-Z]{2}/.test(v)) return null;
-  return v;
-}
-
-const MONO_HINT = /\bmono(space)?\b|\bcode\b/i;
-
-function extractFonts(doc: DesignDocument): { body?: string; mono?: string } {
-  const candidates: Array<{ name: string; family: string }> = [];
-
-  for (const t of doc.spec.typographyTokens ?? []) {
-    const family = familyFromValue(t.value);
-    if (family) candidates.push({ name: t.name, family });
-  }
-  const known = new Set((doc.spec.typographyTokens ?? []).map((t) => t.name));
-  for (const [name, value] of Object.entries(doc.spec.typography)) {
-    if (known.has(name)) continue;
-    if (!/font|family|body|text|mono|code|heading/i.test(name)) continue;
-    const family = familyFromValue(value);
-    if (family) candidates.push({ name, family });
-  }
-
-  let body: string | undefined;
-  let mono: string | undefined;
-  for (const c of candidates) {
-    const isMono = MONO_HINT.test(c.name) || MONO_HINT.test(c.family);
-    if (isMono) {
-      if (!mono) mono = c.family;
-    } else if (!body) {
-      body = c.family;
-    }
-  }
-  return { body, mono };
-}
-
-const RADIUS_NAMES = ["sm", "md", "lg", "xl", "full"] as const;
-const RADIUS_VALUE = /^\d+(\.\d+)?(px|rem|em|%)$/;
-
-function extractRadii(doc: DesignDocument): Record<string, string> {
-  const entries: Array<{ name: string; value: string }> = [...(doc.spec.radiusTokens ?? [])];
-  const known = new Set(entries.map((e) => e.name));
-  for (const [name, value] of Object.entries(doc.spec.radii)) {
-    if (!known.has(name)) entries.push({ name, value });
-  }
-
-  const out: Record<string, string> = {};
-  for (const size of RADIUS_NAMES) {
-    for (const e of entries) {
-      const bare = e.name.toLowerCase().replace(/^(--)?(radius|rounded|radii)[-_]?/, "");
-      if (bare === size && RADIUS_VALUE.test(e.value.trim())) {
-        out[`--kmd-radius-${size}`] = e.value.trim();
-        break;
-      }
-    }
-  }
-  return out;
+  };
+  const bgDark = pick(AUTHORED_BG_NAME) ?? pick(AUTHORED_SURFACE_NAME);
+  if (bgDark !== null) return bgDark ? "dark" : "light";
+  const textDark = pick(AUTHORED_TEXT_NAME);
+  if (textDark !== null) return textDark ? "light" : "dark";
+  return "light";
 }
 
 // ---------------------------------------------------------------------------
@@ -556,101 +193,16 @@ function extractRadii(doc: DesignDocument): Record<string, string> {
 /**
  * Map a pipeline result to `--kmd-*` overrides for both modes.
  *
- * The input document is not mutated. See the ADR for the mapping table,
- * derivation rules, and fallback behavior.
+ * The input document is not mutated. See the ADR for the mapping table and
+ * fallback behavior.
  */
 export function emitThemeTokens(doc: DesignDocument): DesignThemeTokens {
   const diagnostics: Diagnostic[] = [];
-  const tokens = collectColorTokens(doc);
-  const slots = collectRoles(tokens);
-
-  // --- Determine the authored mode -------------------------------------
-  let authoredMode: Mode | null = null;
-  const bgSignal = slots.background ?? slots.surface;
-  const bgRgba = bgSignal ? parseColor(bgSignal.value) : null;
-  if (bgRgba) {
-    authoredMode = luminance(bgRgba) > 0.5 ? "light" : "dark";
-  } else {
-    const textRgba = slots.text ? parseColor(slots.text.value) : null;
-    if (textRgba) {
-      authoredMode = luminance(textRgba) > 0.5 ? "dark" : "light";
-    }
-  }
-
-  const fonts = extractFonts(doc);
-  const radii = extractRadii(doc);
-  const modeless: Record<string, string> = { ...radii };
-  if (fonts.body && isSafeCssValue(fonts.body)) modeless["--kmd-font-body"] = fonts.body;
-  if (fonts.mono && isSafeCssValue(fonts.mono)) modeless["--kmd-font-mono"] = fonts.mono;
-
-  if (!authoredMode) {
-    const empty = Object.keys(modeless).length === 0;
-    if (empty) {
-      diagnostics.push({
-        severity: "info",
-        token: "design-theme",
-        message: "No themeable tokens could be extracted; default themes are unchanged.",
-      });
-    } else {
-      diagnostics.push({
-        severity: "info",
-        token: "design-theme",
-        message:
-          "No parseable background or text color; only mode-independent tokens (fonts, radii) are themed.",
-      });
-    }
-    return {
-      light: { ...modeless },
-      dark: { ...modeless },
-      authoredMode: "dark",
-      empty,
-      diagnostics,
-    };
-  }
-
-  // --- Build role value maps for both modes -----------------------------
-  const byName = new Map(tokens.map((t) => [t.name, t]));
-  const authoredRoles: RoleValues = {};
-  const derivedRoles: RoleValues = {};
-  const derivedMode: Mode = authoredMode === "light" ? "dark" : "light";
-
-  for (const [slot, token] of Object.entries(slots) as Array<
-    [keyof RoleSlots, ColorToken | undefined]
-  >) {
-    if (!token) continue;
-    authoredRoles[slot] = token.value;
-
-    const paired = token.pair ? byName.get(token.pair) : undefined;
-    if (paired) {
-      derivedRoles[slot] = paired.value;
-      continue;
-    }
-    const kind: DeriveKind =
-      slot === "background" ||
-      slot === "surface" ||
-      slot === "text" ||
-      slot === "textMuted" ||
-      slot === "divider"
-        ? slot
-        : "accent";
-    const derived = deriveOpposing(token.value, derivedMode, kind);
-    if (derived) {
-      derivedRoles[slot] = derived;
-    } else {
-      diagnostics.push({
-        severity: "info",
-        token: token.name,
-        message: `Cannot derive a ${derivedMode} variant for "${token.name}" (unparseable color "${token.value}"); the default ${derivedMode} value is used.`,
-      });
-    }
-  }
-
-  const authored = { ...expandMode(authoredRoles, authoredMode), ...modeless };
-  const derived = { ...expandMode(derivedRoles, derivedMode), ...modeless };
-
-  const light = authoredMode === "light" ? authored : derived;
-  const dark = authoredMode === "dark" ? authored : derived;
+  const vars = buildShowcaseThemeVars(doc);
+  const light = vars ? projectMode(vars.light) : {};
+  const dark = vars ? projectMode(vars.dark) : {};
   const empty = Object.keys(light).length === 0 && Object.keys(dark).length === 0;
+
   if (empty) {
     diagnostics.push({
       severity: "info",
@@ -659,7 +211,13 @@ export function emitThemeTokens(doc: DesignDocument): DesignThemeTokens {
     });
   }
 
-  return { light, dark, authoredMode, empty, diagnostics };
+  return {
+    light,
+    dark,
+    authoredMode: empty ? "dark" : detectAuthoredMode(doc),
+    empty,
+    diagnostics,
+  };
 }
 
 // ---------------------------------------------------------------------------

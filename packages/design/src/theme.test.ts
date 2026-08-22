@@ -2,296 +2,269 @@ import { describe, expect, it } from "vitest";
 import type { ColorToken, DesignDocument } from "./ir.js";
 import { emptyDesignDocument } from "./ir.js";
 import { runDesignPipeline } from "./pipeline.js";
+import { buildShowcaseThemeVars } from "./showcase.js";
 import { designThemeCss, emitThemeTokens } from "./theme.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function docWithColors(
-  colors: Array<{ name: string; value: string; pair?: string }>,
-): DesignDocument {
+function docWithColors(colors: Array<{ name: string; value: string }>): DesignDocument {
   const doc = emptyDesignDocument("");
   doc.spec.colorTokens = colors.map(
-    (c): ColorToken => ({
-      name: c.name,
-      value: c.value,
-      provenance: { extractor: "test" },
-      ...(c.pair ? { pair: c.pair } : {}),
-    }),
+    (c): ColorToken => ({ name: c.name, value: c.value, provenance: { extractor: "test" } }),
   );
   return doc;
 }
 
-/** A light-authored palette with unambiguous role names. */
+/** A light-authored palette using the naming the showcase keyword scorer keys on. */
 function lightPalette(): DesignDocument {
   return docWithColors([
-    { name: "color-background", value: "#f5f0e8" },
-    { name: "color-surface", value: "#fffdf8" },
-    { name: "color-text", value: "#1f1a14" },
-    { name: "color-muted", value: "#6f6656" },
-    { name: "color-border", value: "#ddd2c0" },
-    { name: "color-secondary", value: "#c05621" },
-    { name: "color-success", value: "#2f855a" },
-    { name: "color-error", value: "#c53030" },
+    { name: "Page Background", value: "#f5f0e8" },
+    { name: "Surface", value: "#fffdf8" },
+    { name: "Text heading", value: "#1f1a14" },
+    { name: "Text body", value: "#2a241c" },
+    { name: "Text muted", value: "#6f6656" },
+    { name: "Separator", value: "#ddd2c0" },
+    { name: "Accent", value: "#c05621" },
+    { name: "Positive", value: "#2f855a" },
+    { name: "Error", value: "#c53030" },
   ]);
 }
 
+const THOUGHTSTREAM = `# ThoughtStream
+
+## Colors
+
+### Surface Palette
+
+| Token      | Hex       | Role                       |
+|------------|-----------|----------------------------|
+| Background | \`#FAFAF9\` | Warm white page background |
+| Surface    | \`#F5F5F4\` | Card and section backgrounds |
+
+### Content Palette
+
+| Token          | Hex       | Role                |
+|----------------|-----------|---------------------|
+| Text Primary   | \`#1C1917\` | Body copy, headings |
+| Text Secondary | \`#57534E\` | Bylines, captions   |
+
+### Brand Palette
+
+| Token   | Hex       | Role                     |
+|---------|-----------|--------------------------|
+| Primary | \`#78716C\` | Stone — links, icons     |
+
+## Typography
+
+### Font Stack
+
+| Role             | Font                                              |
+|------------------|---------------------------------------------------|
+| Display/Headings | Libre Baskerville, Georgia, serif                 |
+| UI/Body          | Inter, -apple-system, 'Segoe UI', sans-serif      |
+| Mono/Code        | Source Code Pro, 'Fira Code', Consolas, monospace |
+
+### Type Scale
+
+| Level    | Font              | Size | Weight | Line Height | Letter Spacing | Usage           |
+|----------|-------------------|------|--------|-------------|----------------|-----------------|
+| Display  | Libre Baskerville | 40px | 700    | 1.2         | -0.02em        | Hero titles     |
+| Headline | Libre Baskerville | 30px | 700    | 1.3         | -0.015em       | Post titles     |
+| Body     | Inter             | 17px | 400    | 1.8         | 0              | Reading text    |
+| Code     | Source Code Pro   | 15px | 400    | 1.6         | 0              | Inline and blocks |
+`;
+
 // ---------------------------------------------------------------------------
-// Mapping table
+// Single extractor: the reader theme is a projection of the showcase vars
 // ---------------------------------------------------------------------------
 
-describe("emitThemeTokens — mapping", () => {
-  it("maps roles to the ADR token set for the authored mode", () => {
-    const result = emitThemeTokens(lightPalette());
+describe("emitThemeTokens — projection of the showcase extractor", () => {
+  it("maps every showcase variable per the fixed table, in both modes", () => {
+    const doc = lightPalette();
+    const vars = buildShowcaseThemeVars(doc);
+    expect(vars).not.toBeNull();
+    const result = emitThemeTokens(doc);
 
-    expect(result.authoredMode).toBe("light");
     expect(result.empty).toBe(false);
+    expect(result.authoredMode).toBe("light");
 
-    const light = result.light;
-    // background role
-    expect(light["--kmd-color-neutral"]).toBe("#f5f0e8");
-    // surface role + derived muted surface
-    expect(light["--kmd-color-surface"]).toBe("#fffdf8");
-    expect(light["--kmd-color-surface-muted"]).toBeDefined();
-    expect(light["--kmd-color-code-bg"]).toBe(light["--kmd-color-surface-muted"]);
-    expect(light["--kmd-color-table-header-bg"]).toBe(light["--kmd-color-surface-muted"]);
-    // text role
-    expect(light["--kmd-color-primary"]).toBe("#1f1a14");
-    expect(light["--kmd-color-on-surface"]).toBe("#1f1a14");
-    expect(light["--kmd-color-code-text"]).toBe("#1f1a14");
-    expect(light["--kmd-color-on-primary"]).toBe("#f5f0e8");
-    // muted text role
-    expect(light["--kmd-color-secondary"]).toBe("#6f6656");
-    expect(light["--kmd-color-blockquote-text"]).toBe("#6f6656");
-    // divider role
-    expect(light["--kmd-color-border"]).toBe("#ddd2c0");
-    expect(light["--kmd-color-table-border"]).toBe("#ddd2c0");
-    // accent role ("secondary" name → accent role) + derived accent tokens
-    expect(light["--kmd-color-tertiary"]).toBe("#c05621");
-    expect(light["--kmd-color-link"]).toBe("#c05621");
-    expect(light["--kmd-color-link-hover"]).toBeDefined();
-    expect(light["--kmd-color-selection-bg"]).toMatch(/^rgba\(192,86,33,0\.15\)$/);
-    expect(light["--kmd-color-outline-active-bg"]).toMatch(/^rgba\(192,86,33,0\.1\)$/);
-    // semantic roles
-    expect(light["--kmd-color-success"]).toBe("#2f855a");
-    expect(light["--kmd-color-danger"]).toBe("#c53030");
-    // semantic aliases re-emitted on the scope so they resolve against the
-    // overridden bases (ancestor theme blocks bake them to defaults otherwise)
-    expect(light["--kmd-color-background"]).toBe("var(--kmd-color-neutral)");
-    expect(light["--kmd-color-body"]).toBe("var(--kmd-color-on-surface)");
-    expect(light["--kmd-color-heading"]).toBe("var(--kmd-color-primary)");
-    expect(light["--kmd-focus-outline-color"]).toBe("var(--kmd-color-tertiary)");
+    for (const [mode, nyx] of [
+      ["light", vars?.light],
+      ["dark", vars?.dark],
+    ] as const) {
+      const kmd = result[mode];
+      expect(kmd["--kmd-color-neutral"]).toBe(nyx?.get("--nyx-bg"));
+      expect(kmd["--kmd-color-surface"]).toBe(nyx?.get("--nyx-surface"));
+      expect(kmd["--kmd-color-surface-muted"]).toBe(nyx?.get("--nyx-surface-elevated"));
+      expect(kmd["--kmd-color-code-bg"]).toBe(nyx?.get("--nyx-surface-elevated"));
+      expect(kmd["--kmd-color-table-header-bg"]).toBe(nyx?.get("--nyx-surface-elevated"));
+      expect(kmd["--kmd-color-primary"]).toBe(nyx?.get("--nyx-text-head"));
+      expect(kmd["--kmd-color-on-surface"]).toBe(nyx?.get("--nyx-text-body"));
+      expect(kmd["--kmd-color-code-text"]).toBe(nyx?.get("--nyx-text-body"));
+      expect(kmd["--kmd-color-secondary"]).toBe(nyx?.get("--nyx-text-muted"));
+      expect(kmd["--kmd-color-blockquote-text"]).toBe(nyx?.get("--nyx-text-muted"));
+      expect(kmd["--kmd-color-border"]).toBe(nyx?.get("--nyx-sep"));
+      expect(kmd["--kmd-color-table-border"]).toBe(nyx?.get("--nyx-sep"));
+      expect(kmd["--kmd-color-blockquote-border"]).toBe(nyx?.get("--nyx-sep"));
+      expect(kmd["--kmd-color-scrollbar-thumb"]).toBe(nyx?.get("--nyx-sep"));
+      expect(kmd["--kmd-color-tertiary"]).toBe(nyx?.get("--nyx-accent"));
+      expect(kmd["--kmd-color-link"]).toBe(nyx?.get("--nyx-accent"));
+      expect(kmd["--kmd-color-link-hover"]).toBe(nyx?.get("--nyx-accent-hover"));
+      expect(kmd["--kmd-color-selection-bg"]).toBe(nyx?.get("--nyx-accent-bg"));
+      expect(kmd["--kmd-color-outline-active-bg"]).toBe(nyx?.get("--nyx-accent-bg"));
+      expect(kmd["--kmd-color-on-primary"]).toBe(nyx?.get("--nyx-btn-primary-text"));
+      expect(kmd["--kmd-color-success"]).toBe(nyx?.get("--nyx-positive"));
+      expect(kmd["--kmd-color-danger"]).toBe(nyx?.get("--nyx-error"));
+    }
+
+    // Authored values come through verbatim.
+    expect(result.light["--kmd-color-neutral"]).toBe("#f5f0e8");
+    expect(result.light["--kmd-color-tertiary"]).toBe("#c05621");
+    expect(result.light["--kmd-color-success"]).toBe("#2f855a");
   });
 
-  it("does not emit tokens for roles absent from the spec (per-token fallback)", () => {
+  it("keeps the accent identical across modes, as the showcase does", () => {
+    const result = emitThemeTokens(lightPalette());
+    expect(result.dark["--kmd-color-tertiary"]).toBe(result.light["--kmd-color-tertiary"]);
+    expect(result.dark["--kmd-color-link"]).toBe("#c05621");
+  });
+
+  it("derives a readable dark mode for a light-authored design", () => {
+    const result = emitThemeTokens(lightPalette());
+    const vars = buildShowcaseThemeVars(lightPalette());
+    expect(result.dark["--kmd-color-neutral"]).toBe(vars?.dark.get("--nyx-bg"));
+    // Showcase polarity: dark background, light text.
+    expect(result.dark["--kmd-color-neutral"]).toMatch(/^#[0-2]/);
+    expect(result.dark["--kmd-color-on-surface"]).toMatch(/^#[c-f]/);
+  });
+
+  it("does not emit tokens the showcase did not determine (per-token fallback)", () => {
     const result = emitThemeTokens(
       docWithColors([
-        { name: "color-background", value: "#101418" },
-        { name: "color-text", value: "#e6e9ec" },
+        { name: "Page Background", value: "#ffffff" },
+        { name: "Accent", value: "#3355ff" },
       ]),
     );
+    expect(result.light["--kmd-color-neutral"]).toBe("#ffffff");
+    expect(result.light["--kmd-color-tertiary"]).toBe("#3355ff");
+    expect(result.light["--kmd-color-success"]).toBeUndefined();
+    expect(result.light["--kmd-color-warning"]).toBeUndefined();
+    expect(result.light["--kmd-color-info"]).toBeUndefined();
+    expect(result.light["--kmd-font-body"]).toBeUndefined();
+    expect(result.light["--kmd-radius-lg"]).toBeUndefined();
+  });
 
+  it("re-emits the semantic aliases as var() references whenever anything is emitted", () => {
+    const result = emitThemeTokens(lightPalette());
+    for (const mode of ["light", "dark"] as const) {
+      expect(result[mode]["--kmd-color-heading"]).toBe("var(--kmd-color-primary)");
+      expect(result[mode]["--kmd-color-body"]).toBe("var(--kmd-color-on-surface)");
+      expect(result[mode]["--kmd-color-muted"]).toBe("var(--kmd-color-secondary)");
+      expect(result[mode]["--kmd-color-accent"]).toBe("var(--kmd-color-tertiary)");
+      expect(result[mode]["--kmd-color-background"]).toBe("var(--kmd-color-neutral)");
+      expect(result[mode]["--kmd-color-card"]).toBe("var(--kmd-color-surface)");
+      expect(result[mode]["--kmd-focus-outline-color"]).toBe("var(--kmd-color-tertiary)");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Authored mode
+// ---------------------------------------------------------------------------
+
+describe("emitThemeTokens — authored mode", () => {
+  it("reports dark for a dark-authored design and keeps its values in the dark set", () => {
+    const result = emitThemeTokens(
+      docWithColors([
+        { name: "Page Background", value: "#000000" },
+        { name: "Surface", value: "#1d1d1f" },
+        { name: "Accent", value: "#38bdf8" },
+        { name: "Text heading", value: "#ffffff" },
+        { name: "Text body", value: "rgba(255,255,255,0.85)" },
+      ]),
+    );
     expect(result.authoredMode).toBe("dark");
-    // No accent, divider, semantic roles → not emitted, defaults cascade.
-    expect(result.dark["--kmd-color-tertiary"]).toBeUndefined();
-    expect(result.dark["--kmd-color-border"]).toBeUndefined();
-    expect(result.dark["--kmd-color-success"]).toBeUndefined();
-    // But provided roles are.
-    expect(result.dark["--kmd-color-neutral"]).toBe("#101418");
-    expect(result.dark["--kmd-color-primary"]).toBe("#e6e9ec");
+    expect(result.dark["--kmd-color-neutral"]).toBe("#000000");
+    expect(result.dark["--kmd-color-surface"]).toBe("#1d1d1f");
+    expect(result.dark["--kmd-color-primary"]).toBe("#ffffff");
+    expect(result.dark["--kmd-color-on-surface"]).toBe("rgba(255,255,255,0.85)");
+    // The showcase keeps the accent for the derived light mode too.
+    expect(result.light["--kmd-color-tertiary"]).toBe("#38bdf8");
+    // Derived light mode has light-mode polarity.
+    expect(result.light["--kmd-color-neutral"]).toMatch(/^#[d-f]/);
+  });
+
+  it("falls back to the text polarity when no background is declared", () => {
+    const result = emitThemeTokens(docWithColors([{ name: "Text body", value: "#f0f0f0" }]));
+    expect(result.authoredMode).toBe("dark");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Dark derivation
+// Typography and radii
 // ---------------------------------------------------------------------------
 
-describe("emitThemeTokens — dark derivation", () => {
-  it("derives the opposing mode by lightness inversion for neutrals", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        { name: "color-background", value: "#f0f0f0" }, // near-white neutral
-        { name: "color-text", value: "#202020" },
-      ]),
-    );
-
-    expect(result.authoredMode).toBe("light");
-    // Dark background should be the lightness-inverted near-black.
-    const darkBg = result.dark["--kmd-color-neutral"]!;
-    expect(darkBg).toMatch(/^#[0-9a-f]{6}$/);
-    const lum = parseInt(darkBg.slice(1, 3), 16);
-    expect(lum).toBeLessThan(0x40);
-    // Dark text should be light.
-    const darkText = result.dark["--kmd-color-primary"]!;
-    expect(parseInt(darkText.slice(1, 3), 16)).toBeGreaterThan(0xc0);
+describe("emitThemeTokens — typography and radii", () => {
+  it("maps body, heading and mono stacks from a real pipeline run", () => {
+    const result = emitThemeTokens(runDesignPipeline(THOUGHTSTREAM));
+    expect(result.empty).toBe(false);
+    expect(result.light["--kmd-font-body"]).toMatch(/^Inter\b/);
+    expect(result.light["--kmd-font-heading"]).toMatch(/^Libre Baskerville\b/);
+    expect(result.light["--kmd-font-mono"]).toMatch(/^Source Code Pro\b/);
+    // Typography is mode-independent.
+    expect(result.dark["--kmd-font-heading"]).toBe(result.light["--kmd-font-heading"]);
+    // Colors from the same document.
+    expect(result.light["--kmd-color-neutral"]).toBe("#FAFAF9");
+    expect(result.light["--kmd-color-surface"]).toBe("#F5F5F4");
+    expect(result.light["--kmd-color-on-surface"]).toBe("#1C1917");
+    expect(result.light["--kmd-color-secondary"]).toBe("#57534E");
+    expect(result.light["--kmd-color-tertiary"]).toBe("#78716C");
   });
 
-  it("clamps chromatic accents into the readable band for the target mode", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        { name: "color-background", value: "#ffffff" },
-        { name: "color-accent-primary", value: "#5a1ca8" }, // dark saturated purple (brand role)
-      ]),
-    );
-
-    expect(result.authoredMode).toBe("light");
-    // Authored (light) keeps the value verbatim.
-    expect(result.light["--kmd-color-tertiary"]).toBe("#5a1ca8");
-    // Derived dark variant is lightened to at least L 0.6 — much lighter.
-    const derived = result.dark["--kmd-color-tertiary"]!;
-    expect(derived).not.toBe("#5a1ca8");
-    const r = parseInt(derived.slice(1, 3), 16);
-    expect(r).toBeGreaterThan(0x5a);
-  });
-
-  it("always inverts structural roles, even warm off-whites with high HSL saturation", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        // #faf4ec is nearly white but has HSL saturation ≈ 0.58 — chroma,
-        // not saturation, must decide neutrality for structural roles.
-        { name: "color-background", value: "#faf4ec" },
-        { name: "color-text", value: "#2b2118" },
-      ]),
-    );
-
-    expect(result.authoredMode).toBe("light");
-    const darkBg = result.dark["--kmd-color-neutral"]!;
-    expect(darkBg).not.toBe("#faf4ec");
-    expect(parseInt(darkBg.slice(1, 3), 16)).toBeLessThan(0x40);
-    const darkText = result.dark["--kmd-color-primary"]!;
-    expect(parseInt(darkText.slice(1, 3), 16)).toBeGreaterThan(0xb0);
-  });
-
-  it("skips text-role candidates with unreadable contrast against the background", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        { name: "color-background", value: "#fafaf9" },
-        // "subtle" gives this the text-muted role, but it is nearly the
-        // background color — it must be skipped, not emitted.
-        { name: "border-subtle", value: "#e7e5e4" },
-        { name: "color-text", value: "#1c1917" },
-      ]),
-    );
-
-    expect(result.authoredMode).toBe("light");
-    expect(result.light["--kmd-color-primary"]).toBe("#1c1917");
-    // No readable muted-text candidate → not emitted, defaults cascade.
-    expect(result.light["--kmd-color-secondary"]).toBeUndefined();
-    expect(result.light["--kmd-color-blockquote-text"]).toBeUndefined();
-  });
-
-  it("prefers an enriched pair over derivation", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        { name: "color-background", value: "#ffffff", pair: "color-background-dark" },
-        { name: "color-background-dark", value: "#123456", pair: "color-background" },
-        { name: "color-text", value: "#111111" },
-      ]),
-    );
-
-    expect(result.authoredMode).toBe("light");
-    expect(result.dark["--kmd-color-neutral"]).toBe("#123456");
-  });
-
-  it("drops unparseable colors from the derived mode only, with a diagnostic", () => {
-    const result = emitThemeTokens(
-      docWithColors([
-        { name: "color-background", value: "#ffffff" },
-        { name: "color-success", value: "seagreen" }, // named color — not parsed
-      ]),
-    );
-
-    expect(result.light["--kmd-color-success"]).toBe("seagreen");
-    expect(result.dark["--kmd-color-success"]).toBeUndefined();
-    expect(result.diagnostics.some((d) => d.token === "color-success")).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Fonts and radii
-// ---------------------------------------------------------------------------
-
-describe("emitThemeTokens — fonts and radii", () => {
-  it("maps body and mono font families in both modes", () => {
-    const doc = lightPalette();
-    doc.spec.typographyTokens = [
-      {
-        name: "typography-body",
-        value: 'family: "IBM Plex Sans", sans-serif',
-        provenance: { extractor: "test" },
-      },
-      {
-        name: "typography-code",
-        value: 'family: "IBM Plex Mono", monospace',
-        provenance: { extractor: "test" },
-      },
-    ];
-
-    const result = emitThemeTokens(doc);
-    expect(result.light["--kmd-font-body"]).toBe('"IBM Plex Sans", sans-serif');
-    expect(result.light["--kmd-font-mono"]).toBe('"IBM Plex Mono", monospace');
-    expect(result.dark["--kmd-font-body"]).toBe('"IBM Plex Sans", sans-serif');
-  });
-
-  it("reads font-family from composite JSON typography values", () => {
-    const doc = lightPalette();
-    doc.spec.typographyTokens = [
-      {
-        name: "typography-heading",
-        value: '{"font-family":"DM Sans, sans-serif","font-size":"24px"}',
-        provenance: { extractor: "test" },
-      },
-    ];
-
-    const result = emitThemeTokens(doc);
-    expect(result.light["--kmd-font-body"]).toBe("DM Sans, sans-serif");
-  });
-
-  it("reads families from table-extractor composite and size-prefixed values", () => {
-    const doc = lightPalette();
-    doc.spec.typographyTokens = [
-      // Table with a generic Value column: family lands in a size: segment.
-      { name: "font-body", value: "size:Georgia, serif", provenance: { extractor: "test" } },
-      // Composite with an explicit family segment.
-      {
-        name: "font-mono",
-        value: "size:14px; family:JetBrains Mono, monospace; weight:400",
-        provenance: { extractor: "test" },
-      },
-      // A real size must not be mistaken for a family.
-      { name: "font-caption", value: "size:12px", provenance: { extractor: "test" } },
-    ];
-
-    const result = emitThemeTokens(doc);
-    expect(result.light["--kmd-font-body"]).toBe("Georgia, serif");
-    expect(result.light["--kmd-font-mono"]).toBe("JetBrains Mono, monospace");
-  });
-
-  it("maps size-suffixed radius tokens and ignores non-length values", () => {
+  it("maps size-named radius tokens onto the reader scale and ignores component radii", () => {
     const doc = lightPalette();
     doc.spec.radiusTokens = [
-      { name: "radius-sm", value: "4px", provenance: { extractor: "test" } },
-      { name: "radius-lg", value: "20px", provenance: { extractor: "test" } },
-      { name: "radius-full", value: "circle", provenance: { extractor: "test" } },
+      { name: "rounded-sm", value: "8px", provenance: { extractor: "test" } },
+      { name: "radius-md", value: "11px", provenance: { extractor: "test" } },
+      { name: "Large", value: "18px", provenance: { extractor: "test" } },
+      { name: "pill", value: "9999px", provenance: { extractor: "test" } },
+      { name: "none", value: "0px", provenance: { extractor: "test" } },
+      { name: "button", value: "9999px", provenance: { extractor: "test" } },
     ];
-
     const result = emitThemeTokens(doc);
-    expect(result.light["--kmd-radius-sm"]).toBe("4px");
-    expect(result.light["--kmd-radius-lg"]).toBe("20px");
-    expect(result.light["--kmd-radius-md"]).toBeUndefined();
-    expect(result.light["--kmd-radius-full"]).toBeUndefined();
+    expect(result.light["--kmd-radius-sm"]).toBe("8px");
+    expect(result.light["--kmd-radius-md"]).toBe("11px");
+    expect(result.light["--kmd-radius-lg"]).toBe("18px");
+    expect(result.light["--kmd-radius-full"]).toBe("9999px");
+    expect(result.light["--kmd-radius-xl"]).toBeUndefined();
+    // A pill button radius never reaches the reader's size scale.
+    expect(Object.values(result.light).filter((v) => v === "9999px")).toEqual(["9999px"]);
+    expect(result.dark["--kmd-radius-md"]).toBe("11px");
+  });
+
+  it("fills the scale from a global zero radius", () => {
+    const doc = lightPalette();
+    doc.spec.radiusTokens = [
+      { name: "all", value: "0px", provenance: { extractor: "test" } },
+      { name: "full", value: "9999px", provenance: { extractor: "test" } },
+    ];
+    const result = emitThemeTokens(doc);
+    for (const size of ["sm", "md", "lg", "xl"]) {
+      expect(result.light[`--kmd-radius-${size}`]).toBe("0px");
+    }
+    expect(result.light["--kmd-radius-full"]).toBe("9999px");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Empty / malformed specs
+// Empty and malformed input
 // ---------------------------------------------------------------------------
 
 describe("emitThemeTokens — empty and malformed input", () => {
   it("returns an empty result with a diagnostic for an empty document", () => {
     const result = emitThemeTokens(emptyDesignDocument(""));
-
     expect(result.empty).toBe(true);
     expect(result.light).toEqual({});
     expect(result.dark).toEqual({});
@@ -299,10 +272,9 @@ describe("emitThemeTokens — empty and malformed input", () => {
   });
 
   it("returns an empty result for a plain-markdown pipeline run", () => {
-    const doc = runDesignPipeline("# Just a heading\n\nSome ordinary prose.\n");
-    const result = emitThemeTokens(doc);
-
+    const result = emitThemeTokens(runDesignPipeline("# Hello\n\nJust prose.\n"));
     expect(result.empty).toBe(true);
+    expect(designThemeCss(result, "abc")).toBe("");
   });
 
   it("does not mutate the input document", () => {
@@ -315,13 +287,16 @@ describe("emitThemeTokens — empty and malformed input", () => {
   it("rejects values that could escape a CSS declaration", () => {
     const result = emitThemeTokens(
       docWithColors([
-        { name: "color-background", value: "#ffffff" },
-        { name: "color-success", value: "green;} body { display:none " },
+        { name: "Page Background", value: "#fff; } body { display: none" },
+        { name: "Accent", value: "url(https://evil.example/x)" },
       ]),
     );
-
-    expect(result.light["--kmd-color-success"]).toBeUndefined();
-    expect(result.dark["--kmd-color-success"]).toBeUndefined();
+    for (const map of [result.light, result.dark]) {
+      for (const value of Object.values(map)) {
+        expect(value).not.toMatch(/[;{}]/);
+        expect(value).not.toMatch(/url\(/i);
+      }
+    }
   });
 });
 
@@ -334,27 +309,13 @@ describe("emitThemeTokens — determinism", () => {
     const a = emitThemeTokens(lightPalette());
     const b = emitThemeTokens(lightPalette());
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
-    expect(designThemeCss(a, "abc123")).toBe(designThemeCss(b, "abc123"));
   });
 
   it("emits from a real end-to-end pipeline run deterministically", () => {
-    const source = [
-      "# My Design System",
-      "",
-      "## Colors",
-      "",
-      "| Token | Value |",
-      "|---|---|",
-      "| color-background | #10141a |",
-      "| color-text | #e8ecf1 |",
-      "| color-accent | #ff6b35 |",
-      "",
-    ].join("\n");
-    const first = emitThemeTokens(runDesignPipeline(source));
-    const second = emitThemeTokens(runDesignPipeline(source));
-    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
-    expect(first.empty).toBe(false);
-    expect(first.authoredMode).toBe("dark");
+    const a = designThemeCss(emitThemeTokens(runDesignPipeline(THOUGHTSTREAM)), "x1");
+    const b = designThemeCss(emitThemeTokens(runDesignPipeline(THOUGHTSTREAM)), "x1");
+    expect(a).toBe(b);
+    expect(a).toContain("--kmd-color-neutral: #FAFAF9;");
   });
 });
 
@@ -364,26 +325,23 @@ describe("emitThemeTokens — determinism", () => {
 
 describe("designThemeCss", () => {
   it("emits dark as the default block and light behind explicit selectors", () => {
-    const css = designThemeCss(emitThemeTokens(lightPalette()), "h1a2b3");
-
-    expect(css).toContain('[data-kmd-design="h1a2b3"] {');
-    expect(css).toContain('[data-theme="light"] [data-kmd-design="h1a2b3"]');
-    expect(css).toContain('[data-kmd-theme="light"] [data-kmd-design="h1a2b3"]');
-    expect(css).toContain('.kmd-theme-light [data-kmd-design="h1a2b3"]');
-    // Self-activation variants (theme set on the reader root itself).
-    expect(css).toContain('[data-kmd-design="h1a2b3"][data-kmd-theme="light"]');
+    const css = designThemeCss(emitThemeTokens(lightPalette()), "abc-123");
+    expect(css.startsWith('[data-kmd-design="abc-123"] {')).toBe(true);
+    expect(css).toContain('[data-theme="light"] [data-kmd-design="abc-123"]');
+    expect(css).toContain('[data-kmd-theme="light"] [data-kmd-design="abc-123"]');
+    expect(css).toContain('.kmd-theme-light [data-kmd-design="abc-123"]');
+    expect(css).toContain('[data-kmd-design="abc-123"][data-theme="light"]');
     expect(css).toContain("@media (prefers-color-scheme: light)");
-    // The dark block comes first (default), and properties are sorted.
-    const darkBlock = css.slice(0, css.indexOf("}"));
-    const props = [...darkBlock.matchAll(/--kmd-[a-z-]+(?=:)/g)].map((m) => m[0]);
-    expect(props.length).toBeGreaterThan(5);
-    expect([...props].sort()).toEqual(props);
+    expect(css).toContain(":root:not([data-theme]):not([data-kmd-theme])");
+    // Property-sorted inside each block.
+    const firstBlock = css.slice(0, css.indexOf("}"));
+    const props = [...firstBlock.matchAll(/^\s+(--kmd-[a-z0-9-]+):/gm)].map((m) => m[1]);
+    expect(props).toEqual([...props].sort());
   });
 
   it("returns empty string for empty results and invalid scope ids", () => {
     expect(designThemeCss(emitThemeTokens(emptyDesignDocument("")), "abc")).toBe("");
-    const tokens = emitThemeTokens(lightPalette());
-    expect(designThemeCss(tokens, 'x"] * { color: red } [x="')).toBe("");
-    expect(designThemeCss(tokens, "")).toBe("");
+    expect(designThemeCss(emitThemeTokens(lightPalette()), 'x"] { } [y')).toBe("");
+    expect(designThemeCss(emitThemeTokens(lightPalette()), "")).toBe("");
   });
 });
