@@ -288,6 +288,7 @@
 .kmd-reader h4,
 .kmd-reader h5,
 .kmd-reader h6 {
+  font-family: var(--kmd-font-heading);
   color: var(--kmd-color-heading);
   margin-top: var(--kmd-space-xl);
   margin-bottom: var(--kmd-space-sm);

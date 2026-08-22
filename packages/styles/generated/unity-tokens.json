@@ -82,7 +82,8 @@
   "typography": {
     "fontFamilies": {
       "body": "Inter",
-      "mono": "Roboto Mono"
+      "mono": "Roboto Mono",
+      "heading": "Inter"
     },
     "fontSizes": {
       "headline-lg": "34px",

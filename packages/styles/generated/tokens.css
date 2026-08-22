@@ -7,6 +7,7 @@
 :root {
   --kmd-font-body: "Inter", system-ui, -apple-system, sans-serif;
   --kmd-font-mono: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+  --kmd-font-heading: "Inter", system-ui, -apple-system, sans-serif;
 
   --kmd-font-size-headline-lg: 34px;
   --kmd-font-size-headline-md: 24px;
