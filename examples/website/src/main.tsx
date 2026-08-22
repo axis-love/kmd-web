@@ -7,15 +7,15 @@ import { createRoot } from "react-dom/client";
 // showcases kmd-web rendering real .md files (not hardcoded strings).
 import appleDesign from "./apple-DESIGN.md?raw";
 import dylanDesign from "./dylanbrouwer-DESIGN.md?raw";
-import emberDesign from "./sample-design.md?raw";
-import demoDoc from "./sample-doc-showcase.md?raw";
-import thoughtstreamDesign from "./thoughtstream-DESIGN.md?raw";
 // The kmd desktop app's reference samples (D:/Projects/kmd/samples), verbatim.
 import kmdApple from "./kmd-samples/apple-DESIGN.md?raw";
 import kmdDylan from "./kmd-samples/dylanbrouwer-DESIGN.md?raw";
 import kmdNyx from "./kmd-samples/nyx-DESIGN.md?raw";
 import kmdShopvibe from "./kmd-samples/shopvibe-DESIGN.md?raw";
 import kmdThoughtstream from "./kmd-samples/thoughtstream-DESIGN.md?raw";
+import emberDesign from "./sample-design.md?raw";
+import demoDoc from "./sample-doc-showcase.md?raw";
+import thoughtstreamDesign from "./thoughtstream-DESIGN.md?raw";
 
 // Built-in design systems for the ?design= picker. "1" stays an alias for
 // thoughtstream so older review URLs keep working.
@@ -35,11 +35,12 @@ const DESIGN_SYSTEMS: Record<string, { label: string; source: string }> = {
 //   ?theme=light|dark              pins the kmd theme (index.html boot script)
 //   ?design=<name>|1|off           pins a design system ("1" = thoughtstream)
 const param = new URLSearchParams(location.search).get("design");
-const initialKey = param === null || param === "off" || param === "0"
-  ? "off"
-  : param === "1" || DESIGN_SYSTEMS[param] === undefined
-    ? "thoughtstream"
-    : param;
+const initialKey =
+  param === null || param === "off" || param === "0"
+    ? "off"
+    : param === "1" || DESIGN_SYSTEMS[param] === undefined
+      ? "thoughtstream"
+      : param;
 
 function App() {
   const [designKey, setDesignKey] = useState(initialKey);
@@ -48,9 +49,7 @@ function App() {
   const [status, setStatus] = useState<string>("");
 
   const designSource =
-    designKey === "custom"
-      ? (customSource ?? undefined)
-      : DESIGN_SYSTEMS[designKey]?.source;
+    designKey === "custom" ? (customSource ?? undefined) : DESIGN_SYSTEMS[designKey]?.source;
 
   const onDesignTheme = (info: DesignThemeInfo) => {
     const issues = info.diagnostics.map((d) => d.message).join(" | ");
@@ -109,11 +108,7 @@ function App() {
         </button>
         {status && <span className="design-status">{status}</span>}
       </div>
-      <MarkdownReader
-        source={demoDoc}
-        designSource={designSource}
-        onDesignTheme={onDesignTheme}
-      />
+      <MarkdownReader source={demoDoc} designSource={designSource} onDesignTheme={onDesignTheme} />
     </>
   );
 }
