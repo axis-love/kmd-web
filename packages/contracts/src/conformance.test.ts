@@ -80,7 +80,7 @@ function createMockRenderer(result: Partial<RenderResult>): ContractRenderer {
       hasFootnotes: false,
       hasAlerts: false,
     },
-    rendererVersion: "0.1.0",
+    rendererVersion: "0.2.0",
     ...result,
   };
   return {
@@ -102,7 +102,7 @@ describe("conformance manifest", () => {
   });
 
   it("has the correct contracts version", () => {
-    expect(manifest.contractsVersion).toBe("0.1.0");
+    expect(manifest.contractsVersion).toBe("0.2.0");
   });
 
   it("lists at least 2 platforms", () => {

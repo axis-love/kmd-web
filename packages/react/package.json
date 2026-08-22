@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React components: <MarkdownReader>, <DocumentShell>, and hooks.",
   "license": "MIT",
   "repository": {
@@ -32,10 +32,10 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
-    "@axis-love/contracts": "0.1.0",
-    "@axis-love/core": "0.1.0",
-    "@axis-love/browser": "0.1.0",
-    "@axis-love/styles": "0.1.0"
+    "@axis-love/contracts": "0.2.0",
+    "@axis-love/core": "0.2.0",
+    "@axis-love/browser": "0.2.0",
+    "@axis-love/styles": "0.2.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.2",

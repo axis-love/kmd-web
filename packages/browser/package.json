@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser runtime: DOM enhancement, worker bridge, cache, asset URL lifecycle.",
   "license": "MIT",
   "repository": {
@@ -28,14 +28,14 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "0.1.0",
-    "@axis-love/core": "0.1.0"
+    "@axis-love/contracts": "0.2.0",
+    "@axis-love/core": "0.2.0"
   },
   "peerDependencies": {
-    "@axis-love/design": "0.1.0",
-    "@axis-love/highlighting": "0.1.0",
-    "@axis-love/math": "0.1.0",
-    "@axis-love/mermaid": "0.1.0"
+    "@axis-love/design": "0.2.0",
+    "@axis-love/highlighting": "0.2.0",
+    "@axis-love/math": "0.2.0",
+    "@axis-love/mermaid": "0.2.0"
   },
   "peerDependenciesMeta": {
     "@axis-love/design": {
@@ -52,10 +52,10 @@
     }
   },
   "devDependencies": {
-    "@axis-love/design": "0.1.0",
-    "@axis-love/highlighting": "0.1.0",
-    "@axis-love/math": "0.1.0",
-    "@axis-love/mermaid": "0.1.0"
+    "@axis-love/design": "0.2.0",
+    "@axis-love/highlighting": "0.2.0",
+    "@axis-love/math": "0.2.0",
+    "@axis-love/mermaid": "0.2.0"
   },
   "publishConfig": {
     "access": "public"

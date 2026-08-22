@@ -1,6 +1,6 @@
 {
   "name": "@axis-love/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DOM-free Markdown-to-safe-HTML rendering core. No DOM, React, Tauri, or Node I/O.",
   "license": "MIT",
   "repository": {
@@ -28,7 +28,7 @@
     "dist"
   ],
   "dependencies": {
-    "@axis-love/contracts": "0.1.0",
+    "@axis-love/contracts": "0.2.0",
     "hast-util-sanitize": "^5.0.2",
     "js-yaml": "^4.1.1",
     "rehype-raw": "^7.0.0",

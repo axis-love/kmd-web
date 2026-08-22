@@ -70,7 +70,7 @@ describe("@axis-love/highlighting", () => {
   afterEach(() => disposeHighlighter());
 
   it("should export a version string", () => {
-    expect(HIGHLIGHTING_VERSION).toBe("0.1.0");
+    expect(HIGHLIGHTING_VERSION).toBe("0.2.0");
   });
 
   // --- Disabled state ---

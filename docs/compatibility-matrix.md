@@ -1,16 +1,16 @@
 # kmd-web compatibility matrix
 
-**Current release:** `0.1.0` (dist-tag `latest`, npm provenance via OIDC trusted
-publishing, published 2026-08-11 from tag `v0.1.0`).
+**Current release:** `0.2.0` (dist-tag `latest`, npm provenance via OIDC trusted
+publishing, published 2026-08-22 from tag `v0.2.0`).
 All 11 `@axis-love/*` packages are lockstep-versioned; `scripts/check-versions.mjs` enforces it.
 
 ## Consumers
 
 | Consumer | Consumes | Version pin | Verified | Notes |
 |---|---|---|---|---|
-| kmd desktop (Windows/macOS, Tauri) | all 11 packages | `file:` sibling links (dev) → npm `0.1.0` at release | ✅ 337/337 tests + production build against the RC (gate Addendum v2) | switch pins to registry versions when cutting a desktop release |
+| kmd desktop (Windows/macOS, Tauri) | all 11 packages | `file:` sibling links (dev) → npm `0.2.0` at release | ⏳ switches pins to registry `0.2.0` in the kmd 0.4.0 release (filing task) | dev keeps `file:` links so both repos track HEAD; release builds consume published packages so CI no longer needs a sibling checkout |
 | kmd-ios (private) | react/browser/core/styles via upstream merge | upstream kmd pins | ✅ rebased, built, and running against the RC with no issues (confirmed 2026-08-11) | was the last stable-gate exception |
-| kmd-unity | contracts manifest + generated tokens (snapshot, no npm dep) | `contractsVersion 0.1.0`, `TOKENS_VERSION 1.0.0` | ✅ version-locked by check-versions | consumes data contracts only |
+| kmd-unity | contracts manifest + generated tokens (snapshot, no npm dep) | `contractsVersion 0.2.0`, `TOKENS_VERSION 1.0.0` | ✅ version-locked by check-versions | consumes data contracts only |
 | Websites (vanilla JS) | `@axis-love/kmd-web` root entry | `@latest` | ✅ fresh-dir consumer + registry smoke test | `render` / `renderWithFeaturePlugins` / `BrowserReader` from the root |
 | Websites (React) | `@axis-love/kmd-web/react` | `@latest` | ✅ fresh-dir React 19 consumer | `MarkdownReader` |
 | Web Component hosts | `@axis-love/kmd-web/element` | `@latest` | ✅ packed-consumer resolution | `<kmd-reader>` |
@@ -23,7 +23,7 @@ All 11 `@axis-love/*` packages are lockstep-versioned; `scripts/check-versions.m
 
 ## Dist-tags
 
-- `latest` → `0.1.0`
+- `latest` → `0.2.0`
 - `rc` → `0.1.0-rc.1` (the last release candidate; superseded by stable)
 
 ## Rollback / bad-release response

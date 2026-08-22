@@ -14,6 +14,43 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-22
+
+DESIGN.md theming release. Themes authored as DESIGN.md token specs can now
+drive the reader's live `--kmd-*` tokens end to end: extracted by a single
+showcase core, emitted with semantic aliases, and accepted by every host.
+Verified by kmd desktop (migrated from vendored styles to the published
+`@axis-love/*` packages).
+
+### Added (0.2.0)
+
+- DesignMD theming ADR: API shape, token mapping, dark-derivation rules
+  (KWEB-059).
+- Resolved-spec `--kmd-*` theme token emitter (KWEB-060).
+- All three hosts — browser, React, and the element wrapper — accept a
+  designMD theme source alongside the built-in light/dark themes (KWEB-061).
+- Single DESIGN.md token extractor: showcase core lives in
+  `@axis-love/design` (`showcase.ts`), with the theme emitter as a fixed
+  mapping on top of it (KWEB-068).
+- `--kmd-font-heading` token; reader headings pick it up so DESIGN.md specs
+  can set a display face for headings independently of body text (KWEB-068).
+- Website demo gains a design.md picker with the kmd reference samples —
+  apple, dylanbrouwer, nyx, shopvibe, thoughtstream — selectable in-app
+  (KWEB-068).
+- `?design=` URL param pins a DesignMD theme in the website demo
+  (KWEB-061).
+
+### Changed (0.2.0)
+
+- Derived themes align with the design-mode showcase: comfort-band contrast,
+  brand-first accent selection, and a dedicated text-secondary role
+  (KWEB-060).
+- Semantic alias tokens are re-emitted on the scope element so alias-based
+  CSS keeps working under live theme switches (KWEB-060).
+- Text-role colors with unreadable contrast against the theme background are
+  skipped instead of shipped (KWEB-060).
+- ADR 0001 (rendering architecture) accepted after review (KWEB-058).
+
 ## [0.1.0] — 2026-08-11
 
 First stable release. All 11 `@axis-love/*` packages published lockstep with

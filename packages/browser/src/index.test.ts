@@ -102,7 +102,7 @@ const _workerSuccess: WorkerRenderResponse = {
       hasFootnotes: false,
       hasAlerts: false,
     },
-    rendererVersion: "0.1.0",
+    rendererVersion: "0.2.0",
   },
 };
 const _workerError: WorkerRenderResponse = { type: "error", id: 1, error: "fail" };
@@ -127,7 +127,7 @@ void [
 describe("@axis-love/browser public API", () => {
   it("exports BROWSER_VERSION", () => {
     expect(typeof BROWSER_VERSION).toBe("string");
-    expect(BROWSER_VERSION).toBe("0.1.0");
+    expect(BROWSER_VERSION).toBe("0.2.0");
   });
 
   it("exports RAW_IMAGE_SRC_ATTR", () => {

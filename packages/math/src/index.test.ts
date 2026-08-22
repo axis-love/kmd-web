@@ -84,7 +84,7 @@ describe("@axis-love/math", () => {
   });
 
   it("should export a version string", () => {
-    expect(MATH_VERSION).toBe("0.1.0");
+    expect(MATH_VERSION).toBe("0.2.0");
   });
 
   // -------------------------------------------------------------------------

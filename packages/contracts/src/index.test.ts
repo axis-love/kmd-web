@@ -67,7 +67,7 @@ const _checkRenderResult: RenderResult = {
   links: [],
   metadata: {},
   detectedFeatures: _checkDetectedFeatures,
-  rendererVersion: "0.1.0",
+  rendererVersion: "0.2.0",
 };
 const _checkFeatureOptions: FeatureOptions = { math: true };
 const _checkSecurityOptions: SecurityOptions = { allowRemoteImages: false };
@@ -111,7 +111,7 @@ void [
 describe("@axis-love/contracts public API", () => {
   it("exports CONTRACTS_VERSION", () => {
     expect(typeof CONTRACTS_VERSION).toBe("string");
-    expect(CONTRACTS_VERSION).toBe("0.1.0");
+    expect(CONTRACTS_VERSION).toBe("0.2.0");
   });
 
   it("exports defaultRenderOptions with security-first defaults", () => {

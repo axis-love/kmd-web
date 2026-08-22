@@ -20,7 +20,7 @@ import type { OutlineEntry, RenderOptions } from "@axis-love/contracts";
 import type { FC, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export const REACT_PACKAGE_VERSION = "0.1.0";
+export const REACT_PACKAGE_VERSION = "0.2.0";
 
 // ---------------------------------------------------------------------------
 // SSR-safe layout effect

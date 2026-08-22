@@ -74,7 +74,7 @@ const _checkKmdRenderedDetail: KmdRenderedDetail = {
       hasFootnotes: false,
       hasAlerts: false,
     },
-    rendererVersion: "0.1.0",
+    rendererVersion: "0.2.0",
   },
 };
 void _checkMarkdownReaderProps;
@@ -102,7 +102,7 @@ const _checkRenderResult: RenderResult = {
     hasFootnotes: false,
     hasAlerts: false,
   },
-  rendererVersion: "0.1.0",
+  rendererVersion: "0.2.0",
 };
 const _checkAssetResolver: AssetResolver = {
   async resolveAsset(r) {
@@ -149,13 +149,13 @@ void [
 
 describe("@axis-love/kmd-web convenience package", () => {
   it("exports VERSION", () => {
-    expect(VERSION).toBe("0.1.0");
+    expect(VERSION).toBe("0.2.0");
   });
 
   it("re-exports package versions", () => {
-    expect(CONTRACTS_VERSION).toBe("0.1.0");
-    expect(CORE_VERSION).toBe("0.1.0");
-    expect(BROWSER_VERSION).toBe("0.1.0");
+    expect(CONTRACTS_VERSION).toBe("0.2.0");
+    expect(CORE_VERSION).toBe("0.2.0");
+    expect(BROWSER_VERSION).toBe("0.2.0");
   });
 
   it("re-exports defaultRenderOptions", () => {

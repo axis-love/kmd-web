@@ -22,7 +22,7 @@ function makeResult(html: string): RenderResult {
       hasFootnotes: false,
       hasAlerts: false,
     },
-    rendererVersion: "0.1.0",
+    rendererVersion: "0.2.0",
   };
 }
 
