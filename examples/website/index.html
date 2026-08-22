@@ -25,18 +25,37 @@
       color: var(--kmd-color-on-surface);
       background-color: var(--kmd-color-neutral);
     }
-    /* DesignMD theming demo toggle (KWEB-061). Sits in the page shell,
+    /* DesignMD theming demo toolbar (KWEB-061). Sits in the page shell,
        outside .kmd-reader — intentionally NOT restyled by the custom theme,
        which stays scoped to the reader subtree. */
     .design-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 10px;
       max-width: var(--kmd-width-content-max);
       margin: 12px auto 0;
-      font-size: 14px;
-      opacity: 0.85;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    .design-toggle select,
+    .design-toggle button,
+    .design-file {
+      font: inherit;
+      padding: 2px 8px;
+      border: 1px solid var(--kmd-color-border);
+      border-radius: 6px;
+      background: var(--kmd-color-surface);
+      color: var(--kmd-color-on-surface);
       cursor: pointer;
+    }
+    .design-status {
+      font-size: 12px;
+      opacity: 0.75;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 60ch;
     }
   </style>
   <script>
